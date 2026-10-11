@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.19 loaded. Real Minecraft particle rendering aligned to the native camera; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.20 loaded. Vanilla inventory and container screens with guarded input forwarding; localhost:31674.");
         }
         public static string SaveRoot()
         {

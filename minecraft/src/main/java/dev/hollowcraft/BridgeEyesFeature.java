@@ -22,7 +22,9 @@ public final class BridgeEyesFeature extends FeatureRenderer<AbstractClientPlaye
         eyes=TexturedModelData.of(data,1,1).createModel().getChild("eyes");
     }
     @Override public void render(MatrixStack matrices,VertexConsumerProvider consumers,int light,AbstractClientPlayerEntity entity,float limb,float amount,float delta,float age,float yaw,float pitch) {
-        if(!PlayerVisualBridge.rendering||!PlayerVisualBridge.isAvatar(entity)||!entity.isCreative())return;
+        boolean avatar=PlayerVisualBridge.rendering&&PlayerVisualBridge.isAvatar(entity);
+        boolean inventory=NativeGuiBridge.rendering()&&entity==MinecraftClient.getInstance().player;
+        if((!avatar&&!inventory)||!entity.isCreative())return;
         if(white==null) {
             var texture=new NativeImageBackedTexture(1,1,false);texture.getImage().setColor(0,0,-1);texture.upload();
             white=MinecraftClient.getInstance().getTextureManager().registerDynamicTexture("hollowcraft_eyes",texture);

@@ -23,7 +23,7 @@ namespace HollowCraft
         private JToken hovered;
         private string catalogSearch="";private int catalogPage,shopPage,catalogTab;
         private bool textInputFocused;
-        internal bool TextInputFocused => textInputFocused;
+        internal bool TextInputFocused => runtime.Gui?.Active==true?runtime.Gui.TextFocused:textInputFocused;
         private string anvilSource="";
         private string notice="";private float noticeUntil;
         private string choiceKey="";private int choiceRow;
@@ -211,11 +211,13 @@ namespace HollowCraft
             if((bool?)stats?["water"]==true && ((int?)stats?["air"] ?? 300)<300) {
                 int bubbles=Mathf.CeilToInt(((int?)stats["air"] ?? 0)/30f);for(int i=0;i<10;i++) Tile("gui_icons",173-i*8,-27,9,9,i<bubbles ? 16 : 25,18,9,9);
             }
+            bool nativeGui=false;
             if(dead || paused) {
                 GUI.color=dead ? new Color(0.4f,0,0,0.65f) : new Color(0,0,0,0.65f);GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);GUI.color=Color.white;
                 string heading=dead ? "You died!" : "Game Menu";Text(heading,Screen.width/2-heading.Length*9,Screen.height/2-100,3);
                 if(Button(dead ? "Respawn" : "Back to Game",Screen.width/2-100*scale,Screen.height/2)) {if(dead) runtime.Send(new {type="respawn",scene=runtime.Room});else runtime.Resume();}
-            } else if(runtime.CatalogOpen) DrawCatalog();
+            } else if((open||runtime.CatalogOpen)&&(nativeGui=runtime.Gui?.Draw()==true)) { }
+            else if(runtime.CatalogOpen) DrawCatalog();
             else if(open && inventory!=null) DrawInventory(snapshot,container,inventory,stats);
             string focused=GUI.GetNameOfFocusedControl();
             textInputFocused=open&&!dead&&!paused&&(focused=="HollowCraftCreativeSearch"||focused=="HollowCraftAnvilName");
@@ -226,7 +228,7 @@ namespace HollowCraft
                 if(mine>0) {GUI.color=new Color(0,0,0,0.7f);GUI.DrawTexture(new Rect(crosshair.x-20,crosshair.y+24,40,4),Texture2D.whiteTexture);GUI.color=Color.white;GUI.DrawTexture(new Rect(crosshair.x-20,crosshair.y+24,40*mine,4),Texture2D.whiteTexture);}
             } else {
                 Region("gui_icons",new Rect(pointer.x-7.5f*scale,pointer.y-7.5f*scale,15*scale,15*scale),0,0,15,15);
-                if(open) Item(snapshot?["carried"],new Rect(pointer.x+10,pointer.y+10,16*scale,16*scale));
+                if(open&&!nativeGui) Item(snapshot?["carried"],new Rect(pointer.x+10,pointer.y+10,16*scale,16*scale));
             }
             GUI.color=Color.white;
             if(CampaignBridge.Sitting&&!open&&!dead&&!paused) {if(Button("Leave Bench (W / Space)",Screen.width/2-110*scale,Screen.height-76*scale,220)) CampaignBridge.LeaveBench();}

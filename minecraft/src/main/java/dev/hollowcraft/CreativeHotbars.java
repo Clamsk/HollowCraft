@@ -17,7 +17,7 @@ final class CreativeHotbars {
         if(initialized==client)return;
         initialized=client;publish(client);
     }
-    private static void publish(MinecraftClient client) {
+    static void publish(MinecraftClient client) {
         var storage=client.getCreativeHotbarStorage();var result=new ItemStack[9][9];
         for(int row=0;row<9;row++)for(int column=0;column<9;column++)result[row][column]=storage.getSavedHotbar(row).get(column).copy();
         published=result;

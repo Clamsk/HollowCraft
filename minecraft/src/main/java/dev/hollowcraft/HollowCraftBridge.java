@@ -44,6 +44,54 @@ import java.util.concurrent.*;
 public final class HollowCraftBridge implements ModInitializer {
     private static HollowCraftBridge instance;
     public static boolean remoteActive() {return instance!=null && instance.peer!=null;}
+    private volatile java.util.concurrent.atomic.AtomicInteger guiPackets=new java.util.concurrent.atomic.AtomicInteger();
+    private static boolean guiBase(NativeGuiBridge.Session gui) {
+        var bridge=instance;return bridge!=null&&bridge.running&&bridge.owner!=null&&bridge.peer!=null&&bridge.peer.gui
+            &&NativeGuiBridge.session()==gui&&bridge.scene.equals(gui.scene())&&bridge.campaigns.id().equals(gui.campaign());
+    }
+    public static void guiPacket(NativeGuiBridge.Session gui,net.minecraft.network.packet.Packet<net.minecraft.network.listener.ServerPlayPacketListener> packet) {
+        var bridge=instance;if(bridge==null||bridge.server==null)return;
+        var budget=bridge.guiPackets;
+        if(budget.incrementAndGet()>256) {budget.decrementAndGet();return;}
+        var expectedServer=bridge.server;
+        expectedServer.execute(()-> {
+            try {
+                if(bridge.server!=expectedServer||!guiBase(gui)||!bridge.owner.isAlive()||bridge.owner.currentScreenHandler.syncId!=gui.syncId())return;
+                if(packet instanceof net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket click&&click.getSyncId()!=gui.syncId()
+                    ||packet instanceof net.minecraft.network.packet.c2s.play.ButtonClickC2SPacket button&&button.getSyncId()!=gui.syncId()
+                    ||packet instanceof net.minecraft.network.packet.c2s.play.CraftRequestC2SPacket craft&&craft.getSyncId()!=gui.syncId()
+                    ||packet instanceof net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket close&&close.getSyncId()!=gui.syncId())return;
+                bridge.collectLandingWater();packet.apply(bridge.owner.networkHandler);
+            } catch(Exception error) {LOG.warn("Native GUI packet failed",error);}
+            finally {budget.decrementAndGet();}
+        });
+    }
+    public static void guiClientClosed(NativeGuiBridge.Session gui) {
+        var bridge=instance;if(bridge==null||bridge.server==null)return;var expectedServer=bridge.server;
+        expectedServer.execute(()-> {if(bridge.server==expectedServer&&guiBase(gui)) {
+            if(bridge.owner.currentScreenHandler.syncId==gui.syncId())bridge.owner.closeHandledScreen();
+            bridge.closeGui();bridge.openContainer=null;
+        }});
+    }
+    private void closeGui() {
+        var gui=NativeGuiBridge.session();NativeGuiBridge.close();
+        if(gui!=null&&peer!=null) {var event=new JsonObject();event.addProperty("type","guiClosed");event.addProperty("scene",gui.scene());event.addProperty("campaign",gui.campaign());event.addProperty("gui",gui.id());event.addProperty("request",gui.request());peer.event(event);}
+    }
+    private void openGui(boolean inventory,int request) {if(peer!=null&&peer.gui)NativeGuiBridge.open(owner,scene,campaigns.id(),inventory,request);}
+    private void creativeCatalog() {
+        if(peer==null||!creative)return;
+        if(!peer.gui) {peer.event(catalog.build(owner,scene));return;}
+        var gui=NativeGuiBridge.session();if(gui==null)return;
+        var player=owner;var connection=peer;var localServer=server;
+        // ItemGroups is shared with CreativeInventoryScreen; rebuild only on its client thread.
+        net.minecraft.client.MinecraftClient.getInstance().execute(()-> {
+            if(NativeGuiBridge.session()!=gui||server!=localServer||owner!=player||peer!=connection)return;
+            try {
+                var result=catalog.build(player,gui.scene());
+                localServer.execute(()-> {if(server==localServer&&owner==player&&peer==connection&&guiBase(gui))connection.event(result);});
+            } catch(Exception error) {LOG.warn("Creative fallback catalogue unavailable",error);}
+        });
+    }
     public static boolean isRemotePlayer(net.minecraft.entity.LivingEntity entity) {return instance!=null&&instance.owner==entity&&instance.peer!=null&&!instance.scene.isEmpty();}
     public static void playerHurt(net.minecraft.entity.LivingEntity entity,net.minecraft.entity.damage.DamageSource source) {
         if(!isRemotePlayer(entity)) return;
@@ -165,6 +213,7 @@ public final class HollowCraftBridge implements ModInitializer {
             LOG.info("Bridge disabled: world folder must start with HollowCraft"); return;
         }
         server = value;
+        guiPackets=new java.util.concurrent.atomic.AtomicInteger();
         campaigns=new CampaignStore(value);
         for(var world:value.getWorlds()) for(var entity:world.iterateEntities()) if(entity.getCommandTags().contains("hollowcraft_proxy")) entity.discard();
         server.setDifficulty(Difficulty.NORMAL,true);
@@ -191,7 +240,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean());
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\"}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -217,6 +266,7 @@ public final class HollowCraftBridge implements ModInitializer {
         return text.isEmpty() ? null : text.toString();
     }
     private void stop() {
+        closeGui();
         NativeProjectileSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
         collectLandingWater();saveCampaign();
         PlayerRenderState.clear();
@@ -250,6 +300,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
         }
         if (peer == null) {
+            NativeGuiBridge.close();
             NativeProjectileSteps.clear();projectileImpacts.clear();
             if (owner != null) {collectLandingWater();saveCampaign();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
             return;
@@ -353,6 +404,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if (type.equals("scene")) {
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;
+            closeGui();
             collectLandingWater();
             NativeProjectileSteps.clear();projectileImpacts.clear();
             String campaign=string(command,"campaign","legacy");
@@ -479,7 +531,8 @@ public final class HollowCraftBridge implements ModInitializer {
             case "use" -> use(command);
             case "interact" -> interact(command);
             case "containerMove" -> containerMove(command);
-            case "close" -> { owner.closeHandledScreen(); openContainer=null; }
+            case "close" -> {closeGui();owner.closeHandledScreen();openContainer=null;}
+            case "guiInput" -> {if(peer!=null&&peer.gui)NativeGuiBridge.input(command);}
             case "swing" -> swing(command);
             case "cancelAttack" -> {
                 int request=integer(command,"request",0);cancelledAttackRequest=Math.max(cancelledAttackRequest,request);
@@ -510,7 +563,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "offhand" -> PlayerBridge.offhand(owner);
             case "drop" -> owner.dropSelectedItem(command.has("all") && command.get("all").getAsBoolean());
             case "slotClick" -> PlayerBridge.click(owner,command);
-            case "inventoryOpen" -> {owner.clearActiveItem();pendingSwing=null;owner.closeHandledScreen();openContainer=null;}
+            case "inventoryOpen" -> {owner.clearActiveItem();pendingSwing=null;owner.closeHandledScreen();openContainer=null;openGui(true,integer(command,"uiRequest",0));snapshot();}
             case "respawn" -> {
                 if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");hadPose=false;}
             }
@@ -543,7 +596,8 @@ public final class HollowCraftBridge implements ModInitializer {
             }}
             case "creativeCatalog" -> {if(creative&&peer!=null) {
                 owner.clearActiveItem();owner.closeHandledScreen();openContainer=null;
-                peer.event(catalog.build(owner,scene));snapshot();
+                openGui(true,integer(command,"uiRequest",0));
+                creativeCatalog();snapshot();
             }}
             case "creativeHotbar" -> {if(creative)creativeHotbar(command);}
             case "creativeItem" -> {if(creative) {
@@ -590,7 +644,7 @@ public final class HollowCraftBridge implements ModInitializer {
             CreativeHotbars.save(index,stacks,error->afterHotbar(localServer,()-> {
                 if(owner!=player||!campaigns.id().equals(campaign)||!scene.equals(room))return;
                 notice(error.isEmpty()?"Saved hotbar "+(index+1)+" (X + "+(index+1)+" to load)":error);
-                if(creative&&peer!=null)peer.event(catalog.build(owner,scene));
+                creativeCatalog();
             }));
         } else if(string(command,"action","").equals("load")) {
             CreativeHotbars.load(index,(stacks,error)->afterHotbar(localServer,()-> {
@@ -941,10 +995,17 @@ public final class HollowCraftBridge implements ModInitializer {
         NativeTerrainBlock.shapes.clear();
     }
     private void snapshot() {
+        if(peer!=null&&peer.gui) {
+            var gui=NativeGuiBridge.session();
+            if(!owner.isAlive()) {closeGui();owner.closeHandledScreen();openContainer=null;}
+            else if(owner.currentScreenHandler!=owner.playerScreenHandler&&(gui==null||gui.syncId()!=owner.currentScreenHandler.syncId))openGui(false,0);
+            else if(gui!=null&&gui.syncId()!=owner.currentScreenHandler.syncId)closeGui();
+        }
         JsonObject result = new JsonObject();
         result.addProperty("type", "snapshot"); result.addProperty("scene", scene);result.addProperty("campaign",campaigns.id());
         result.addProperty("worldTime",owner.getServerWorld().getTime());
         result.addProperty("tick",server.getTicks());result.addProperty("playerSyncId",owner.playerScreenHandler.syncId);
+        if(peer!=null&&peer.gui)result.add("gui",NativeGuiBridge.description());
         result.addProperty("playerX",owner.getX()-slot*1024);result.addProperty("playerY",owner.getY()-64);
         result.add("enemies",enemies.snapshot());
         JsonArray primed=new JsonArray();
@@ -1034,12 +1095,14 @@ public final class HollowCraftBridge implements ModInitializer {
         final BufferedWriter writer;
         final boolean projectileSteps;
         final boolean audio;
+        final boolean gui;
         final Set<String> audioFiles=ConcurrentHashMap.newKeySet();
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui) {
             this.projectileSteps=projectileSteps;
             this.audio=audio;
+            this.gui=gui;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {
                 try { while (!socket.isClosed()) {

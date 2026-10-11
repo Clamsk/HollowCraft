@@ -30,6 +30,14 @@
     ,"ParticleManagerAccess"
     ,"MatrixStackAccess"
     ,"ParticleAlphaMixin"
+    ,"NativeGuiPacketMixin"
+    ,"NativeGuiWindowMixin"
+    ,"NativeGuiKeysMixin"
+    ,"NativeGuiBindingMixin"
+    ,"NativeGuiAlphaMixin"
+    ,"NativeGuiSkinMixin"
+    ,"NativeGuiMouseMixin"
+    ,"NativeGuiScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

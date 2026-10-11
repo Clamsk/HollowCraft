@@ -63,6 +63,9 @@ namespace HollowCraft
         private int waterLandingPhase,waterLandingHand;
         private MinecraftAudio audio;
         private readonly NativeParticleView particles=new NativeParticleView();
+        internal NativeGuiView Gui;
+        internal int UiRequest;
+        private int uiRequests;
         private int lastProjectileTick=-1;
         private float nextVisual;
         private Vector2Int mineCell = new Vector2Int(int.MinValue, int.MinValue);
@@ -171,12 +174,14 @@ namespace HollowCraft
             audio=gameObject.AddComponent<MinecraftAudio>();audio.Initialize(this,assets);
             Application.runInBackground=true;
             ui=new MinecraftUI(this);
+            Gui=new NativeGuiView(this);
         }
         private void OnDestroy()
         {
             pointerInput.Dispose();
             bridge?.Dispose(); ClearBlocks();
             particles.Dispose();
+            Gui?.Dispose();
             MinecraftControls.Restore(); Instance=null;
 
             foreach (Texture2D texture in textures.Values) Destroy(texture);
@@ -198,6 +203,7 @@ namespace HollowCraft
         }
         private void Update()
         {
+            Gui?.Refresh(assets);
             pointerInput.Context(InGame&&!GameplayBlocked&&!Automated&&Application.isFocused);
             string activeScene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (activeScene!=diagnosticScene)
@@ -264,6 +270,7 @@ namespace HollowCraft
                 if((string)message["type"]=="itemSwing"&&(string)message["scene"]==scene) {
                     itemSwingSerial=(int?)message["serial"]??0;itemSwingHand=(int?)message["hand"]??0;itemSwingAt=Time.unscaledTime;
                 }
+                if((string)message["type"]=="guiClosed"&&(string)message["scene"]==scene&&((int?)message["request"]??0)==UiRequest&&((long?)message["gui"]??0)==Gui?.Session) {UiRequest=0;inventoryOpen=CatalogOpen=false;container=null;Gui.Reset();ui.CancelDrag();}
                 if ((string)message["type"] == "snapshot" && (string)message["scene"] == scene && (message["campaign"]==null||(string)message["campaign"]==campaign)) ApplySnapshot(message);
                 if ((string)message["type"] == "attack" && (string)message["scene"] == scene && building && !inventoryOpen) Combat.Begin(message,scene);
                 if((string)message["type"]=="attackRejected"&&(string)message["scene"]==scene)Combat.Reject(message);
@@ -290,7 +297,7 @@ namespace HollowCraft
             if (name != scene || newlyConnected || campaign!=CampaignSession.Id)
             {
                 ClearBlocks(); scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
-                container=null; inventoryOpen=false;waterLandingAt=-1000; Combat.Cancel(); PlayerSystem.EnterScene(hero);
+                container=null; inventoryOpen=false;UiRequest=0;Gui.Reset();waterLandingAt=-1000; Combat.Cancel(); PlayerSystem.EnterScene(hero);
                 CatalogOpen=false;usingItem=false;MinecraftEnvironment.SceneChanged();
                 snapshotLogged=false; stableSince=Time.unscaledTime;
                 campaign=CampaignSession.Id;nextPose=0;nextTerrain=0;
@@ -304,10 +311,10 @@ namespace HollowCraft
             if (!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
                 bridge.Send(new { type = "mode", scene, mode = creative ? "survival" : "creative" });
             if(!Automated&&Application.isFocused&&connected) Modes.Tick(this,Input.GetKey(KeyCode.F3),Input.GetKeyDown(KeyCode.F4),Input.GetKeyDown(KeyCode.Escape));
-            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused)) {
+            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused&&Gui?.Active!=true)) {
                 if(inventoryOpen||CatalogOpen)CloseInterface();
                 else if(creative)OpenCatalog();
-                else {inventoryOpen=true;bridge.Send(new {type="inventoryOpen",scene});}
+                else {inventoryOpen=true;UiRequest=++uiRequests;bridge.Send(new {type="inventoryOpen",scene,uiRequest=UiRequest});}
             }
             if(!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.Escape)&&!Modes.ConsumedEscape) {if(NativeShop.Visible) NativeShop.Close();else if(NativeChoice.Visible) NativeChoice.Decide(false);else if(CatalogOpen) CatalogOpen=false;else if(inventoryOpen) CloseInterface();else {paused=!paused;Time.timeScale=paused||connectionFrozen ? 0 : 1;bridge.Send(new {type="pause",paused});}}
             if(!Automated&&Application.isFocused&&!NativeShop.Visible&&Input.GetKeyDown(KeyCode.F11)&&creative) {if(CatalogOpen)CloseInterface();else OpenCatalog();}
@@ -325,11 +332,14 @@ namespace HollowCraft
                 nextVisual=Time.unscaledTime+.033f;
                 var body=hero.GetComponent<Rigidbody2D>();
                 var camera=GameCursor.GameCamera();
+                var pointer=GameCursor.ReadScreenPosition();float guiScale=Mathf.Max(1,Mathf.Min(Mathf.Clamp(Mathf.Floor(Screen.height/240f),2,4),Mathf.Floor(Screen.width/320f),Mathf.Floor(Screen.height/240f)));
                 float viewYaw=MinecraftControls.FrontView?0:-MinecraftControls.Facing*75;
                 if(Combat.Swinging)viewYaw=-Mathf.Sign(Combat.Aim.x)*75;
                 bridge.Send(new {type="visual",scene,viewYaw,speed=body.linearVelocity.x,vy=body.linearVelocity.y,
                     viewX=camera!=null?camera.transform.position.x:hero.transform.position.x,viewY=camera!=null?camera.transform.position.y:hero.transform.position.y,
                     viewWidth=camera!=null?camera.orthographicSize*2*camera.aspect:36,viewHeight=camera!=null?camera.orthographicSize*2:24,
+                    guiWidth=Mathf.FloorToInt(Screen.width/guiScale),guiHeight=Mathf.FloorToInt(Screen.height/guiScale),guiMouseX=pointer.x/Screen.width,guiMouseY=(Screen.height-pointer.y)/Screen.height,
+                    guiMods=NativeGuiView.Modifiers,guiC=Input.GetKey(KeyCode.C),guiX=Input.GetKey(KeyCode.X),
                     crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,
                     pitch=usingItem&&GameCursor.WorldTarget(hero,out Vector2 aimPoint,out _)?-Mathf.Atan2(aimPoint.y-GameCursor.Eye(hero).y,Mathf.Abs(aimPoint.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0,
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
@@ -440,10 +450,10 @@ namespace HollowCraft
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;}
         private void LateUpdate() {FlushNativeSteps();GameCursor.ApplyCursor();particles.Draw(assets,this,cachedHero,InGame&&bridge?.Connected==true&&building&&!Dead);if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
-        internal void CloseInterface() {ui.CancelDrag();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
-        private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;Send(new {type="creativeCatalog",scene});}
+        internal void CloseInterface() {ui.CancelDrag();UiRequest=0;Gui?.Reset();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
+        private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;UiRequest=++uiRequests;Send(new {type="creativeCatalog",scene,uiRequest=UiRequest});}
         private bool HandleHotbarShortcut() {
-            if(!creative||!bridge.Connected||!Application.isFocused||ui.TextInputFocused||GameplayBlocked&&!CatalogOpen)return false;
+            if(!creative||!bridge.Connected||!Application.isFocused||ui.TextInputFocused||Gui?.Active==true||GameplayBlocked&&!CatalogOpen)return false;
             bool load=Input.GetKey(KeyCode.X),save=Input.GetKey(KeyCode.C);if(!load&&!save)return false;
             for(int i=0;i<9;i++)if(Input.GetKeyDown(KeyCode.Alpha1+i)) {StopMining();Combat.Cancel();Send(new {type="creativeHotbar",scene,action=load?"load":"save",slot=i});return true;}
             return false;
@@ -554,6 +564,7 @@ namespace HollowCraft
             selected = (int?)message["selected"] ?? selected;
             Combat.Profile=message["combat"] as JObject;
             var nextContainer=message["container"] as JObject;
+            if((long?)message["gui"]?["session"]>0&&(bool?)message["gui"]?["inventory"]==false)inventoryOpen=true;
             if(nextContainer!=null && container==null) inventoryOpen=true;
             container=nextContainer;
             var entries = (JArray)message["inventory"];

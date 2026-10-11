@@ -10,8 +10,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 final class CreativeCatalog {
     private final List<ItemStack> stacks=new ArrayList<>();
     private int revision;
-    int revision() {return revision;}
-    JsonObject build(ServerPlayerEntity player,String scene) {
+    synchronized int revision() {return revision;}
+    synchronized JsonObject build(ServerPlayerEntity player,String scene) {
         stacks.clear();JsonArray items=new JsonArray(),groups=new JsonArray();Map<String,Integer> indices=new LinkedHashMap<>();
         ItemGroups.updateDisplayContext(player.getWorld().getEnabledFeatures(),false,player.getServer().getRegistryManager());
         for(ItemGroup group:ItemGroups.getGroupsToDisplay()) {
@@ -35,7 +35,7 @@ final class CreativeCatalog {
         }
         JsonObject result=new JsonObject();result.addProperty("type","catalog");result.addProperty("scene",scene);result.addProperty("revision",++revision);result.add("items",items);result.add("groups",groups);return result;
     }
-    ItemStack stack(int index,int count) {
+    synchronized ItemStack stack(int index,int count) {
         if(index<0||index>=stacks.size()||stacks.get(index).getSubNbt("CustomCreativeLock")!=null)return ItemStack.EMPTY;
         ItemStack stack=stacks.get(index).copy();stack.setCount(Math.max(1,Math.min(count,stack.getMaxCount())));return stack;
     }
