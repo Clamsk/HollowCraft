@@ -116,12 +116,14 @@ namespace HollowCraft
         }
         private bool paused;
         private bool connectionFrozen;
+        private bool frontendSuspended=true;
+        private bool? backendPauseSent;
         private float nextHeldUse;
         private int itemSwingSerial,itemSwingHand;
         private float itemSwingAt=-100;
         private MinecraftUI ui;
         private bool BridgeIntro => (CampaignSession.IntroPending||openingSync)&&cachedManager!=null&&cachedManager.GetSceneNameString()=="Tutorial_01";
-        internal bool InGame => cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
+        internal bool InGame => !frontendSuspended && cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && cachedManager.IsGameplayScene() && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
         internal bool Creative => creative;
         internal bool Connected=>bridge?.Connected==true;
         internal string Mode=>(string)Stats?["mode"]??"survival";
@@ -130,11 +132,11 @@ namespace HollowCraft
         internal int LandingEvents;
         internal readonly GameModeMenu Modes=new GameModeMenu();
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
-        internal bool InterfaceBlocked=>cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
+        internal bool InterfaceBlocked=>frontendSuspended||cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
         internal bool NativeControlLocked=>cachedHero?.controlReqlinquished==true&&!BridgeIntro;
         internal bool GameplayBlocked=>InterfaceBlocked||NativeControlLocked;
-        internal bool SimulationPaused=>paused||connectionFrozen||Dead;
-        internal bool AudioPaused=>paused||connectionFrozen;
+        internal bool SimulationPaused=>frontendSuspended||paused||connectionFrozen||Dead;
+        internal bool AudioPaused=>frontendSuspended||paused||connectionFrozen;
         internal bool CatalogOpen;
         internal JArray Catalog;
         internal JArray CatalogGroups;
@@ -206,9 +208,15 @@ namespace HollowCraft
             if (cachedManager == null) cachedManager = FindFirstObjectByType<GameManager>();
             hero = cachedHero;
             return hero != null && hero.gameObject.activeInHierarchy && cachedManager != null
-                && !cachedManager.isPaused && (!cachedManager.IsInSceneTransition||BridgeIntro)
+                && cachedManager.IsGameplayScene() && !cachedManager.isPaused && (!cachedManager.IsInSceneTransition||BridgeIntro)
                 && cachedManager.GetSceneNameString() != "Opening_Sequence"
                 && hero.GetComponent<Rigidbody2D>() != null;
+        }
+        private void SyncBackendPause() {
+            if(bridge?.Connected!=true) {backendPauseSent=null;return;}
+            bool value=frontendSuspended||paused||connectionFrozen;
+            if(backendPauseSent==value)return;
+            bridge.Send(new {type="pause",paused=value});backendPauseSent=value;
         }
         private void Update()
         {
@@ -249,7 +257,7 @@ namespace HollowCraft
             bool connected = bridge.Connected;
             bool newlyConnected = connected && !wasConnected;
             if (!connected && wasConnected) {connectionFrozen=true;Time.timeScale=0;status = "Minecraft disconnected; reconnecting";}
-            if(newlyConnected&&connectionFrozen) {connectionFrozen=false;Time.timeScale=paused?0:1;if(paused) bridge.Send(new {type="pause",paused=true});}
+            if(newlyConnected) {backendPauseSent=null;if(connectionFrozen) {connectionFrozen=false;Time.timeScale=paused?0:1;}}
             wasConnected = connected;
             while (bridge.TryRead(out JObject message))
             {
@@ -300,7 +308,11 @@ namespace HollowCraft
                     bridge.Send(new {type="teleportAck",scene,x,y,teleport=(int?)message["teleport"]??-1});
                 }
             }
-            if (!Playable(out HeroController hero)) { MinecraftControls.Tick(null,false,false); Combat.Cancel(); return; }
+            if (!Playable(out HeroController hero)) {
+                if(!frontendSuspended) {StopMining();Combat.Cancel();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}CloseInterface();}
+                frontendSuspended=true;SyncBackendPause();MinecraftControls.Tick(null,false,false);return;
+            }
+            frontendSuspended=false;
             string name = cachedManager.GetSceneNameString();
             CampaignSession.Select(cachedManager);
             if(!cachedManager.IsInSceneTransition)openingSync=false;
@@ -326,7 +338,8 @@ namespace HollowCraft
                 else if(creative)OpenCatalog();
                 else {inventoryOpen=true;UiRequest=++uiRequests;bridge.Send(new {type="inventoryOpen",scene,uiRequest=UiRequest});}
             }
-            if(!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.Escape)&&!Modes.ConsumedEscape) {if(NativeShop.Visible) NativeShop.Close();else if(NativeChoice.Visible) NativeChoice.Decide(false);else if(CatalogOpen) CatalogOpen=false;else if(inventoryOpen) CloseInterface();else {paused=!paused;Time.timeScale=paused||connectionFrozen ? 0 : 1;bridge.Send(new {type="pause",paused});}}
+            if(!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.Escape)&&!Modes.ConsumedEscape) {if(NativeShop.Visible) NativeShop.Close();else if(NativeChoice.Visible) NativeChoice.Decide(false);else if(CatalogOpen) CloseInterface();else if(inventoryOpen) CloseInterface();else {paused=!paused;Time.timeScale=paused||connectionFrozen ? 0 : 1;}}
+            SyncBackendPause();
             if(!Automated&&Application.isFocused&&!NativeShop.Visible&&Input.GetKeyDown(KeyCode.F11)&&creative) {if(CatalogOpen)CloseInterface();else OpenCatalog();}
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.F)) SwapHands();
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.Q)) bridge.Send(new {type="drop",scene,all=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)});
@@ -464,9 +477,11 @@ namespace HollowCraft
             FlushNativeSteps();GameCursor.ApplyCursor();
             bool visible=InGame&&bridge?.Connected==true&&building&&!Dead;
             particles.Draw(assets,this,cachedHero,visible);entityView.Draw(assets,this,cachedHero,visible);
-            foreach(var pair in drops)NativeVisual(pair.Value,entityView.Covers(pair.Key));
-            foreach(var pair in primedTnt)NativeVisual(pair.Value,entityView.Covers(pair.Key));
-            foreach(var pair in projectiles)NativeVisual(pair.Value,entityView.Covers(pair.Key));
+            bool hideWorld=!InGame;
+            foreach(var block in blocks.Values)NativeVisual(block,hideWorld);
+            foreach(var pair in drops)NativeVisual(pair.Value,hideWorld||entityView.Covers(pair.Key));
+            foreach(var pair in primedTnt)NativeVisual(pair.Value,hideWorld||entityView.Covers(pair.Key));
+            foreach(var pair in projectiles)NativeVisual(pair.Value,hideWorld||entityView.Covers(pair.Key));
             foreach(var renderer in nativeHiddenRenderers.Keys.Where(key=>key==null).ToArray())nativeHiddenRenderers.Remove(renderer);
             if(placementGhost!=null && (GameplayBlocked||!building))placementGhost.SetActive(false);
             if(GameplayBlocked||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}
@@ -828,6 +843,6 @@ namespace HollowCraft
             ui.Draw(LatestSnapshot,container,inventoryOpen||CatalogOpen,selected,creative,Dead,paused,bridge.Connected,crosshair,mineProgress);
             ui.DrawModes();
         }
-        internal void Resume() {paused=false;Time.timeScale=connectionFrozen?0:1;bridge.Send(new {type="pause",paused=false});}
+        internal void Resume() {paused=false;Time.timeScale=connectionFrozen?0:1;SyncBackendPause();}
     }
 }
