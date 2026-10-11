@@ -38,10 +38,11 @@ namespace HollowCraft
         private IntPtr window,hook;
         private float nextInstall;
         private volatile bool capture,disposed;
+        private volatile int heldButtons;
         private bool unavailable,subclass;
         internal NativePointerBuffer() {callback=WindowMessageCallback;}
         internal void Context(bool enabled) {
-            capture=enabled&&!disposed;if(!capture)while(presses.TryDequeue(out _)) { }
+            capture=enabled&&!disposed;if(!capture) {heldButtons=0;while(presses.TryDequeue(out _)) { }}
             if(window!=IntPtr.Zero||unavailable||disposed||Time.unscaledTime<nextInstall)return;
             nextInstall=Time.unscaledTime+2;
             try {
@@ -76,14 +77,18 @@ namespace HollowCraft
             return CallNextHookEx(IntPtr.Zero,code,removed,pointer);
         }
         private void Observe(IntPtr handle,uint message,UIntPtr wParam,IntPtr lParam) {
+            // Keep held state from the same window messages as the click queue.
+            // Unity's frame polling alone must not stop continuous use during a jump.
+            if(capture&&!disposed&&GetForegroundWindow()==handle&&message>=0x0200&&message<=0x0206)
+                heldButtons=(int)(wParam.ToUInt64()&3);
             if(capture&&!disposed&&GetForegroundWindow()==handle&&(message==0x0201||message==0x0203||message==0x0204||message==0x0206)&&presses.Count<128) {
                 long packed=lParam.ToInt64();presses.Enqueue(new Press {Button=message==0x0201||message==0x0203?0:1,X=(short)(packed&0xffff),Y=(short)((packed>>16)&0xffff)});
             }
-            if(message==0x0008||message==0x001C&&wParam==UIntPtr.Zero) {capture=false;while(presses.TryDequeue(out _)) { }}
+            if(message==0x0008||message==0x001C&&wParam==UIntPtr.Zero) {capture=false;heldButtons=0;while(presses.TryDequeue(out _)) { }}
         }
         private IntPtr WindowMessageCallback(IntPtr handle,uint message,UIntPtr wParam,IntPtr lParam,UIntPtr id,UIntPtr data) {
             Observe(handle,message,wParam,lParam);
-            if(message==0x0082) {RemoveWindowSubclass(handle,callback,Id);roots.TryRemove(handle,out _);window=IntPtr.Zero;subclass=false;capture=false;}
+            if(message==0x0082) {RemoveWindowSubclass(handle,callback,Id);roots.TryRemove(handle,out _);window=IntPtr.Zero;subclass=false;capture=false;heldButtons=0;}
             return DefSubclassProc(handle,message,wParam,lParam);
         }
         internal bool Read(out Press press,out Vector2 screen) {
@@ -93,8 +98,9 @@ namespace HollowCraft
             else screen=GameCursor.ReadScreenPosition();
             return true;
         }
+        internal bool Held(int button) => capture&&!disposed&&window!=IntPtr.Zero&&(heldButtons&(button==0?1:2))!=0&&GetForegroundWindow()==window;
         public void Dispose() {
-            capture=false;disposed=true;bool removed=true;
+            capture=false;disposed=true;heldButtons=0;bool removed=true;
             if(subclass&&window!=IntPtr.Zero)removed=RemoveWindowSubclass(window,callback,Id);
             if(hook!=IntPtr.Zero)removed=UnhookWindowsHookEx(hook)&&removed;
             if(removed) {roots.TryRemove(window,out _);window=hook=IntPtr.Zero;subclass=false;}

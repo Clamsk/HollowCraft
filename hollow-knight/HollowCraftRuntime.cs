@@ -85,14 +85,18 @@ namespace HollowCraft
         private string ghostItem;
         private Vector2Int? queuedTower;
         private float queuedTowerUntil;
+        private enum PlacementBlocker {None,Reach,Mode,Occupied,Terrain,Player,Enemy}
         private List<float[]> terrainCells=new List<float[]>();
-        internal bool PlacementAllowed(Vector2Int cell,HeroController hero) {
-            if(!GameCursor.BlockInReach(cell,hero))return false;
-            if(Spectator||Mode=="adventure"||blocks.ContainsKey(Key(cell.x,cell.y)) || terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[5]>=.999f))) return false;
+        internal bool PlacementAllowed(Vector2Int cell,HeroController hero) => PlacementBlockedBy(cell,hero)==PlacementBlocker.None;
+        private PlacementBlocker PlacementBlockedBy(Vector2Int cell,HeroController hero) {
+            if(!GameCursor.BlockInReach(cell,hero))return PlacementBlocker.Reach;
+            if(Spectator||Mode=="adventure")return PlacementBlocker.Mode;
+            if(blocks.ContainsKey(Key(cell.x,cell.y)))return PlacementBlocker.Occupied;
+            if(terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[5]>=.999f)))return PlacementBlocker.Terrain;
             var body=hero.GetComponent<Collider2D>();
             var bounds=new Bounds(new Vector3(cell.x+0.5f,cell.y+0.5f,hero.transform.position.z),new Vector3(0.98f,0.98f,1));
-            if(body!=null && body.bounds.Intersects(bounds)) return false;
-            return !Physics2D.OverlapBoxAll(bounds.center,new Vector2(.98f,.98f),0).Any(c=>!c.isTrigger && c.GetComponentInParent<HealthManager>()!=null);
+            if(body!=null && body.bounds.Intersects(bounds))return PlacementBlocker.Player;
+            return Physics2D.OverlapBoxAll(bounds.center,new Vector2(.98f,.98f),0).Any(c=>!c.isTrigger && c.GetComponentInParent<HealthManager>()!=null)?PlacementBlocker.Enemy:PlacementBlocker.None;
         }
         private Vector2Int PlacementCell(Vector2Int pointed,HeroController hero) {
             if(JumpPlacementCell(pointed,hero,out Vector2Int tower))return tower;
@@ -119,7 +123,10 @@ namespace HollowCraft
             var candidate=new Vector2Int(Cell(hero.transform.position.x),Cell(origin.Value+.001f));
             // A full native voxel is the clicked support; partial floors can instead
             // receive a foundation in their own voxel, avoiding a two-block first jump.
-            if(terrainCells.Any(p=>p[0]==candidate.x&&p[1]==candidate.y&&(p.Length<6||p[5]>=.999f)))candidate+=Vector2Int.up;
+            // Unity's contact skin can leave the feet just below a voxel edge. A
+            // placed MC block is also a support, so resolve its upper face before
+            // deciding whether this jump's new block can be queued.
+            if(blocks.ContainsKey(Key(candidate.x,candidate.y))||terrainCells.Any(p=>p[0]==candidate.x&&p[1]==candidate.y&&(p.Length<6||p[5]>=.999f)))candidate+=Vector2Int.up;
             cell=candidate;
             return !blocks.ContainsKey(Key(cell.x,cell.y));
         }
@@ -415,27 +422,32 @@ namespace HollowCraft
             if(!GameCursor.WorldTarget(hero,out Vector2 mouse,out crosshair)) return;
             if(!Application.isFocused) {queuedTower=null;StopMining();return;}
             bool nativeLeft=false,nativeRight=false;
+            bool leftHeld=Input.GetMouseButton(0)||pointerInput.Held(0),rightHeld=Input.GetMouseButton(1)||pointerInput.Held(1);
             while(pointerInput.Read(out NativePointerBuffer.Press press,out Vector2 screen)) {
                 if(!GameCursor.WorldTarget(hero,screen,out Vector2 pressed,out _))continue;
                 nativeLeft|=press.Button==0;nativeRight|=press.Button==1;
-                HandlePointer(hero,pressed,press.Button==0,false,press.Button==1,Input.GetMouseButton(1));
+                HandlePointer(hero,pressed,press.Button==0,false,press.Button==1,rightHeld);
             }
-            HandlePointer(hero,mouse,!nativeLeft&&Input.GetMouseButtonDown(0),Input.GetMouseButton(0),!nativeRight&&Input.GetMouseButtonDown(1),Input.GetMouseButton(1));
+            HandlePointer(hero,mouse,!nativeLeft&&Input.GetMouseButtonDown(0),leftHeld,!nativeRight&&Input.GetMouseButtonDown(1),rightHeld);
         }
         internal void HandlePointer(HeroController hero,Vector2 mouse,bool leftDown,bool leftHeld,bool rightDown,bool rightHeld) {
             if(rightDown)Combat.Cancel();
             if(rightHeld) {MinecraftControls.Facing=mouse.x<hero.transform.position.x?-1:1;MinecraftControls.frontView=false;}
             Vector2Int cell = new Vector2Int(Cell(mouse.x), Cell(mouse.y));
             Preview(cell,hero);
-            if(queuedTower.HasValue&&(Time.unscaledTime>queuedTowerUntil||Math.Abs(mouse.x-hero.transform.position.x)>1||mouse.y>hero.GetComponent<Collider2D>().bounds.min.y+.6f||PlacementItem==null))queuedTower=null;
+            if(queuedTower.HasValue&&(Time.unscaledTime>queuedTowerUntil||Math.Abs(queuedTower.Value.x+.5f-hero.transform.position.x)>1||PlacementItem==null))queuedTower=null;
             bool buffered=queuedTower.HasValue;
             if(rightDown||rightHeld&&Time.unscaledTime>=nextHeldUse||buffered) {
                 var placement=buffered?queuedTower.Value:PlacementCell(cell,hero);
-                bool canPlace=PlacementAllowed(placement,hero);
+                var blockedBy=PlacementBlockedBy(placement,hero);
+                bool canPlace=blockedBy==PlacementBlocker.None;
                 var item=PlacementItem;
                 bool tower=buffered||JumpPlacementCell(cell,hero,out _);
-                if(!canPlace&&tower&&(bool?)item?["predictSolid"]==true) {
-                    if(!buffered) {queuedTower=placement;queuedTowerUntil=Time.unscaledTime+.55f;}
+                if(blockedBy==PlacementBlocker.Player&&tower&&item!=null) {
+                    if(!buffered) {
+                        queuedTower=placement;queuedTowerUntil=Time.unscaledTime+.8f;
+                        Debug.Log("[HollowCraft] Jump placement buffered cell="+placement+" feet="+hero.GetComponent<Collider2D>().bounds.min.y+" mode="+Mode);
+                    }
                     // Recheck clearance each frame while airborne, instead of spending
                     // the 4-tick use delay before the feet clear the new block's top.
                     nextHeldUse=Time.unscaledTime+.02f;
@@ -447,6 +459,7 @@ namespace HollowCraft
                     if(canPlace&&item!=null)SendPose(hero,true);else SendPose(hero,false);
                     if(canPlace&&predict&&item!=null&&(!blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed)||MinecraftControls.Crouching||!Interactive(pointed.name)))PredictPlacement(placement,item);
                     var eye=GameCursor.Eye(hero);
+                    if(tower)Debug.Log("[HollowCraft] Jump placement sent cell="+placement+" canPlace="+canPlace+" blocker="+blockedBy+" feet="+hero.GetComponent<Collider2D>().bounds.min.y);
                     Send(new {type="interact",scene,x=cell.x,y=cell.y,placeX=placement.x,placeY=placement.y,canPlace,
                         playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,aimX=mouse.x-eye.x,aimY=mouse.y-eye.y});
                     usingItem=true;
@@ -490,7 +503,7 @@ namespace HollowCraft
             blocks[key]=block;pendingPlacements[key]=Time.unscaledTime+.75f;
         }
         internal void SwapHands() {
-            StopMining();Combat.Cancel();usingItem=false;
+            queuedTower=null;StopMining();Combat.Cancel();usingItem=false;
             Send(new {type="itemUse",scene,cancel=true});Send(new {type="offhand",scene});
         }
         private void SendItemUse(HeroController hero,Vector2 target,bool start,bool release) {

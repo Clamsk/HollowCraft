@@ -1,4 +1,4 @@
-param([string]$Version='0.30.0')
+param([string]$Version='0.30.1')
 $ErrorActionPreference='Stop'
 $rootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $rootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -21,7 +21,8 @@ $filesTask=@(
     'scripts\prepare-hk-test.ps1','scripts\prepare-mc-test.ps1',
     'scripts\start-hollowcraft.ps1','scripts\stop-hollowcraft.ps1',
     'release\dependencies.lock.json','release\hollowcraft.example.json',
-    'release\THIRD_PARTY.md','README.md',
+    'release\THIRD_PARTY.md','release\INSTALL_zh.md','README.md','SOURCE_SETUP.md',
+    'docs\ARCHITECTURE.md','docs\PLAYTHROUGH.md',
     'artifacts\HollowCraft\HollowCraft.dll',
     'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar'
 )
@@ -32,8 +33,12 @@ foreach($relativeTask in $filesTask) {
 }
 Copy-Item -LiteralPath (Join-Path $rootTask 'release\INSTALL_zh.md') -Destination (Join-Path $stageTask 'INSTALL_zh.md')
 # Find the Unicode playtest note without placing non-ASCII literals in PS5 scripts.
-$noteTask=Get-ChildItem -LiteralPath $rootTask -File | Where-Object {$_.Name -like '*-0.30.md'} | Select-Object -First 1
-if($noteTask) {Copy-Item -LiteralPath $noteTask.FullName -Destination (Join-Path $stageTask 'CHANGELOG_zh.md')}
+$noteVersionTask=if($Version.EndsWith('.0')) {$Version.Substring(0,$Version.Length-2)}else{$Version}
+$noteTask=Get-ChildItem -LiteralPath $rootTask -File | Where-Object {$_.Name -like ('*-'+$noteVersionTask+'.md')} | Select-Object -First 1
+if($noteTask) {
+    Copy-Item -LiteralPath $noteTask.FullName -Destination (Join-Path $stageTask 'CHANGELOG_zh.md')
+    Copy-Item -LiteralPath $noteTask.FullName -Destination (Join-Path $stageTask $noteTask.Name)
+}
 $manifestFilesTask=@()
 foreach($fileTask in Get-ChildItem -LiteralPath $stageTask -File -Recurse | Sort-Object FullName) {
     $relativeTask=$fileTask.FullName.Substring($stageTask.Length+1).Replace('\','/')

@@ -1,14 +1,16 @@
-# HollowCraft 0.30 试玩版本
+# HollowCraft 0.30.1 试玩版本
 
 Minecraft-style survival and combat in Hollow Knight
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.md](试玩说明-0.30.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.1.md](试玩说明-0.30.1.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 0.30 接入点燃 TNT 的空洞原生地形碰撞，按玩家要求将普通跳跃上调到约 1.5 格，初始装备增加铁镐，并提供 Windows 安装配置包。保留 0.29 的 HIM 白眼、创造双击空格飞行与脚下放置目标锁定。实际操作效果待玩家试玩。
 
+0.30.1 针对生存跳跃时放置请求被丢弃：在已有 MC 方块上起跳会先解析支撑面的上方格子，短按右键在身体暂时重叠时保留最多 0.8 秒，脚底腾出空间后发送；锁定的目标不再因相机与人物升降而取消。连续右键同时读取原生窗口的按住状态。保留 1.5 格跳跃参数，没有继续上调高度。
+
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
-直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.0)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd**。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)。
+直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.1)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd**。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)。
 
 仓库提交只包含源码与脚本；发布包另带自编译 Mod，不包含游戏文件、提取素材、第三方依赖二进制、运行副本、日志或存档。GitHub 的 Source code 压缩包需自行构建，说明见 [SOURCE_SETUP.md](SOURCE_SETUP.md)。
 
