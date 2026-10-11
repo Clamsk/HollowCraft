@@ -37,6 +37,7 @@ final class ItemUseBridge {
     }
     private static Box region(int offset,int x,int y) {return new Box(offset+x-28,64+y-24,-4,offset+x+28,64+y+24,4);}
     static void tick(ServerPlayerEntity player,int offset,int x,int y) {
+        anchors.entrySet().removeIf(entry->player.getServerWorld().getEntity(entry.getKey())==null);
         for(var projectile:player.getServerWorld().getEntitiesByClass(ProjectileEntity.class,region(offset,x,y),e->true)) {
             if(projectile instanceof PersistentProjectileEntity arrow&&arrow.getCommandTags().contains("hollowcraft_native_anchor")) {
                 if(arrow instanceof TridentEntity&&arrow.isNoClip()) {anchors.remove(arrow.getUuid());arrow.removeScoreboardTag("hollowcraft_native_anchor");arrow.setNoGravity(false);}
@@ -45,7 +46,7 @@ final class ItemUseBridge {
             projectile.setPosition(projectile.getX(),projectile.getY(),.5);
             projectile.setVelocity(projectile.getVelocity().multiply(1,1,0));
             // Keep arrows pickable, including ammunition fired by the native scene's player.
-            if(projectile instanceof PersistentProjectileEntity arrow&&arrow.squaredDistanceTo(player)<2.25) arrow.onPlayerCollision(player);
+            if(projectile instanceof PersistentProjectileEntity arrow&&arrow.getBoundingBox().intersects(player.getBoundingBox().expand(.25,.5,.25))) arrow.onPlayerCollision(player);
         }
         for(var block:player.getServerWorld().getEntitiesByClass(net.minecraft.entity.FallingBlockEntity.class,region(offset,x,y),e->true)) {block.setPosition(block.getX(),block.getY(),.5);block.setVelocity(block.getVelocity().multiply(1,1,0));}
     }

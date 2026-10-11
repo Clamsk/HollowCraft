@@ -17,6 +17,8 @@ namespace HollowCraft
         private bool awaitingImpact;
         private float retryAt;
         private object hitCommand;
+        private MeshRenderer[] meshes;
+        private void Awake() {meshes=GetComponentsInChildren<MeshRenderer>();}
         internal void Push(JObject value,string scene) {
             room=scene;kind=(string)value["kind"];entity=(int)value["entity"];uuid=(string)value["uuid"];
             var target=new Vector3((float)value["x"],(float)value["y"],-.15f);
@@ -74,7 +76,7 @@ namespace HollowCraft
                 if(retireAt<0&&Time.unscaledTime>=retryAt) {retryAt=Time.unscaledTime+.4f;HollowCraftRuntime.Instance.Send(hitCommand);}
             }
             if(kind!="minecraft:falling_block"&&velocity.sqrMagnitude>.001f)transform.rotation=Quaternion.Euler(0,0,Mathf.Atan2(velocity.y,velocity.x)*Mathf.Rad2Deg-(kind=="minecraft:trident"?90:0));
-            foreach(var renderer in GetComponentsInChildren<MeshRenderer>())MinecraftMeshes.SortFaces(renderer);
+            foreach(var renderer in meshes)if(renderer!=null)MinecraftMeshes.SortFaces(renderer);
         }
     }
 }

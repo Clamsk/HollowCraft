@@ -26,13 +26,17 @@ namespace HollowCraft
         private static Vector2 nativeSize,nativeOffset;
         private static bool bodyConfigured;
         private static bool priorEnabled;
+        private static readonly RaycastHit2D[] groundHits=new RaycastHit2D[16];
+        private static readonly float[] groundOffsets={0,-.7f,.7f};
         internal static bool Grounded(HeroController value) {
             var collider=value.GetComponent<Collider2D>();if(collider==null) return value.cState.onGround;
             var rb=value.GetComponent<Rigidbody2D>();if(rb!=null&&rb.linearVelocity.y>.1f)return false;
             var bounds=collider.bounds;
-            foreach(float offset in new[]{0f,-bounds.extents.x*.7f,bounds.extents.x*.7f})
-                foreach(var hit in Physics2D.RaycastAll(new Vector2(bounds.center.x+offset,bounds.min.y+.02f),Vector2.down,.055f,LayerMask.GetMask("Terrain","Default")))
-                    if(hit.collider!=null && !hit.collider.isTrigger && hit.collider.GetComponentInParent<HeroController>()==null && hit.collider.GetComponentInParent<HealthManager>()==null) return true;
+            var filter=new ContactFilter2D();filter.SetLayerMask(LayerMask.GetMask("Terrain","Default"));filter.useTriggers=false;
+            foreach(float offset in groundOffsets) {
+                int count=Physics2D.Raycast(new Vector2(bounds.center.x+offset*bounds.extents.x,bounds.min.y+.02f),Vector2.down,filter,groundHits,.055f);
+                for(int i=0;i<count;i++) {var hit=groundHits[i];if(hit.collider!=null&&hit.collider.GetComponentInParent<HeroController>()==null&&hit.collider.GetComponentInParent<HealthManager>()==null)return true;}
+            }
             return false;
         }
 

@@ -12,6 +12,8 @@ namespace HollowCraft
     {
         private const float CellSize = 1f;
         private BridgeClient bridge;
+        private readonly NativePointerBuffer pointerInput=new NativePointerBuffer();
+        private Collider2D[] terrainProbe=new Collider2D[32];
         internal static HollowCraftRuntime Instance;
         internal CursorCombat Combat;
         internal string HeldItem => inventory[selected];
@@ -102,7 +104,7 @@ namespace HollowCraft
         internal int LandingEvents;
         internal readonly GameModeMenu Modes=new GameModeMenu();
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
-        internal bool GameplayBlocked=>cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||paused||connectionFrozen||Dead;
+        internal bool GameplayBlocked=>cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
         internal bool SimulationPaused=>paused||connectionFrozen||Dead;
         internal bool CatalogOpen;
         internal JArray Catalog;
@@ -110,6 +112,7 @@ namespace HollowCraft
         internal int SelectedSlot=>selected;
         internal bool Dead => (bool?)LatestSnapshot?["stats"]?["dead"] ?? false;
         internal string Room => scene;
+        internal string CampaignId=>campaign;
         internal JObject Stats => LatestSnapshot?["stats"] as JObject;
         internal void Send(object command) => bridge.Send(command);
         private string assets;
@@ -150,6 +153,7 @@ namespace HollowCraft
         }
         private void OnDestroy()
         {
+            pointerInput.Dispose();
             bridge?.Dispose(); ClearBlocks();
             MinecraftControls.Restore(); Instance=null;
 
@@ -172,6 +176,7 @@ namespace HollowCraft
         }
         private void Update()
         {
+            pointerInput.Context(InGame&&!GameplayBlocked&&!Automated&&Application.isFocused);
             string activeScene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (activeScene!=diagnosticScene)
             {
@@ -210,6 +215,7 @@ namespace HollowCraft
             wasConnected = connected;
             while (bridge.TryRead(out JObject message))
             {
+                if(message["campaign"]!=null&&(string)message["campaign"]!=campaign)continue;
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
                 if((string)message["type"]=="nativeImpact"&&(string)message["scene"]==scene&&projectiles.TryGetValue((int)message["entity"],out GameObject impact)&&impact!=null)impact.GetComponent<ProjectileView>().Resolve(message);
                 if((string)message["type"]=="projectile"&&(string)message["scene"]==scene) {
@@ -238,6 +244,7 @@ namespace HollowCraft
                     var body=cachedHero.GetComponent<Collider2D>();float feetOffset=cachedHero.transform.position.y-body.bounds.min.y;
                     if(float.IsNaN(x)||float.IsNaN(y)||Math.Abs(x)>400||y<-60||y>240) continue;
                     cachedHero.transform.position=new Vector3(x,y+feetOffset,cachedHero.transform.position.z);cachedHero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
+                    MinecraftEnvironment.StopMotion();
                     bridge.Send(new {type="teleportAck",scene,x,y});
                 }
             }
@@ -249,8 +256,11 @@ namespace HollowCraft
             {
                 ClearBlocks(); scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
                 container=null; inventoryOpen=false; Combat.Cancel(); PlayerSystem.EnterScene(hero);
+                CatalogOpen=false;usingItem=false;MinecraftEnvironment.SceneChanged();
                 snapshotLogged=false; stableSince=Time.unscaledTime;
                 campaign=CampaignSession.Id;nextPose=0;nextTerrain=0;
+                bridge.Campaign=campaign;LatestSnapshot=null;Combat.Profile=null;Catalog=CatalogGroups=null;creative=false;
+                Array.Fill(inventory,null);Array.Clear(counts,0,counts.Length);selected=0;
                 openingSync=CampaignSession.IntroPending&&scene=="Tutorial_01"&&cachedManager.IsInSceneTransition;
                 Debug.Log("[HollowCraft] Room " + scene + " hero " + hero.transform.position);
                 Array.Fill(crafting, -1);
@@ -297,6 +307,7 @@ namespace HollowCraft
             if (Environment.GetEnvironmentVariable("HOLLOWCRAFT_SMOKE") == "1") SmokeTick(hero);
             if(Automated) return;
             // Native landing/knockback animation locks must not swallow MC mouse presses.
+            pointerInput.Context(building&&connected&&!GameplayBlocked&&Application.isFocused);
             if (!building || !connected || GameplayBlocked) return;
             if(Spectator) {StopMining();return;}
             for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Select(i);
@@ -304,7 +315,13 @@ namespace HollowCraft
             if (Math.Abs(scroll) > 0.01f) Select((selected + (scroll > 0 ? 8 : 1)) % 9);
             if(!GameCursor.WorldTarget(hero,out Vector2 mouse,out crosshair)) return;
             if(!Application.isFocused) {StopMining();return;}
-            HandlePointer(hero,mouse,Input.GetMouseButtonDown(0),Input.GetMouseButton(0),Input.GetMouseButtonDown(1),Input.GetMouseButton(1));
+            bool nativeLeft=false,nativeRight=false;
+            while(pointerInput.Read(out NativePointerBuffer.Press press,out Vector2 screen)) {
+                if(!GameCursor.WorldTarget(hero,screen,out Vector2 pressed,out _))continue;
+                nativeLeft|=press.Button==0;nativeRight|=press.Button==1;
+                HandlePointer(hero,pressed,press.Button==0,false,press.Button==1,Input.GetMouseButton(1));
+            }
+            HandlePointer(hero,mouse,!nativeLeft&&Input.GetMouseButtonDown(0),Input.GetMouseButton(0),!nativeRight&&Input.GetMouseButtonDown(1),Input.GetMouseButton(1));
         }
         internal void HandlePointer(HeroController hero,Vector2 mouse,bool leftDown,bool leftHeld,bool rightDown,bool rightHeld) {
             if(rightDown)Combat.Cancel();
@@ -406,12 +423,15 @@ namespace HollowCraft
             if (mask == 0) return result;
             for (int x = cx - 8; x <= cx + 8; x++) for (int y = cy - 6; y <= cy + 6; y++)
             {
-                Collider2D[] colliders = Physics2D.OverlapBoxAll(new Vector2((x + 0.5f) * CellSize, (y + 0.5f) * CellSize),
+                var filter=new ContactFilter2D();filter.SetLayerMask(mask);filter.useTriggers=false;
+                int found=Physics2D.OverlapBox(new Vector2((x + 0.5f) * CellSize, (y + 0.5f) * CellSize),
                     // Native platforms can be much thinner than a block and sit at cell edges.
                     // Sampling only the middle half missed their floors, letting server items
                     // fall through platforms that still supported the native player.
-                    new Vector2(CellSize * 0.9999f, CellSize * 0.9999f), 0, mask);
-                foreach(var c in colliders.Where(c=>!c.isTrigger&&!c.name.StartsWith("HollowCraft.Block")&&c.GetComponentInParent<HeroController>()==null&&c.GetComponentInParent<HealthManager>()==null)) {
+                    new Vector2(CellSize * 0.9999f, CellSize * 0.9999f), 0, filter,terrainProbe);
+                while(found==terrainProbe.Length&&terrainProbe.Length<256) {Array.Resize(ref terrainProbe,terrainProbe.Length*2);found=Physics2D.OverlapBox(new Vector2(x+.5f,y+.5f),new Vector2(.9999f,.9999f),0,filter,terrainProbe);}
+                for(int index=0;index<found;index++) {
+                    var c=terrainProbe[index];if(c==null||c.name.StartsWith("HollowCraft.Block")||c.GetComponentInParent<HeroController>()!=null||c.GetComponentInParent<HealthManager>()!=null)continue;
                     var bounds=c.bounds;float x0=Mathf.Max(x,bounds.min.x),x1=Mathf.Min(x+1,bounds.max.x),y0=Mathf.Max(y,bounds.min.y),y1=Mathf.Min(y+1,bounds.max.y);
                     var center=new Vector2(x+.5f,y+.5f);var closest=c.ClosestPoint(center);
                     // Polygon terrain bounds can span a whole room. Use the nearby surface

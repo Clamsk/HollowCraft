@@ -41,7 +41,7 @@ public final class PlayerVisualBridge {
 
     static void tick(MinecraftClient client) {
         var state=PlayerRenderState.latest;var input=PlayerRenderState.controls;
-        if(client.world==null||state==null||input==null||!state.scene.equals(text(input,"scene","")))return;
+        if(client.world==null||state==null||input==null||!state.scene.equals(text(input,"scene",""))||!state.campaign.equals(text(input,"campaign","")))return;
         if(HollowCraftBridge.remotePaused)return;
         try {
             if(avatar==null||avatar.clientWorld!=client.world) {
@@ -89,7 +89,7 @@ public final class PlayerVisualBridge {
     public static void render(MinecraftClient client,float delta) {
         var state=PlayerRenderState.latest;var input=PlayerRenderState.controls;
         String root=System.getProperty("hollowcraft.icons","");
-        if(root.isEmpty()||avatar==null||state==null||input==null||!state.scene.equals(text(input,"scene","")))return;
+        if(root.isEmpty()||avatar==null||state==null||input==null||!state.scene.equals(text(input,"scene",""))||!state.campaign.equals(text(input,"campaign","")))return;
         long now=System.nanoTime();if(now-lastRender<30_000_000L)return;
         lastRender=now;
         Matrix4f projection=new Matrix4f(RenderSystem.getProjectionMatrix());
@@ -113,7 +113,7 @@ public final class PlayerVisualBridge {
             draw.draw();
             pixels.clear();GL11.glReadPixels(0,0,SIZE,SIZE,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,pixels);
             ByteBuffer header=ByteBuffer.wrap(transfer).order(ByteOrder.LITTLE_ENDIAN);
-            header.putInt(0x48435039).putInt(++sequence).putInt(SIZE).putInt(SIZE).putLong(FRAME_SESSION).putInt(state.scene.hashCode());
+            header.putInt(0x48435039).putInt(++sequence).putInt(SIZE).putInt(SIZE).putLong(FRAME_SESSION).putInt((state.scene+"|"+state.campaign).hashCode());
             pixels.get(transfer,28,SIZE*SIZE*4);
             header.putInt(28+SIZE*SIZE*4,sequence);
             Path directory=Path.of(root).getParent().resolve("player_frames");Files.createDirectories(directory);

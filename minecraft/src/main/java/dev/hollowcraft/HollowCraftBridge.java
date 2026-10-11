@@ -48,25 +48,27 @@ public final class HollowCraftBridge implements ModInitializer {
     public static void playerHurt(net.minecraft.entity.LivingEntity entity,net.minecraft.entity.damage.DamageSource source) {
         if(!isRemotePlayer(entity)) return;
         JsonObject event=new JsonObject();event.addProperty("type","hurt");event.addProperty("scene",instance.scene);
-        event.addProperty("ticks",entity.hurtTime);event.addProperty("kind",source.getName());instance.peer.event(event.toString());
+        event.addProperty("ticks",entity.hurtTime);event.addProperty("kind",source.getName());instance.peer.event(event);
         LOG.info("Bridge player hurt kind={} HP={} hurtTicks={}",source.getName(),entity.getHealth(),entity.hurtTime);
     }
     public static volatile boolean remotePaused;
     public static void vanillaTeleport(ServerPlayerEntity player) {
         if(instance==null||instance.owner!=player||instance.peer==null||instance.scene.isEmpty()) return;
         instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;instance.fallen=0;
+        instance.hadPose=false;instance.wasGrounded=false;
         instance.teleportWaiting=instance.server.getTicks()+40;
-        JsonObject event=new JsonObject();event.addProperty("type","teleport");event.addProperty("scene",instance.scene);event.addProperty("x",instance.exactX);event.addProperty("y",instance.exactY);instance.peer.event(event.toString());
+        JsonObject event=new JsonObject();event.addProperty("type","teleport");event.addProperty("scene",instance.scene);event.addProperty("x",instance.exactX);event.addProperty("y",instance.exactY);instance.peer.event(event);
     }
     private static final Logger LOG = LoggerFactory.getLogger("HollowCraft");
     public static void projectileEvent(net.minecraft.entity.projectile.ProjectileEntity entity,String phase,Vec3d point) {
         var bridge=instance;
         if(bridge==null||bridge.owner==null||bridge.peer==null||bridge.scene.isEmpty()||entity.getWorld().isClient||entity.getWorld().getServer()!=bridge.server)return;
+        if(Math.abs(entity.getX()-bridge.slot*1024)>400||entity.getY()<4||entity.getY()>304)return;
         JsonObject event=new JsonObject();event.addProperty("type","projectile");event.addProperty("scene",bridge.scene);event.addProperty("phase",phase);
         JsonObject value=ItemUseBridge.projectile(entity,bridge.slot*1024);
         if(phase.equals("land"))value.addProperty("grounded",true);
         if(point!=null){value.addProperty("x",point.x-bridge.slot*1024);value.addProperty("y",point.y-64);}
-        event.add("value",value);bridge.peer.event(event.toString());
+        event.add("value",value);bridge.peer.event(event);
     }
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int PORT = 31674;
@@ -125,7 +127,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(entity instanceof TntEntity tnt && tnt.getFuse()<=0 && server==world.getServer() && peer!=null && !scene.isEmpty()) {
                 LOG.info("TNT explosion local {}, {}",tnt.getX()-slot*1024,tnt.getY()-64);
                 JsonObject event=new JsonObject();event.addProperty("type","explosion");event.addProperty("scene",scene);
-                event.addProperty("x",tnt.getX()-slot*1024);event.addProperty("y",tnt.getY()-64);peer.event(event.toString());
+                event.addProperty("x",tnt.getX()-slot*1024);event.addProperty("y",tnt.getY()-64);peer.event(event);
             }
         });
     }
@@ -234,16 +236,16 @@ public final class HollowCraftBridge implements ModInitializer {
             if (!scene.isEmpty()) {
                 // Local coordinates occupy a one-block-thick plane, far from normal world spawn.
                 Vec3d impulse=owner.getVelocity();
-                if(owner.hurtTime>0&&impulse.lengthSquared()>.0001&&peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","impulse");event.addProperty("scene",scene);event.addProperty("x",impulse.x);event.addProperty("y",impulse.y);peer.event(event.toString());}
+                if(owner.hurtTime>0&&impulse.lengthSquared()>.0001&&peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","impulse");event.addProperty("scene",scene);event.addProperty("x",impulse.x);event.addProperty("y",impulse.y);peer.event(event);}
                 owner.teleport(owner.getServerWorld(), slot * 1024 + exactX, 64 + exactY, 0.5, owner.getYaw(), owner.getPitch());
                 owner.setVelocity(Vec3d.ZERO);
                 owner.setOnGround(wasGrounded);
-                PlayerRenderState.publish(owner,scene);
+                PlayerRenderState.publish(owner,scene,campaigns.id());
                 enemies.tick();
                 ItemUseBridge.tick(owner,slot*1024,centerX,centerY);
                 if(peer!=null) {
                     JsonObject flight=new JsonObject();flight.addProperty("type","projectiles");flight.addProperty("scene",scene);flight.addProperty("tick",server.getTicks());
-                    flight.add("projectiles",ItemUseBridge.snapshot(owner,slot*1024,centerX,centerY));peer.event(flight.toString());
+                    flight.add("projectiles",ItemUseBridge.snapshot(owner,slot*1024,centerX,centerY));peer.event(flight);
                 }
                 for(var tnt:owner.getServerWorld().getEntitiesByClass(TntEntity.class,new Box(slot*1024+centerX-24,64+centerY-24,-8,slot*1024+centerX+24,64+centerY+24,8),e->true)) {
                     tnt.setPosition(tnt.getX(),tnt.getY(),.5);tnt.setVelocity(tnt.getVelocity().multiply(1,1,0));
@@ -342,6 +344,7 @@ public final class HollowCraftBridge implements ModInitializer {
             return;
         }
         if (scene.isEmpty() || !scene.equals(string(command, "scene", ""))) return;
+        if(command.has("campaign")&&!campaigns.id().equals(string(command,"campaign","")))return;
         switch (type) {
             case "pose" -> {
                 if(server.getTicks()<teleportWaiting) break;
@@ -380,7 +383,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 FluidBridge.seal(owner.getServerWorld(),pos(centerX,centerY));
                 if(openContainer!=null && (Math.abs(openContainer.getX()-slot*1024-centerX)>6 || Math.abs(openContainer.getY()-64-centerY)>6)) {owner.closeHandledScreen();openContainer=null;}
             }
-            case "teleportAck" -> {teleportWaiting=0;exactX=command.get("x").getAsDouble();exactY=command.get("y").getAsDouble();fallen=0;}
+            case "teleportAck" -> {teleportWaiting=0;exactX=command.get("x").getAsDouble();exactY=command.get("y").getAsDouble();fallen=0;hadPose=false;wasGrounded=false;}
             case "checkpoint" -> {campaigns.save(owner);server.save(false,true,true);status="World and player data saved";}
             case "nativeDeath" -> enemies.confirmDeath(integer(command,"id",0),integer(command,"generation",-1));
             case "rest" -> {if(owner.isAlive()) {owner.setHealth(owner.getMaxHealth());owner.getHungerManager().setFoodLevel(20);owner.getHungerManager().setSaturationLevel(5);campaigns.save(owner);server.save(false,true,true);status="Rested and saved at campaign checkpoint";}}
@@ -395,7 +398,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             case "place" -> {
                 boolean accepted=place(command);
-                if(peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","placeResult");event.addProperty("scene",scene);event.addProperty("x",integer(command,"x",0));event.addProperty("y",integer(command,"y",0));event.addProperty("accepted",accepted);peer.event(event.toString());}
+                if(peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","placeResult");event.addProperty("scene",scene);event.addProperty("x",integer(command,"x",0));event.addProperty("y",integer(command,"y",0));event.addProperty("accepted",accepted);peer.event(event);}
                 snapshot();
             }
             case "mine" -> mine(command);
@@ -464,7 +467,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }}
             case "creativeCatalog" -> {if(creative&&peer!=null) {
                 owner.clearActiveItem();owner.closeHandledScreen();openContainer=null;
-                peer.event(catalog.build(owner,scene).toString());snapshot();
+                peer.event(catalog.build(owner,scene));snapshot();
             }}
             case "creativeItem" -> {if(creative) {
                 if(command.has("catalogIndex")) {
@@ -515,7 +518,7 @@ public final class HollowCraftBridge implements ModInitializer {
         landingWater=null;landingWaterBefore=null;
     }
     private void landingEvent(String kind,float distance) {
-        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","landing");event.addProperty("scene",scene);event.addProperty("kind",kind);event.addProperty("intro",introLanding);event.addProperty("distance",distance);event.addProperty("x",exactX);event.addProperty("y",exactY);peer.event(event.toString());
+        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","landing");event.addProperty("scene",scene);event.addProperty("kind",kind);event.addProperty("intro",introLanding);event.addProperty("distance",distance);event.addProperty("x",exactX);event.addProperty("y",exactY);peer.event(event);
     }
     private BlockPos target(JsonObject command) {
         int x = integer(command, "x", 0), y = integer(command, "y", 0);
@@ -591,7 +594,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private void swing(JsonObject command) {
         int request=integer(command,"request",0);
         if(request>0&&request<=cancelledAttackRequest)return;
-        if(request>0&&request==lastAttackRequest&&lastAttackEvent!=null) {if(peer!=null)peer.event(lastAttackEvent.toString());return;}
+        if(request>0&&request==lastAttackRequest&&lastAttackEvent!=null) {if(peer!=null)peer.event(lastAttackEvent);return;}
         if(request>0&&request<lastAttackRequest)return;
         if(!owner.isAlive()||owner.isSpectator()) {rejectAttack(request,"Player cannot attack");return;}
         int now=server.getTicks(); if(now<nextSwingTick) {pendingSwing=command;return;}
@@ -621,11 +624,11 @@ public final class HollowCraftBridge implements ModInitializer {
         event.addProperty("aimX",command.has("aimX") ? command.get("aimX").getAsDouble() : 1);
         event.addProperty("aimY",command.has("aimY") ? command.get("aimY").getAsDouble() : 0);
         lastAttackRequest=request;lastAttackEvent=event.deepCopy();
-        Peer current=peer;if(current!=null) current.event(event.toString());
+        Peer current=peer;if(current!=null) current.event(event);
         if(!creative) owner.addExhaustion(0.1f);
     }
     private void rejectAttack(int request,String reason) {
-        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","attackRejected");event.addProperty("scene",scene);event.addProperty("request",request);event.addProperty("reason",reason);peer.event(event.toString());
+        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","attackRejected");event.addProperty("scene",scene);event.addProperty("request",request);event.addProperty("reason",reason);peer.event(event);
     }
     private void nativeProjectileHit(JsonObject command) {
         int id=integer(command,"entity",-1);var entity=owner.getServerWorld().getEntityById(id);
@@ -656,7 +659,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
         }
         if(peer!=null) {
-            JsonObject event=new JsonObject();event.addProperty("type","nativeImpact");event.addProperty("scene",scene);event.addProperty("entity",id);event.addProperty("accepted",accepted);event.addProperty("removed",removed);event.addProperty("grounded",grounded);peer.event(event.toString());
+            JsonObject event=new JsonObject();event.addProperty("type","nativeImpact");event.addProperty("scene",scene);event.addProperty("entity",id);event.addProperty("accepted",accepted);event.addProperty("removed",removed);event.addProperty("grounded",grounded);peer.event(event);
         }
     }
     private void mine(JsonObject command) {
@@ -853,7 +856,10 @@ public final class HollowCraftBridge implements ModInitializer {
             sender.setDaemon(true); sender.start();
         }
         void enqueue(String value) { if (!output.offer(value)) { output.poll(); output.offer(value); } }
-        void event(String value) {if(!events.offer(value)) {try {socket.close();}catch(IOException ignored){}}}
+        void event(JsonObject message) {
+            if(message.has("scene")&&instance!=null&&instance.campaigns!=null)message.addProperty("campaign",instance.campaigns.id());
+            if(!events.offer(message.toString())) {try {socket.close();}catch(IOException ignored){}}
+        }
         synchronized void send(String value) throws IOException { writer.write(value); writer.newLine(); writer.flush(); }
     }
 }

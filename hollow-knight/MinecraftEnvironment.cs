@@ -19,6 +19,8 @@ namespace HollowCraft
         private int Effect(string id) {var effects=HollowCraftRuntime.Instance?.Stats?["effects"] as JArray;var effect=effects?.FirstOrDefault(e=>(string)e["id"]=="minecraft:"+id);return effect==null?-1:(int)effect["amplifier"];}
         private void Awake() {instance=this;}
         internal static void SetVerticalImpulse(float velocity) {if(instance!=null) {instance.motionY=velocity;instance.lastAppliedY=velocity*20;instance.normalPhase=0;instance.ownGravity=true;}}
+        internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;}}
+        internal static void SceneChanged() {StopMotion();if(instance!=null)instance.ownGravity=false;}
         internal static bool TakeJump(HeroController player)
         {
             var runtime=HollowCraftRuntime.Instance;

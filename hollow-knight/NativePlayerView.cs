@@ -13,10 +13,14 @@ namespace HollowCraft
         private byte[] rgba;
         private int sequence=-1;
         private long session;
+        private string sceneKey;
+        private bool ready;
         private float nextRead;
         private readonly DateTime started=DateTime.UtcNow;
         internal bool Draw(string assets,Vector3 feet,int layer,int order)
         {
+            string expected=(HollowCraftRuntime.Instance?.Room??"")+"|"+(HollowCraftRuntime.Instance?.CampaignId??"");
+            if(sceneKey!=expected) {sceneKey=expected;sequence=-1;ready=false;Hide();}
             if(Time.unscaledTime>=nextRead) {
                 nextRead=Time.unscaledTime+.016f;
                 for(int slot=0;slot<3;slot++) {
@@ -26,7 +30,7 @@ namespace HollowCraft
                         using(var stream=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new BinaryReader(stream)) {
                             if(stream.Length!=32+256*256*4||reader.ReadInt32()!=0x48435039)continue;
                             int serial=reader.ReadInt32(),w=reader.ReadInt32(),h=reader.ReadInt32();long frameSession=reader.ReadInt64();int sceneHash=reader.ReadInt32();
-                            if(w!=256||h!=256||sceneHash!=SceneHash(HollowCraftRuntime.Instance?.Room??"")||frameSession<session||frameSession==session&&serial<=sequence)continue;
+                            if(w!=256||h!=256||sceneHash!=SceneHash(expected)||frameSession<session||frameSession==session&&serial<=sequence)continue;
                             if(rgba==null)rgba=new byte[w*h*4];int at=0;
                             while(at<rgba.Length){int n=stream.Read(rgba,at,rgba.Length-at);if(n<=0)break;at+=n;}
                             if(at!=rgba.Length||reader.ReadInt32()!=serial)continue;
@@ -36,12 +40,12 @@ namespace HollowCraft
                                 root=new GameObject("HollowCraft.MinecraftPlayerRenderer");UnityEngine.Object.DontDestroyOnLoad(root);renderer=root.AddComponent<SpriteRenderer>();
                                 renderer.sprite=Sprite.Create(Texture,new Rect(0,0,w,h),new Vector2(.5f,48f/256),64,0,SpriteMeshType.FullRect);
                             }
-                            Texture.LoadRawTextureData(rgba);Texture.Apply(false,false);sequence=serial;session=frameSession;
+                            Texture.LoadRawTextureData(rgba);Texture.Apply(false,false);sequence=serial;session=frameSession;ready=true;
                         }
                     } catch(IOException) { } catch(UnauthorizedAccessException) { }
                 }
             }
-            if(root==null)return false;
+            if(root==null||!ready)return false;
             root.SetActive(true);root.transform.position=feet;root.transform.localScale=Vector3.one;
             renderer.sortingLayerID=layer;renderer.sortingOrder=order+2;return true;
         }

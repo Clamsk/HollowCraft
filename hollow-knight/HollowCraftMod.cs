@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.9 loaded. Native projectile collision, vanilla food use, creative inventory and responsive jump building; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.10 loaded. Native window click queue, campaign-scoped messages and motion resets; localhost:31674.");
         }
         public static string SaveRoot()
         {

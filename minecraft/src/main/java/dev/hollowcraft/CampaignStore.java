@@ -37,6 +37,9 @@ final class CampaignStore {
             player.getInventory().selectedSlot=Math.max(0,Math.min(8,data.getInt("SelectedItemSlot")));
             player.clearStatusEffects();
             for(var entry:data.getList("ActiveEffects",NbtElement.COMPOUND_TYPE)) {var effect=StatusEffectInstance.fromNbt((NbtCompound)entry);if(effect!=null)player.addStatusEffect(effect);}
+            player.setAbsorptionAmount(Math.max(0,data.getFloat("AbsorptionAmount")));
+            player.setFireTicks(Math.max(0,data.getShort("Fire")));player.setAir(Math.max(0,data.getShort("Air")));player.setFrozenTicks(data.getInt("TicksFrozen"));
+            player.fallDistance=0;player.hurtTime=0;player.timeUntilRegen=0;
             player.changeGameMode(GameMode.byName(data.getString("BridgeMode"),GameMode.SURVIVAL));
             player.addCommandTag("hollowcraft_starter_iron_v1");introDone=data.getBoolean("IntroDone");
             player.currentScreenHandler.sendContentUpdates();
@@ -50,7 +53,7 @@ final class CampaignStore {
         player.getInventory().clear();player.getEnderChestInventory().clear();player.clearStatusEffects();
         player.removeScoreboardTag("hollowcraft_starter_iron_v1");player.removeScoreboardTag("hollowcraft_starter");
         NbtCompound food=new NbtCompound();food.putInt("foodLevel",20);food.putInt("foodTickTimer",0);food.putFloat("foodSaturationLevel",5);food.putFloat("foodExhaustionLevel",0);player.getHungerManager().readNbt(food);
-        player.setHealth(player.getMaxHealth());player.experienceLevel=0;player.experienceProgress=0;player.totalExperience=0;
+        player.setHealth(player.getMaxHealth());player.setAbsorptionAmount(0);player.fallDistance=0;player.experienceLevel=0;player.experienceProgress=0;player.totalExperience=0;
         player.getInventory().selectedSlot=0;player.extinguish();player.setFrozenTicks(0);player.setAir(300);player.hurtTime=0;player.timeUntilRegen=0;
         player.changeGameMode(GameMode.SURVIVAL);player.currentScreenHandler.sendContentUpdates();return true;
     }

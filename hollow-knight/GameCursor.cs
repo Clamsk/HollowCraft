@@ -13,6 +13,9 @@ namespace HollowCraft
         [DllImport("user32.dll")] private static extern bool ScreenToClient(IntPtr window,ref Point point);
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr window,out WindowRect rect);
         private static IntPtr window;
+        private static GameCameras cameras;
+        private static Camera gameCamera;
+        private static float nextCameraLookup;
         internal static Vector2 ReadScreenPosition()
         {
             Vector2 value=Input.mousePosition;
@@ -31,9 +34,11 @@ namespace HollowCraft
         }
         internal static Camera GameCamera()
         {
-            var cameras=UnityEngine.Object.FindFirstObjectByType<GameCameras>();
-            if(cameras!=null && cameras.mainCamera!=null) return cameras.mainCamera;
-            return Camera.allCameras.Length>0 ? Array.Find(Camera.allCameras,c=>c.enabled && c.orthographic) ?? Camera.main : Camera.main;
+            if(gameCamera!=null&&gameCamera.enabled)return gameCamera;
+            if(Time.unscaledTime<nextCameraLookup)return null;nextCameraLookup=Time.unscaledTime+.5f;
+            if(cameras==null)cameras=UnityEngine.Object.FindFirstObjectByType<GameCameras>();
+            if(cameras!=null && cameras.mainCamera!=null)return gameCamera=cameras.mainCamera;
+            var available=Camera.allCameras;return gameCamera=Array.Find(available,c=>c.enabled&&c.orthographic)??Camera.main;
         }
         internal static float BlockReach => HollowCraftRuntime.Instance?.Creative==true?5:4.5f;
         internal static float AttackReach => HollowCraftRuntime.Instance?.Creative==true?6:3;
@@ -47,10 +52,11 @@ namespace HollowCraft
         }
         internal static Vector2 ClampWorld(Vector2 pointer,Vector2 origin) => origin+Vector2.ClampMagnitude(pointer-origin,Math.Max(BlockReach,AttackReach));
         internal static bool WorldTarget(HeroController hero,out Vector2 target,out Vector2 gui)
+            => WorldTarget(hero,ReadScreenPosition(),out target,out gui);
+        internal static bool WorldTarget(HeroController hero,Vector2 screen,out Vector2 target,out Vector2 gui)
         {
             var camera=GameCamera();target=hero.transform.position;gui=new Vector2(Screen.width/2,Screen.height/2);
             if(camera==null) return false;
-            Vector2 screen=ReadScreenPosition();
             Vector3 raw=camera.ScreenToWorldPoint(new Vector3(screen.x,screen.y,hero.transform.position.z-camera.transform.position.z));
             target=ClampWorld(raw,Eye(hero));
             Vector3 result=camera.WorldToScreenPoint(new Vector3(target.x,target.y,hero.transform.position.z));

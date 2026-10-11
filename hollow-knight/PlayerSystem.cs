@@ -30,6 +30,7 @@ namespace HollowCraft
             if(!hasSpawn && hero.cState.onGround) {spawn=hero.transform.position;hasSpawn=true;}
             if(wasDead && !runtime.Dead) {
                 hero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
+                MinecraftEnvironment.StopMotion();
                 if(!CampaignBridge.Respawn()) {hero.transform.position=spawn;hero.RegainControl();hero.AcceptInput();}
             }
             wasDead=runtime.Dead;
@@ -62,7 +63,7 @@ namespace HollowCraft
             if(hero!=null)
             {
                 var body=hero.GetComponent<Rigidbody2D>();
-                if(hazardType>=2 && hasSpawn) {hero.transform.position=spawn;if(body!=null) body.linearVelocity=Vector2.zero;}
+                if(hazardType>=2 && hasSpawn) {hero.transform.position=spawn;if(body!=null) body.linearVelocity=Vector2.zero;MinecraftEnvironment.StopMotion();}
             }
             return true;
         }
