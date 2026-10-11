@@ -66,6 +66,8 @@ final class ItemUseBridge {
         value.addProperty("x",projectile.getX()-offset);value.addProperty("y",projectile.getY()-64);value.addProperty("vx",projectile.getVelocity().x);value.addProperty("vy",projectile.getVelocity().y);
         boolean grounded=projectile instanceof PersistentProjectileEntity arrow&&((dev.hollowcraft.mixin.ArrowAccess)arrow).hollowcraft$inGround();
         value.addProperty("grounded",grounded);
+        value.addProperty("nativeCollision",NativeTerrainBlock.delegated(projectile));
+        value.addProperty("noClip",projectile instanceof PersistentProjectileEntity arrow&&arrow.isNoClip());
         String item=projectile instanceof FlyingItemEntity flying?PlayerBridge.renderKey(flying.getStack()):projectile instanceof TridentEntity?"minecraft:trident":"minecraft:arrow";
         value.addProperty("item",item);return value;
     }

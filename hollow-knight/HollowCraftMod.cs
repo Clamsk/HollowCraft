@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.13 loaded. Vanilla container selectors, loom previews and NBT item icons; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.14 loaded. Input before world ticks, native projectile lookahead and held item retries; localhost:31674.");
         }
         public static string SaveRoot()
         {

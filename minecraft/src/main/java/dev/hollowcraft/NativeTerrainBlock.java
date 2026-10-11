@@ -15,6 +15,13 @@ final class NativeTerrainBlock extends Block {
     private NativeTerrainBlock() {super(AbstractBlock.Settings.create().strength(-1,3600000).nonOpaque().dropsNothing().dynamicBounds());}
     static void register() {Registry.register(Registries.BLOCK,new Identifier("hollowcraft_bridge","native_terrain"),INSTANCE);}
     static boolean proxy(BlockState state) {return state.isOf(INSTANCE)||state.isOf(Blocks.BARRIER);}
-    @Override public VoxelShape getCollisionShape(BlockState state,BlockView world,BlockPos pos,ShapeContext context) {return shapes.getOrDefault(pos,VoxelShapes.fullCube());}
+    static boolean delegated(net.minecraft.entity.projectile.ProjectileEntity projectile) {
+        return (projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity||projectile instanceof net.minecraft.entity.projectile.thrown.ThrownEntity)
+            &&projectile.getOwner() instanceof net.minecraft.server.network.ServerPlayerEntity player&&HollowCraftBridge.isRemotePlayer(player);
+    }
+    @Override public VoxelShape getCollisionShape(BlockState state,BlockView world,BlockPos pos,ShapeContext context) {
+        if(context instanceof EntityShapeContext entity&&entity.getEntity() instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&delegated(projectile))return VoxelShapes.empty();
+        return shapes.getOrDefault(pos,VoxelShapes.fullCube());
+    }
     @Override public VoxelShape getOutlineShape(BlockState state,BlockView world,BlockPos pos,ShapeContext context) {return getCollisionShape(state,world,pos,context);}
 }

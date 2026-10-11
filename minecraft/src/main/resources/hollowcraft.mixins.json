@@ -10,6 +10,7 @@
     ,"ArrowAccess"
     ,"ProjectileCollisionMixin"
     ,"ProjectileAccess"
+    ,"ProjectileTargetMixin"
   ],
   "client": [
     "ItemRendererAccess",

@@ -96,6 +96,7 @@ namespace HollowCraft
         private bool paused;
         private bool connectionFrozen;
         private float nextFoodUse;
+        private float nextHeldUse;
         private MinecraftUI ui;
         private bool BridgeIntro => (CampaignSession.IntroPending||openingSync)&&cachedManager!=null&&cachedManager.GetSceneNameString()=="Tutorial_01";
         internal bool InGame => cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
@@ -345,8 +346,10 @@ namespace HollowCraft
                 nextFoodUse=Time.unscaledTime+.2f;
                 SendItemUse(hero,mouse,true,false);usingItem=true;
             }
-            if ((rightDown || rightHeld&&Time.unscaledTime>=nextPlace&&((bool?)LatestSnapshot?["inventory"]?[selected]?["block"]??false)) && !food)
+            bool heldBlock=(bool?)LatestSnapshot?["inventory"]?[selected]?["block"]??false;
+            if ((rightDown || rightHeld&&Time.unscaledTime>=(heldBlock?nextPlace:nextHeldUse)) && !food)
             {
+                nextHeldUse=Time.unscaledTime+.2f;if(heldBlock)nextPlace=Time.unscaledTime+.2f;
                 if(blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed) && !MinecraftControls.Crouching && Interactive(pointed.name))
                 {bridge.Send(new {type="use",scene,x=cell.x,y=cell.y});return;}
                 if(!((bool?)LatestSnapshot?["inventory"]?[selected]?["block"] ?? false)) {

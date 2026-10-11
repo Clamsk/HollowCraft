@@ -52,6 +52,7 @@ public final class HollowCraftBridge implements ModInitializer {
         LOG.info("Bridge player hurt kind={} HP={} hurtTicks={}",source.getName(),entity.getHealth(),entity.hurtTime);
     }
     public static volatile boolean remotePaused;
+    public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
     public static void vanillaTeleport(ServerPlayerEntity player,Vec3d normal) {
         if(instance==null||instance.owner!=player||instance.peer==null||instance.scene.isEmpty()) return;
         instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;instance.fallen=0;
@@ -118,6 +119,7 @@ public final class HollowCraftBridge implements ModInitializer {
         NativeTerrainBlock.register();
         ServerLifecycleEvents.SERVER_STARTED.register(this::start);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> stop());
+        ServerTickEvents.START_SERVER_TICK.register(this::beginTick);
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerEntityEvents.ENTITY_LOAD.register((entity,world)-> {
             if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile)projectileEvent(projectile,"spawn",null);
@@ -205,6 +207,13 @@ public final class HollowCraftBridge implements ModInitializer {
         if (owner != null) owner.setNoGravity(false);
         owner = null; scene = ""; server = null; peer = null; commands.clear();
     }
+    private void drainCommands() throws IOException {
+        JsonObject command;for(int budget=0;budget<32&&(command=commands.poll())!=null;budget++)execute(command);
+    }
+    private void beginTick(MinecraftServer current) {
+        if(!running||current!=server||peer==null||owner==null)return;
+        try {drainCommands();}catch(Exception error) {LOG.error("Bridge input before world tick failed",error);}
+    }
     private void tick(MinecraftServer current) {
         if (!running || current != server) return;
         // This opt-in void world is a backend. Keep its avatar safe while the 2D client reconnects.
@@ -228,8 +237,7 @@ public final class HollowCraftBridge implements ModInitializer {
         }
         if (owner == null) return;
         try {
-            JsonObject command;
-            for (int budget = 0; budget < 32 && (command = commands.poll()) != null; budget++) execute(command);
+            drainCommands();
             if(server.getTicks()%100==0)saveCampaign();
             if(landingWater!=null&&server.getTicks()>=collectWaterTick) collectLandingWater();
             if(pendingHit!=null && server.getTicks()>=hitReadyTick) {var ready=pendingHit;pendingHit=null;execute(ready);}
@@ -681,7 +689,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(Double.isFinite(x)&&Double.isFinite(y)&&Math.abs(x)<=400&&y>=-60&&y<=240) {
                 Vec3d point=new Vec3d(slot*1024+x,64+y,.5);
                 double tolerance=4+projectile.getVelocity().length()*5;
-                if(projectile.getPos().squaredDistanceTo(point)<=tolerance*tolerance&&!projectile.isRemoved()&&!projectile.getCommandTags().contains("hollowcraft_native_anchor")) {
+                if(projectile.getPos().squaredDistanceTo(point)<=tolerance*tolerance&&!projectile.isRemoved()&&!projectile.getCommandTags().contains("hollowcraft_native_anchor")&&!(projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity arrow&&arrow.isNoClip())) {
                     if(command.has("enemies"))enemies.observe(owner,command.getAsJsonArray("enemies"),slot*1024);
                     var target=enemies.source(integer(command,"target",0));
                     double nx=command.has("normalX")?command.get("normalX").getAsDouble():0,ny=command.has("normalY")?command.get("normalY").getAsDouble():1;
