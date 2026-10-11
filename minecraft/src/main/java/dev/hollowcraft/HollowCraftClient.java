@@ -40,6 +40,7 @@ public final class HollowCraftClient implements ClientModInitializer {
             NativeGuiBridge.render(client,1);
             NativeHudBridge.render(client,1);
             NativeEntityBridge.render(client,1);
+            NativeBlockBridge.render(client,1);
             if(client.getServer()!=null&&HollowCraftBridge.remoteActive()) {
                 if(previousMusic==null)previousMusic=(double)client.options.getSoundVolume(net.minecraft.sound.SoundCategory.MUSIC);
                 if(client.options.getSoundVolume(net.minecraft.sound.SoundCategory.MUSIC)!=0) {
@@ -80,8 +81,8 @@ public final class HollowCraftClient implements ClientModInitializer {
         });
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.END.register(context -> {
             var client=net.minecraft.client.MinecraftClient.getInstance();
-            PlayerVisualBridge.render(client,context.tickDelta());NativeParticleBridge.render(client,context.tickDelta());NativeGuiBridge.render(client,context.tickDelta());NativeHudBridge.render(client,context.tickDelta());NativeEntityBridge.render(client,context.tickDelta());
+            PlayerVisualBridge.render(client,context.tickDelta());NativeParticleBridge.render(client,context.tickDelta());NativeGuiBridge.render(client,context.tickDelta());NativeHudBridge.render(client,context.tickDelta());NativeEntityBridge.render(client,context.tickDelta());NativeBlockBridge.render(client,context.tickDelta());
         });
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(client->{NativeParticleBridge.close();NativeGuiBridge.closeRenderer();NativeHudBridge.close();NativeEntityBridge.close();});
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(client->{NativeParticleBridge.close();NativeGuiBridge.closeRenderer();NativeHudBridge.close();NativeEntityBridge.close();NativeBlockBridge.close();});
     }
 }

@@ -64,7 +64,10 @@ namespace HollowCraft
         private MinecraftAudio audio;
         private readonly NativeParticleView particles=new NativeParticleView();
         private readonly NativeParticleView entityView=new NativeParticleView("entity_frames",0x48434554,25,true);
+        private readonly NativeParticleView blockView=new NativeParticleView("block_frames",0x4843424c,5,true,525);
         private readonly Dictionary<Renderer,bool> nativeHiddenRenderers=new Dictionary<Renderer,bool>();
+        private readonly Dictionary<GameObject,Renderer[]> nativeRendererCache=new Dictionary<GameObject,Renderer[]>();
+        private float nextRendererCleanup;
         internal NativeGuiView Gui;
         internal NativeHudView Hud;
         internal int UiRequest;
@@ -191,6 +194,7 @@ namespace HollowCraft
             bridge?.Dispose(); ClearBlocks();
             particles.Dispose();
             entityView.Dispose();
+            blockView.Dispose();
             Gui?.Dispose();
             Hud?.Dispose();
             MinecraftControls.Restore(); Instance=null;
@@ -476,19 +480,28 @@ namespace HollowCraft
         private void LateUpdate() {
             FlushNativeSteps();GameCursor.ApplyCursor();
             bool visible=InGame&&bridge?.Connected==true&&building&&!Dead;
-            particles.Draw(assets,this,cachedHero,visible);entityView.Draw(assets,this,cachedHero,visible);
+            particles.Draw(assets,this,cachedHero,visible);entityView.Draw(assets,this,cachedHero,visible);blockView.Draw(assets,this,cachedHero,visible);
             bool hideWorld=!InGame;
-            foreach(var block in blocks.Values)NativeVisual(block,hideWorld);
+            foreach(var block in blocks.Values) {
+                int x=Mathf.FloorToInt(block.transform.position.x),y=Mathf.FloorToInt(block.transform.position.y);
+                NativeVisual(block,hideWorld||blockView.Covers((x&65535)<<16|(y&65535)));
+            }
             foreach(var pair in drops)NativeVisual(pair.Value,hideWorld||entityView.Covers(pair.Key));
             foreach(var pair in primedTnt)NativeVisual(pair.Value,hideWorld||entityView.Covers(pair.Key));
             foreach(var pair in projectiles)NativeVisual(pair.Value,hideWorld||entityView.Covers(pair.Key));
-            foreach(var renderer in nativeHiddenRenderers.Keys.Where(key=>key==null).ToArray())nativeHiddenRenderers.Remove(renderer);
+            if(Time.unscaledTime>=nextRendererCleanup) {
+                nextRendererCleanup=Time.unscaledTime+1;
+                foreach(var renderer in nativeHiddenRenderers.Keys.Where(key=>key==null).ToArray())nativeHiddenRenderers.Remove(renderer);
+                foreach(var item in nativeRendererCache.Keys.Where(key=>key==null).ToArray())nativeRendererCache.Remove(item);
+            }
             if(placementGhost!=null && (GameplayBlocked||!building))placementGhost.SetActive(false);
             if(GameplayBlocked||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}
         }
         private void NativeVisual(GameObject item,bool hide) {
             if(item==null)return;
-            foreach(var renderer in item.GetComponentsInChildren<Renderer>(true)) {
+            if(!nativeRendererCache.TryGetValue(item,out Renderer[] renderers)) {renderers=item.GetComponentsInChildren<Renderer>(true);nativeRendererCache[item]=renderers;}
+            foreach(var renderer in renderers) {
+                if(renderer==null)continue;
                 if(hide) {if(!nativeHiddenRenderers.ContainsKey(renderer))nativeHiddenRenderers[renderer]=renderer.enabled;renderer.enabled=false;}
                 else if(nativeHiddenRenderers.TryGetValue(renderer,out bool previous)) {renderer.enabled=previous;nativeHiddenRenderers.Remove(renderer);}
             }
@@ -685,7 +698,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { audio?.StopAll();particles.Reset();entityView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

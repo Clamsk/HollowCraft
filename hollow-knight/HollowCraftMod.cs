@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.25 loaded. Native menu and transition presence pauses Minecraft and hides stale world visuals; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.26 loaded. Actual Minecraft block models, fluids and block entity renderers; localhost:31674.");
         }
         public static string SaveRoot()
         {

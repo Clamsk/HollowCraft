@@ -56,7 +56,7 @@ namespace HollowCraft
                     using (var reader = new StreamReader(stream))
                     using (var writer = new StreamWriter(stream) { AutoFlush = true })
                     {
-                        writer.WriteLine("{\"type\":\"hello\",\"protocol\":1,\"nativeProjectileSteps\":true,\"minecraftAudio\":true,\"nativeGui\":true,\"nativeHud\":true,\"nativeEntityRender\":true}");
+                        writer.WriteLine("{\"type\":\"hello\",\"protocol\":1,\"nativeProjectileSteps\":true,\"minecraftAudio\":true,\"nativeGui\":true,\"nativeHud\":true,\"nativeEntityRender\":true,\"nativeBlockRender\":true}");
                         string hello = reader.ReadLine();
                         if (hello == null || hello.Length > 65536) throw new IOException("Invalid hello");
                         var reply = JObject.Parse(hello);

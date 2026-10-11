@@ -1,8 +1,8 @@
-# HollowCraft 0.25 试玩版本
+# HollowCraft 0.26 试玩版本
 
 Minecraft-style survival and combat in Hollow Knight
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见《试玩说明-0.25.md》，初始装备延续 0.6。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见《试玩说明-0.26.md》，初始装备延续 0.6。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
