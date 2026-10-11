@@ -68,7 +68,7 @@ namespace HollowCraft
                 if(health>=adapter.Health-.001f) continue;
                 if(Math.Abs((float)value["maxHealth"]-adapter.Max)>.001f) continue;
                 if(adapter.Breakable!=null) {
-                    if(health<=0) {string source=(string)value["damageKind"];bool blast=source=="explosion"||source=="explosion.player";HitTaker.Hit(adapter.Breakable.gameObject,new HitInstance {Source=hero.gameObject,AttackType=blast?AttackTypes.Spell:AttackTypes.Nail,DamageDealt=999,Multiplier=1,IgnoreInvulnerable=false},3);adapter.Health=health;}
+                    if(health<=0) {string source=(string)value["damageKind"];bool blast=source=="explosion"||source=="explosion.player"||source=="fireworks";HitTaker.Hit(adapter.Breakable.gameObject,new HitInstance {Source=hero.gameObject,AttackType=blast?AttackTypes.Spell:AttackTypes.Nail,DamageDealt=999,Multiplier=1,IgnoreInvulnerable=false},3);adapter.Health=health;}
                     if(health<=0&&!adapter.Breakable.gameObject.activeInHierarchy) HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id,generation=adapter.Generation});
                     continue;
                 }
@@ -78,7 +78,7 @@ namespace HollowCraft
                 if(damage<=0) continue;
                 Vector2 direction=((Vector2)enemy.transform.position-(Vector2)hero.transform.position).normalized;
                 string kind=(string)value["damageKind"];
-                bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion";
+                bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion"||kind=="fireworks";
                 HitTaker.Hit(enemy.gameObject,new HitInstance {Source=hero.gameObject,AttackType=ranged?AttackTypes.Spell:AttackTypes.Nail,DamageDealt=damage,Multiplier=1,
                     Direction=Mathf.Atan2(direction.y,direction.x)*Mathf.Rad2Deg,MagnitudeMultiplier=1.2f,IgnoreInvulnerable=true},3);
                 FSMUtility.SendEventToGameObject(enemy.gameObject,"TAKE DAMAGE",false);

@@ -16,6 +16,7 @@
     ,"RemoteSoundAudienceMixin"
     ,"RemotePlacementMixin"
     ,"NativeTerrainRaycastMixin"
+    ,"FireworkTerrainMixin"
   ],
   "client": [
     "ItemRendererAccess",

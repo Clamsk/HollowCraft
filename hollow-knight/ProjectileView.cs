@@ -42,7 +42,8 @@ namespace HollowCraft
             if(!initialized){transform.position=target;initialized=true;}
             if(changed){from=transform.position;to=target;received=Time.unscaledTime;}retireAt=-1;
             velocity=new Vector2((float?)value["vx"]??0,(float?)value["vy"]??0);grounded=(bool?)value["grounded"]??false;
-            if(!landed&&!awaitingImpact)Sweep(target,target+new Vector3(velocity.x,velocity.y,0),true);
+            var nextVelocity=new Vector2((float?)value["nextVx"]??velocity.x,(float?)value["nextVy"]??velocity.y);
+            if(!landed&&!awaitingImpact)Sweep(target,target+new Vector3(nextVelocity.x,nextVelocity.y,0),true);
             if(stepRequired&&!awaitingImpact&&(lastStepAge!=age||Time.unscaledTime>=nextStepRetry)) {
                 lastStepAge=age;nextStepRetry=Time.unscaledTime+.2f;
                 HollowCraftRuntime.Instance?.QueueNativeStep(entity,uuid,age,room);
@@ -58,7 +59,7 @@ namespace HollowCraft
             else awaitingImpact=false;
         }
         private void Sweep(Vector3 start,Vector3 end,bool predicted=false) {
-            if(awaitingImpact||grounded||noClip||!nativeCollision||retireAt>=0||string.IsNullOrEmpty(uuid)||kind=="minecraft:falling_block"||kind=="minecraft:firework_rocket")return;
+            if(awaitingImpact||grounded||noClip||!nativeCollision||retireAt>=0||string.IsNullOrEmpty(uuid)||kind=="minecraft:falling_block")return;
             Vector2 delta=end-start;if(delta.sqrMagnitude<.000001f)return;
             var hits=Physics2D.CircleCastAll(start,kind=="minecraft:ender_pearl"?.125f:.08f,delta.normalized,delta.magnitude);
             Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));

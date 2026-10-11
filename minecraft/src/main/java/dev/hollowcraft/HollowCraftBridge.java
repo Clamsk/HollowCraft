@@ -103,7 +103,7 @@ public final class HollowCraftBridge implements ModInitializer {
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
     public static boolean delegateLegacyTerrain(BlockState state,BlockPos pos,net.minecraft.block.ShapeContext context) {
         var bridge=instance;
-        return bridge!=null&&state.isOf(Blocks.BARRIER)&&pos.getZ()==0
+        return bridge!=null&&!NativeTerrainQueries.solid()&&state.isOf(Blocks.BARRIER)&&pos.getZ()==0
             &&Math.abs(pos.getX()-bridge.slot*1024-bridge.centerX)<=32&&Math.abs(pos.getY()-64-bridge.centerY)<=28
             &&context instanceof net.minecraft.block.EntityShapeContext entity&&entity.getEntity() instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&nativeProjectile(projectile);
     }
@@ -896,6 +896,16 @@ public final class HollowCraftBridge implements ModInitializer {
                         if(Double.isFinite(lx)&&Double.isFinite(ly)&&Math.abs(lx-x)<=3&&Math.abs(ly-y)<=3&&Math.abs(lx)<=400&&ly>=-60&&ly<=240)position=new Vec3d(slot*1024+lx,64+ly,.5);
                     }
                     NativeProjectileSteps.revoke(projectile);projectile.setPosition(position);
+                    // These vanilla impacts remove the projectile immediately. Move its client
+                    // copy before status/particle packets so the burst uses the actual native hit.
+                    // Retained arrows stay under the normal tracker, avoiding a second relative move.
+                    if(projectile instanceof net.minecraft.entity.projectile.FireworkRocketEntity firework&&((dev.hollowcraft.mixin.FireworkAccess)firework).hollowcraft$explosive()
+                        ||projectile instanceof net.minecraft.entity.projectile.thrown.EnderPearlEntity
+                        ||projectile instanceof net.minecraft.entity.projectile.thrown.EggEntity
+                        ||projectile instanceof net.minecraft.entity.projectile.thrown.SnowballEntity
+                        ||projectile instanceof net.minecraft.entity.projectile.thrown.PotionEntity
+                        ||projectile instanceof net.minecraft.entity.projectile.thrown.ExperienceBottleEntity)
+                        owner.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket(projectile));
                     net.minecraft.util.hit.HitResult collision=target!=null?new net.minecraft.util.hit.EntityHitResult(target,point):new BlockHitResult(point,side,BlockPos.ofFloored(point.add(-nx*.02,-ny*.02,0)),false);
                     ((dev.hollowcraft.mixin.ProjectileAccess)projectile).hollowcraft$collide(collision);
                     accepted=true;removed=projectile.isRemoved();
