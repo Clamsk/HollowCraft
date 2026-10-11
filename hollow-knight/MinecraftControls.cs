@@ -98,11 +98,15 @@ namespace HollowCraft
         public static float AdjustMove(float movement)
         {
             if(!Active) return movement;
+            var runtime=HollowCraftRuntime.Instance;
+            if(runtime?.NativeControlLocked==true)return movement;
             if(PlayerSystem.KnockbackActive) return PlayerSystem.KnockbackX/Math.Max(1,hero.RUN_SPEED);
             if(TestMovement.HasValue)movement=TestMovement.Value;
             if((InterfaceOpen || !Application.isFocused)&&!TestMovement.HasValue) return 0;
             if(MinecraftEnvironment.Gliding) return MinecraftEnvironment.FlightVelocity.x*20/Math.Max(1,hero.RUN_SPEED);
-            var runtime=HollowCraftRuntime.Instance;
+            if(MinecraftEnvironment.HorizontalSpeed.HasValue) {
+                return SafeHorizontalSpeed(MinecraftEnvironment.HorizontalSpeed.Value)/Math.Max(1,hero.RUN_SPEED);
+            }
             bool sprint=Sprinting;
             float speed=(float?)runtime.Stats?["speed"] ?? .1f;
             float effects=Mathf.Clamp(speed/(sprint?.13f:.1f),.05f,6);
@@ -114,6 +118,13 @@ namespace HollowCraft
                 if(!Physics2D.Raycast(foot,Vector2.down,0.45f,LayerMask.GetMask("Terrain","Default"))) return 0;
             }
             return movement*4.317f/Math.Max(1,hero.RUN_SPEED)*.3f*effects;
+        }
+        internal static float SafeHorizontalSpeed(float speed) {
+            if(Crouching&&hero!=null&&Grounded(hero)&&body!=null&&Math.Abs(speed)>.01f) {
+                Vector2 foot=new Vector2(body.bounds.center.x+Math.Sign(speed)*(body.bounds.extents.x+.2f),body.bounds.min.y+.05f);
+                if(!Physics2D.Raycast(foot,Vector2.down,.45f,LayerMask.GetMask("Terrain","Default")))return 0;
+            }
+            return speed;
         }
         internal static void Restore()
         {
