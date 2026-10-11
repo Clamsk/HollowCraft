@@ -16,6 +16,9 @@ namespace HollowCraft
         private Collider2D[] terrainProbe=new Collider2D[32];
         internal static HollowCraftRuntime Instance;
         internal CursorCombat Combat;
+        internal JumpBuilding JumpBuild;
+        internal JObject TowerItem=>PlacementItem is JObject item&&(bool?)item["predictSolid"]==true?item:null;
+        internal bool BuildRightHeld=>Input.GetMouseButton(1)||pointerInput.Held(1);
         internal string HeldItem => inventory[selected];
         private JObject PlacementItem {
             get {
@@ -88,17 +91,19 @@ namespace HollowCraft
         private enum PlacementBlocker {None,Reach,Mode,Occupied,Terrain,Player,Enemy}
         private List<float[]> terrainCells=new List<float[]>();
         internal bool PlacementAllowed(Vector2Int cell,HeroController hero) => PlacementBlockedBy(cell,hero)==PlacementBlocker.None;
-        private PlacementBlocker PlacementBlockedBy(Vector2Int cell,HeroController hero) {
+        private PlacementBlocker PlacementBlockedBy(Vector2Int cell,HeroController hero,bool foundation=false,float supportY=0) {
             if(!GameCursor.BlockInReach(cell,hero))return PlacementBlocker.Reach;
             if(Spectator||Mode=="adventure")return PlacementBlocker.Mode;
             if(blocks.ContainsKey(Key(cell.x,cell.y)))return PlacementBlocker.Occupied;
-            if(terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[5]>=.999f)))return PlacementBlocker.Terrain;
+            bool floorFoundation=foundation&&supportY>=cell.y-.05f&&supportY<cell.y+1&&Math.Abs(hero.transform.position.x-cell.x-.5f)<=.85f;
+            if(!floorFoundation&&terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[5]>=.999f)))return PlacementBlocker.Terrain;
             var body=hero.GetComponent<Collider2D>();
             var bounds=new Bounds(new Vector3(cell.x+0.5f,cell.y+0.5f,hero.transform.position.z),new Vector3(0.98f,0.98f,1));
             if(body!=null && body.bounds.Intersects(bounds))return PlacementBlocker.Player;
             return Physics2D.OverlapBoxAll(bounds.center,new Vector2(.98f,.98f),0).Any(c=>!c.isTrigger && c.GetComponentInParent<HealthManager>()!=null)?PlacementBlocker.Enemy:PlacementBlocker.None;
         }
         private Vector2Int PlacementCell(Vector2Int pointed,HeroController hero) {
+            if(JumpBuild!=null&&JumpBuild.Preview(hero,new Vector2(pointed.x+.5f,pointed.y+.5f),out Vector2Int fixedCell,out _,out _))return fixedCell;
             if(JumpPlacementCell(pointed,hero,out Vector2Int tower))return tower;
             // Clicking the native ground selects its free upper face, like clicking the top
             // face of a Minecraft terrain block. Empty cursor cells keep their exact target.
@@ -139,7 +144,9 @@ namespace HollowCraft
             var renderer=placementGhost.GetComponent<SpriteRenderer>();
             string id=(string)item["id"];
             if(ghostItem!=id) {ghostItem=id;var texture=Texture(ghostItem);renderer.sprite=texture!=null ? Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width) : Square(Color.white);}
-            renderer.color=PlacementAllowed(cell,hero) ? new Color(1,1,1,.42f) : new Color(1,.25f,.25f,.42f);
+            bool foundation=false;float support=0;
+            if(JumpBuild!=null&&JumpBuild.Preview(hero,new Vector2(cell.x+.5f,cell.y+.5f),out Vector2Int target,out bool native,out float top)&&target==cell) {foundation=native;support=top;}
+            renderer.color=PlacementBlockedBy(cell,hero,foundation,support)==PlacementBlocker.None ? new Color(1,1,1,.42f) : new Color(1,.25f,.25f,.42f);
             var original=hero.GetComponent<Renderer>();if(original!=null) renderer.sortingLayerID=original.sortingLayerID;
             placementGhost.transform.position=new Vector3(cell.x+.5f,cell.y+.5f,-.2f);placementGhost.SetActive(true);
         }
@@ -207,7 +214,7 @@ namespace HollowCraft
         {
             assets = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "HollowCraftAssets");
             bridge = new BridgeClient();
-            Instance=this; Combat=new CursorCombat(bridge.Send);
+            Instance=this; Combat=new CursorCombat(bridge.Send);JumpBuild=new JumpBuilding(this);
             audio=gameObject.AddComponent<MinecraftAudio>();audio.Initialize(this,assets);
             Application.runInBackground=true;
             ui=new MinecraftUI(this);
@@ -323,6 +330,7 @@ namespace HollowCraft
                 if ((string)message["type"] == "snapshot" && (string)message["scene"] == scene && (message["campaign"]==null||(string)message["campaign"]==campaign)) ApplySnapshot(message);
                 if ((string)message["type"] == "attack" && (string)message["scene"] == scene && building && !inventoryOpen) Combat.Begin(message,scene);
                 if((string)message["type"]=="attackRejected"&&(string)message["scene"]==scene)Combat.Reject(message);
+                if((string)message["type"]=="towerResult"&&(string)message["scene"]==scene)JumpBuild.Resolve(message);
                 if((string)message["type"]=="placeResult"&&(string)message["scene"]==scene&&(bool?)message["accepted"]!=true) {
                     string rejected=Key((int)message["x"],(int)message["y"]);
                     if(pendingPlacements.Remove(rejected)&&blocks.TryGetValue(rejected,out GameObject block)) {block.SetActive(false);Destroy(block);blocks.Remove(rejected);}
@@ -414,13 +422,13 @@ namespace HollowCraft
             bool hotbarShortcut=HandleHotbarShortcut();
             // Native landing/knockback animation locks must not swallow MC mouse presses.
             pointerInput.Context(building&&connected&&!GameplayBlocked&&Application.isFocused);
-            if (!building || !connected || GameplayBlocked) {queuedTower=null;return;}
+            if (!building || !connected || GameplayBlocked) {queuedTower=null;JumpBuild.Cancel();return;}
             if(Spectator) {StopMining();return;}
             if(!hotbarShortcut)for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Select(i);
             float scroll = Input.mouseScrollDelta.y;
             if (Math.Abs(scroll) > 0.01f) Select((selected + (scroll > 0 ? 8 : 1)) % 9);
             if(!GameCursor.WorldTarget(hero,out Vector2 mouse,out crosshair)) return;
-            if(!Application.isFocused) {queuedTower=null;StopMining();return;}
+            if(!Application.isFocused) {queuedTower=null;JumpBuild.Cancel();StopMining();return;}
             bool nativeLeft=false,nativeRight=false;
             bool leftHeld=Input.GetMouseButton(0)||pointerInput.Held(0),rightHeld=Input.GetMouseButton(1)||pointerInput.Held(1);
             while(pointerInput.Read(out NativePointerBuffer.Press press,out Vector2 screen)) {
@@ -429,15 +437,21 @@ namespace HollowCraft
                 HandlePointer(hero,pressed,press.Button==0,false,press.Button==1,rightHeld);
             }
             HandlePointer(hero,mouse,!nativeLeft&&Input.GetMouseButtonDown(0),leftHeld,!nativeRight&&Input.GetMouseButtonDown(1),rightHeld);
+            JumpBuild.Tick(hero);
         }
         internal void HandlePointer(HeroController hero,Vector2 mouse,bool leftDown,bool leftHeld,bool rightDown,bool rightHeld) {
             if(rightDown)Combat.Cancel();
             if(rightHeld) {MinecraftControls.Facing=mouse.x<hero.transform.position.x?-1:1;MinecraftControls.frontView=false;}
             Vector2Int cell = new Vector2Int(Cell(mouse.x), Cell(mouse.y));
+            bool towerInput=(rightDown||rightHeld)&&JumpBuild?.Pointer(hero,mouse)==true;
+            if(towerInput) {
+                queuedTower=null;
+                if(usingItem) {SendItemUse(hero,mouse,false,true);usingItem=false;}
+            }
             Preview(cell,hero);
             if(queuedTower.HasValue&&(Time.unscaledTime>queuedTowerUntil||Math.Abs(queuedTower.Value.x+.5f-hero.transform.position.x)>1||PlacementItem==null))queuedTower=null;
             bool buffered=queuedTower.HasValue;
-            if(rightDown||rightHeld&&Time.unscaledTime>=nextHeldUse||buffered) {
+            if(!towerInput&&(rightDown||rightHeld&&Time.unscaledTime>=nextHeldUse||buffered)) {
                 var placement=buffered?queuedTower.Value:PlacementCell(cell,hero);
                 var blockedBy=PlacementBlockedBy(placement,hero);
                 bool canPlace=blockedBy==PlacementBlocker.None;
@@ -502,8 +516,14 @@ namespace HollowCraft
             renderer.sprite=texture!=null?Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width):Square(Color.white);
             blocks[key]=block;pendingPlacements[key]=Time.unscaledTime+.75f;
         }
+        internal bool TowerPlacementAllowed(Vector2Int cell,HeroController hero,bool foundation,float support)=>Math.Abs(hero.transform.position.x-cell.x-.5f)<=.85f&&PlacementBlockedBy(cell,hero,foundation,support)==PlacementBlocker.None;
+        internal void PrepareTower(HeroController hero,Vector2Int cell,JObject item) {Combat.Cancel();SendPose(hero,true);PredictPlacement(cell,item);}
+        internal void RejectTower(Vector2Int cell) {
+            string key=Key(cell.x,cell.y);
+            if(pendingPlacements.Remove(key)&&blocks.TryGetValue(key,out GameObject block)) {if(block!=null) {block.SetActive(false);Destroy(block);}blocks.Remove(key);}
+        }
         internal void SwapHands() {
-            queuedTower=null;StopMining();Combat.Cancel();usingItem=false;
+            JumpBuild.Cancel();queuedTower=null;StopMining();Combat.Cancel();usingItem=false;
             Send(new {type="itemUse",scene,cancel=true});Send(new {type="offhand",scene});
         }
         private void SendItemUse(HeroController hero,Vector2 target,bool start,bool release) {
@@ -549,7 +569,7 @@ namespace HollowCraft
                 else if(nativeHiddenRenderers.TryGetValue(renderer,out bool previous)) {renderer.enabled=previous;nativeHiddenRenderers.Remove(renderer);}
             }
         }
-        internal void CloseInterface() {queuedTower=null;ui.CancelDrag();UiRequest=0;Gui?.Reset();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
+        internal void CloseInterface() {JumpBuild?.Cancel();queuedTower=null;ui.CancelDrag();UiRequest=0;Gui?.Reset();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
         private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;UiRequest=++uiRequests;Send(new {type="creativeCatalog",scene,uiRequest=UiRequest});}
         private bool HandleHotbarShortcut() {
             if(!creative||!bridge.Connected||!Application.isFocused||ui.TextInputFocused||Gui?.Active==true||GameplayBlocked&&!CatalogOpen)return false;
@@ -560,7 +580,7 @@ namespace HollowCraft
         internal int CatalogRevision;
         private static bool Interactive(string name) => name.Contains("crafting_table") || name.Contains("chest") || name.Contains("furnace") || name.Contains("barrel") || name.Contains("shulker_box") || name.Contains("door") || name.Contains("button") || name.Contains("lever") || name.Contains("tnt") || name.Contains("brewing_stand") || name.Contains("anvil") || name.Contains("enchanting_table") || name.Contains("smoker") || name.Contains("hopper") || name.Contains("dropper") || name.Contains("dispenser") || name.Contains("grindstone") || name.Contains("loom") || name.Contains("stonecutter") || name.Contains("smithing_table") || name.Contains("cartography_table");
         private static int Cell(float value) => Mathf.FloorToInt(value / CellSize);
-        internal void Select(int value) { queuedTower=null;selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }
+        internal void Select(int value) {JumpBuild.Cancel();queuedTower=null;selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }
         private List<float[]> ProbeTerrain(int cx, int cy)
         {
             var result = new List<float[]>();
@@ -748,7 +768,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { JumpBuild?.Cancel();audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) if(block!=null) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

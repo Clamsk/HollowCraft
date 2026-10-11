@@ -44,6 +44,7 @@ namespace HollowCraft
                 float potion=boost>=0?.1f*(boost+1):0;velocity=(velocity-potion)*(.4634f/.42f)+potion;
                 instance.nextJump=Time.time+.5f;
                 instance.lastJump=Time.time;
+                runtime.JumpBuild?.BeginJump(player);
                 JumpOriginFeet=player.GetComponent<Collider2D>().bounds.min.y;
                 instance.motionY=velocity;instance.normalPhase=0;instance.ownGravity=true;instance.lastAppliedY=velocity*20;
                 instance.fluidActive=false;
@@ -74,7 +75,8 @@ namespace HollowCraft
                 }
                 if(Flying&&Time.time-lastJump>.08f&&MinecraftControls.Grounded(hero)&&!Input.GetKey(KeyCode.Space))SetFlying(false);
                 if(JumpOriginFeet.HasValue&&Time.time-lastJump>.08f&&MinecraftControls.Grounded(hero))JumpOriginFeet=null;
-                if(!Input.GetKey(KeyCode.Space))nextJump=0;
+                bool buildJump=runtime.JumpBuild?.AutoJump==true;
+                if(!Input.GetKey(KeyCode.Space)&&!buildJump)nextJump=0;
                 else if(!Flying&&MinecraftControls.Grounded(hero))TakeJump(hero);
                 if(!Flying&&Input.GetKeyDown(KeyCode.Space)&&!MinecraftControls.Grounded(hero)&&Time.time-lastJump>.08f) BeginGlide(hero);
                 if(Input.GetKeyDown(KeyCode.LeftShift))Gliding=false;

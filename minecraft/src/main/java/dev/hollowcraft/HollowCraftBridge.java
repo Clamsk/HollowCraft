@@ -196,6 +196,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private double attackMultiplier=1, reachY;
     private JsonObject pendingHit;
     private JsonObject pendingSwing;
+    private final Map<String,JsonObject> towerReplies=new LinkedHashMap<>();
     private JsonObject lastAttackEvent;
     private int lastAttackRequest,cancelledAttackRequest;
 
@@ -439,6 +440,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(peer!=null)peer.send(reply.toString());return;
         }
         if (type.equals("scene")) {
+            towerReplies.clear();
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;
             closeGui();
@@ -475,7 +477,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if(command.has("campaign")&&!campaigns.id().equals(string(command,"campaign","")))return;
         // Finish the short clutch before player actions mutate hand items or containers.
         if(landingWater!=null&&switch(type) {
-            case "select","mode","place","interact","mine","mining","use","itemUse","offhand","drop","slotClick","inventoryOpen","creativeCatalog","creativeItem","creativeHotbar","creativeDiscard","craft","swap","kit","adventureKit","swing","hit","damage","respawn","checkpoint","rest","containerMove","containerButton","anvilName","close","eat","nativeProjectileHit" -> true;
+            case "select","mode","place","towerPlace","interact","mine","mining","use","itemUse","offhand","drop","slotClick","inventoryOpen","creativeCatalog","creativeItem","creativeHotbar","creativeDiscard","craft","swap","kit","adventureKit","swing","hit","damage","respawn","checkpoint","rest","containerMove","containerButton","anvilName","close","eat","nativeProjectileHit" -> true;
             default -> false;
         })collectLandingWater();
         switch (type) {
@@ -565,6 +567,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 if(peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","placeResult");event.addProperty("scene",scene);event.addProperty("x",integer(command,"x",0));event.addProperty("y",integer(command,"y",0));event.addProperty("accepted",accepted);peer.event(event);}
                 snapshot();
             }
+            case "towerPlace" -> towerPlace(command);
             case "mine" -> mine(command);
             case "mining" -> {
                 if(command.has("active") && !command.get("active").getAsBoolean()) {miningPos=null;miningProgress=0;break;}
@@ -778,6 +781,46 @@ public final class HollowCraftBridge implements ModInitializer {
         return pos(x, y);
     }
     private boolean place(JsonObject command) {return place(command,Hand.MAIN_HAND).isAccepted();}
+    private static boolean towerBlock(ItemStack stack) {
+        if(stack.isEmpty()||!(stack.getItem() instanceof BlockItem block))return false;
+        return Block.isShapeFullCube(block.getBlock().getDefaultState().getCollisionShape(net.minecraft.world.EmptyBlockView.INSTANCE,BlockPos.ORIGIN));
+    }
+    private boolean nativeFoundation(JsonObject command,BlockPos target) {
+        if(!string(command,"type","").equals("towerPlace")||!command.has("nativeFoundation")||!command.get("nativeFoundation").getAsBoolean())return false;
+        if(!command.has("supportY")||!command.has("playerX")||!command.has("playerY"))return false;
+        double support=command.get("supportY").getAsDouble(),x=command.get("playerX").getAsDouble(),feet=command.get("playerY").getAsDouble();
+        int y=target.getY()-64;
+        return Double.isFinite(support)&&Double.isFinite(x)&&Double.isFinite(feet)&&support>=y-.05&&support<y+1
+            &&feet>=y+1.015&&feet<=support+3&&Math.abs(x-(target.getX()-slot*1024+.5))<=.85;
+    }
+    private void towerPlace(JsonObject command) {
+        String request=string(command,"request","");if(!request.matches("[0-9a-f]{32}"))return;
+        var cached=towerReplies.get(request);if(cached!=null) {if(peer!=null)peer.event(cached);return;}
+        boolean accepted=false;String reason="No solid block selected";
+        try {
+            if(!owner.isAlive()||owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {reason="Player cannot build";}
+            else if(!command.has("playerX")||!command.has("playerY")) {reason="Missing player position";}
+            else {
+                double x=command.get("playerX").getAsDouble(),y=command.get("playerY").getAsDouble();
+                int cellX=integer(command,"x",0),cellY=integer(command,"y",0);
+                if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x-cellX-.5)>.85||y<cellY+1.015||y>cellY+4) {reason="Feet have not cleared the tower cell";}
+                else for(var hand:Hand.values()) {
+                    if(!towerBlock(owner.getStackInHand(hand)))continue;
+                    // This is an explicit building action, separate from shield/food
+                    // use or container interaction. Vanilla BlockItem still owns placement.
+                    owner.clearActiveItem();
+                    accepted=place(command,hand).isAccepted();reason=status;
+                    if(accepted)itemSwing(hand);
+                    break;
+                }
+            }
+        } catch(RuntimeException error) {reason=error.getClass().getSimpleName();LOG.warn("Tower placement failed",error);}
+        var reply=new JsonObject();reply.addProperty("type","towerResult");reply.addProperty("scene",scene);reply.addProperty("request",request);
+        reply.addProperty("x",integer(command,"x",0));reply.addProperty("y",integer(command,"y",0));reply.addProperty("accepted",accepted);reply.addProperty("reason",reason);
+        if(towerReplies.size()>=64)towerReplies.remove(towerReplies.keySet().iterator().next());towerReplies.put(request,reply);
+        LOG.info("Tower result request={} cell={},{} accepted={} reason={}",request,integer(command,"x",0),integer(command,"y",0),accepted,reason);
+        if(peer!=null)peer.event(reply);owner.currentScreenHandler.sendContentUpdates();snapshot();
+    }
     private ActionResult place(JsonObject command,Hand hand) {
         if(command.has("playerX")&&command.has("playerY")) {
             double x=command.get("playerX").getAsDouble(),y=command.get("playerY").getAsDouble();
@@ -789,10 +832,11 @@ public final class HollowCraftBridge implements ModInitializer {
         if (target == null) { status = "Target outside bridge reach or bounds"; return ActionResult.FAIL; }
         if(owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {status="This game mode cannot place blocks";return ActionResult.FAIL;}
         var nativeShape=NativeTerrainBlock.shapes.get(target);
-        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return ActionResult.FAIL; }
-        if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)) { status = "Target already contains a Minecraft block"; return ActionResult.FAIL; }
+        boolean foundation=nativeFoundation(command,target)&&towerBlock(owner.getStackInHand(hand));
+        if (!foundation&&terrain.contains(target)&&(nativeShape==null||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return ActionResult.FAIL; }
+        if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)&&!(foundation&&NativeTerrainBlock.proxy(world.getBlockState(target)))) { status = "Target already contains a Minecraft block"; return ActionResult.FAIL; }
         if (!(owner.getStackInHand(hand).getItem() instanceof BlockItem)) { status = "Select a block in either hand"; return ActionResult.FAIL; }
-        boolean floorEdge=world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE);
+        boolean floorEdge=world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)||foundation&&NativeTerrainBlock.proxy(world.getBlockState(target));
         // A native floor can sit a few hundredths above a voxel edge. Keep the physical
         // floor in Unity, but let vanilla put the requested block against its supporting cell.
         if(floorEdge)world.setBlockState(target,Blocks.AIR.getDefaultState(),Block.NOTIFY_LISTENERS);
