@@ -56,6 +56,7 @@ public final class PlayerVisualBridge {
                 mainHand=hands.getField("MAIN_HAND").get(null);twoHands=hands.getField("TWO_HANDED").get(null);
             }
             avatar.tick();
+            avatar.fishHook=client.player==null?null:client.player.fishHook;
             for(var slot:EquipmentSlot.values()) {
                 var item=state.equipment[slot.ordinal()];
                 if(!ItemStack.areEqual(avatar.getEquippedStack(slot),item))avatar.equipStack(slot,item.copy());

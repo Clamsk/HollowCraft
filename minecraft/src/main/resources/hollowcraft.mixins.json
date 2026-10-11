@@ -41,6 +41,9 @@
     ,"NativeGuiMouseMixin"
     ,"NativeGuiScreenMixin"
     ,"InGameHudAccess"
+    ,"EntityRenderDispatcherAccess"
+    ,"RenderSystemAccess"
+    ,"NativeEntityPerspectiveMixin"
   ],
   "injectors": {
     "defaultRequire": 1

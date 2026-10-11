@@ -109,6 +109,7 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     public static boolean audioRequested() {return instance!=null&&instance.peer!=null&&instance.peer.audio;}
     public static boolean hudRequested() {return instance!=null&&instance.peer!=null&&instance.peer.hud;}
+    public static boolean entityRenderRequested() {return instance!=null&&instance.peer!=null&&instance.peer.entityRender;}
     public static boolean audioReady(String key) {var peer=instance==null?null:instance.peer;return peer!=null&&peer.audio&&peer.audioFiles.contains(key);}
     public static boolean audioEvent(JsonObject event) {
         var peer=instance==null?null:instance.peer;var state=PlayerRenderState.latest;
@@ -247,7 +248,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean());
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean(),hello.has("nativeEntityRender")&&hello.get("nativeEntityRender").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\"}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -277,6 +278,7 @@ public final class HollowCraftBridge implements ModInitializer {
         NativeProjectileSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
         collectLandingWater();saveCampaign();
         PlayerRenderState.clear();
+        NativeEntityBridge.clear();
         collectLandingWater();
         for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}trackedDrops.clear();dropObserved.clear();
         FluidBridge.reset();
@@ -308,6 +310,7 @@ public final class HollowCraftBridge implements ModInitializer {
         }
         if (peer == null) {
             NativeGuiBridge.close();
+            NativeEntityBridge.clear();
             NativeProjectileSteps.clear();projectileImpacts.clear();
             if (owner != null) {collectLandingWater();saveCampaign();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
             return;
@@ -364,6 +367,7 @@ public final class HollowCraftBridge implements ModInitializer {
                     // HK's transform is the body centre; MC's transform is the feet.
                     if(owner.isAlive() && server.getTicks()-first>=40 && dropped.squaredDistanceTo(owner)<4) {dropped.resetPickupDelay();dropped.onPlayerCollision(owner);}
                 }
+                if(entityRenderRequested())NativeEntityBridge.publish(owner,scene,campaigns.id(),slot*1024);
                 if (++ticks % 2 == 0) snapshot();
             }
         } catch (Exception e) { status = e.getClass().getSimpleName() + ": " + e.getMessage(); LOG.error("Bridge tick", e); }
@@ -1117,13 +1121,15 @@ public final class HollowCraftBridge implements ModInitializer {
         final boolean audio;
         final boolean gui;
         final boolean hud;
+        final boolean entityRender;
         final Set<String> audioFiles=ConcurrentHashMap.newKeySet();
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud,boolean entityRender) {
             this.projectileSteps=projectileSteps;
             this.audio=audio;
             this.hud=hud;
+            this.entityRender=entityRender;
             this.gui=gui;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {
