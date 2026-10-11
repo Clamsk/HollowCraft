@@ -120,6 +120,12 @@ public final class HollowCraftBridge implements ModInitializer {
     public static void audioStop() {var event=new JsonObject();event.addProperty("type","mcSoundStop");audioEvent(event);}
     public static boolean projectileStepsEnabled() {return instance!=null&&instance.peer!=null&&instance.peer.projectileSteps;}
     public static boolean tickNativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeProjectileSteps.tick(projectile);}
+    public static boolean nativeTnt(TntEntity tnt) {
+        var bridge=instance;
+        return bridge!=null&&bridge.peer!=null&&bridge.peer.tntSteps&&bridge.owner!=null&&!bridge.scene.isEmpty()
+            &&tnt.getWorld()==bridge.owner.getServerWorld()&&Math.abs(tnt.getX()-bridge.slot*1024-bridge.centerX)<=32
+            &&Math.abs(tnt.getY()-64-bridge.centerY)<=32&&Math.abs(tnt.getZ())<=8;
+    }
     public static boolean nativeProjectileVisible(net.minecraft.entity.projectile.ProjectileEntity projectile) {
         var bridge=instance;
         return bridge!=null&&projectile.getWorld().getServer()==bridge.server
@@ -249,7 +255,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean(),hello.has("nativeEntityRender")&&hello.get("nativeEntityRender").getAsBoolean(),hello.has("nativeBlockRender")&&hello.get("nativeBlockRender").getAsBoolean());
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean(),hello.has("nativeEntityRender")&&hello.get("nativeEntityRender").getAsBoolean(),hello.has("nativeBlockRender")&&hello.get("nativeBlockRender").getAsBoolean(),hello.has("nativeTntSteps")&&hello.get("nativeTntSteps").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\",\"saveSession\":true}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -276,7 +282,7 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private void stop() {
         closeGui();
-        NativeProjectileSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
+        NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
         collectLandingWater();saveCampaign();
         PlayerRenderState.clear();
         NativeEntityBridge.clear();
@@ -314,7 +320,7 @@ public final class HollowCraftBridge implements ModInitializer {
             NativeGuiBridge.close();
             NativeEntityBridge.clear();
             NativeBlockBridge.clear();
-            NativeProjectileSteps.clear();projectileImpacts.clear();
+            NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();
             if (owner != null) {collectLandingWater();saveCampaign();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
             return;
         }
@@ -348,6 +354,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 for(var tnt:owner.getServerWorld().getEntitiesByClass(TntEntity.class,new Box(slot*1024+centerX-24,64+centerY-24,-8,slot*1024+centerX+24,64+centerY+24,8),e->true)) {
                     tnt.setPosition(tnt.getX(),tnt.getY(),.5);tnt.setVelocity(tnt.getVelocity().multiply(1,1,0));
                 }
+                if(peer.tntSteps) {var event=new JsonObject();event.addProperty("type","primed");event.addProperty("scene",scene);event.addProperty("tick",server.getTicks());event.add("primed",primedSnapshot());peer.event(event);}
                 if(miningPos!=null) {
                     if(server.getTicks()-lastMiningTick>5) {miningPos=null;miningProgress=0;}
                     else {
@@ -378,12 +385,19 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private void grantIronStarter() {
         String tag="hollowcraft_starter_iron_v1";
-        if(owner.getCommandTags().contains(tag))return;
+        String pickTag="hollowcraft_starter_iron_pickaxe_v1";
+        if(owner.getCommandTags().contains(tag)) {
+            if(!owner.getCommandTags().contains(pickTag)) {
+                boolean present=false;for(int i=0;i<36;i++)if(owner.getInventory().getStack(i).isOf(Items.IRON_PICKAXE))present=true;
+                if(!present)give(new ItemStack(Items.IRON_PICKAXE));owner.addCommandTag(pickTag);
+            }
+            return;
+        }
         boolean fresh=owner.getInventory().isEmpty();
         Item[] items={Items.IRON_SWORD,Items.BOW,Items.COOKED_BEEF,Items.COBBLESTONE,Items.OAK_LOG,
             Items.IRON_AXE,Items.WATER_BUCKET,Items.LAVA_BUCKET,Items.FLINT_AND_STEEL,
-            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH};
-        int[] amounts={1,1,64,64,64,1,1,1,1,64,64,64,64};
+            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE};
+        int[] amounts={1,1,64,64,64,1,1,1,1,64,64,64,64,1};
         int nextSlot=0;
         for(int i=0;i<items.length;i++) {
             int missing=amounts[i];
@@ -408,6 +422,7 @@ public final class HollowCraftBridge implements ModInitializer {
         }
         if(fresh)owner.getInventory().selectedSlot=0;
         owner.addCommandTag(tag);
+        owner.addCommandTag(pickTag);
         owner.addCommandTag("hollowcraft_starter");
         LOG.info("Iron starter loadout granted; fresh={}",fresh);
     }
@@ -428,11 +443,11 @@ public final class HollowCraftBridge implements ModInitializer {
             if (name.isBlank() || name.length() > 120) return;
             closeGui();
             collectLandingWater();
-            NativeProjectileSteps.clear();projectileImpacts.clear();
+            NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();
             String campaign=string(command,"campaign","legacy");
             if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");}
             boolean fresh=campaigns.select(owner,campaign,command.has("legacy")&&command.get("legacy").getAsBoolean());
-            if(fresh)grantIronStarter();creative=owner.isCreative();campaigns.save(owner);
+            grantIronStarter();creative=owner.isCreative();campaigns.save(owner);
             introLanding=command.has("intro")&&command.get("intro").getAsBoolean()&&!campaigns.introDone&&name.equals("Tutorial_01");
             owner.closeHandledScreen(); openContainer=null; combo=0; activeAttack=0;
             enemies.clear();miningPos=null;miningProgress=0;
@@ -590,6 +605,15 @@ public final class HollowCraftBridge implements ModInitializer {
                 }
             }
             case "nativeProjectileHit" -> {nativeProjectileHit(command);snapshot();}
+            case "tntStep" -> {
+                if(command.has("steps")&&command.get("steps").isJsonArray()) {
+                    int count=0;for(var element:command.getAsJsonArray("steps")) {
+                        if(++count>64)break;var step=element.getAsJsonObject();var entity=owner.getServerWorld().getEntityById(integer(step,"entity",-1));
+                        if(entity instanceof TntEntity tnt&&tnt.getUuidAsString().equals(string(step,"uuid",""))&&step.has("dx")&&step.has("dy"))
+                            NativeTntSteps.allow(tnt,integer(step,"age",-1),step.get("dx").getAsDouble(),step.get("dy").getAsDouble(),step.has("lift")?step.get("lift").getAsDouble():0);
+                    }
+                }
+            }
             case "offhand" -> PlayerBridge.offhand(owner);
             case "drop" -> owner.dropSelectedItem(command.has("all") && command.get("all").getAsBoolean());
             case "slotClick" -> PlayerBridge.click(owner,command);
@@ -1034,6 +1058,19 @@ public final class HollowCraftBridge implements ModInitializer {
         terrain.clear();
         NativeTerrainBlock.shapes.clear();
     }
+    private JsonArray primedSnapshot() {
+        var result=new JsonArray();if(owner==null||scene.isEmpty())return result;
+        var area=new Box(slot*1024+centerX-32,64+centerY-32,-8,slot*1024+centerX+32,64+centerY+32,8);
+        for(var tnt:owner.getServerWorld().getEntitiesByClass(TntEntity.class,area,e->!e.isRemoved())) {
+            if(result.size()>=256)break;
+            var value=new JsonObject();var next=NativeTntSteps.next(tnt);
+            value.addProperty("id",tnt.getId());value.addProperty("uuid",tnt.getUuidAsString());value.addProperty("age",tnt.age);
+            value.addProperty("x",tnt.getX()-slot*1024);value.addProperty("y",tnt.getY()-64);value.addProperty("fuse",tnt.getFuse());
+            value.addProperty("width",tnt.getWidth());value.addProperty("height",tnt.getHeight());
+            value.addProperty("nextX",next.x);value.addProperty("nextY",next.y);value.addProperty("stepRequired",NativeTntSteps.required(tnt));result.add(value);
+        }
+        return result;
+    }
     private void snapshot() {
         if(peer!=null&&peer.gui) {
             var gui=NativeGuiBridge.session();
@@ -1049,11 +1086,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if(peer!=null&&peer.hud)result.addProperty("hudSession",NativeHudBridge.SESSION);
         result.addProperty("playerX",owner.getX()-slot*1024);result.addProperty("playerY",owner.getY()-64);
         result.add("enemies",enemies.snapshot());
-        JsonArray primed=new JsonArray();
-        for(var tnt:owner.getServerWorld().getEntitiesByClass(TntEntity.class,new Box(slot*1024+centerX-20,64+centerY-20,-2,slot*1024+centerX+20,64+centerY+20,2),e->true)) {
-            JsonObject value=new JsonObject();value.addProperty("id",tnt.getId());value.addProperty("x",tnt.getX()-slot*1024);value.addProperty("y",tnt.getY()-64);value.addProperty("fuse",tnt.getFuse());primed.add(value);
-        }
-        result.add("primed",primed);
+        result.add("primed",primedSnapshot());
         result.add("projectiles",ItemUseBridge.snapshot(owner,slot*1024,centerX,centerY));
         result.addProperty("status", status); result.addProperty("creative", creative);
         result.addProperty("selected", owner.getInventory().selectedSlot);
@@ -1140,15 +1173,17 @@ public final class HollowCraftBridge implements ModInitializer {
         final boolean hud;
         final boolean entityRender;
         final boolean blockRender;
+        final boolean tntSteps;
         final Set<String> audioFiles=ConcurrentHashMap.newKeySet();
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud,boolean entityRender,boolean blockRender) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud,boolean entityRender,boolean blockRender,boolean tntSteps) {
             this.projectileSteps=projectileSteps;
             this.audio=audio;
             this.hud=hud;
             this.entityRender=entityRender;
             this.blockRender=blockRender;
+            this.tntSteps=tntSteps;
             this.gui=gui;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {

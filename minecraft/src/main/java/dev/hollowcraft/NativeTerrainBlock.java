@@ -22,6 +22,7 @@ final class NativeTerrainBlock extends Block {
     }
     @Override public VoxelShape getCollisionShape(BlockState state,BlockView world,BlockPos pos,ShapeContext context) {
         if(!NativeTerrainQueries.solid()&&context instanceof EntityShapeContext entity&&entity.getEntity() instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&delegated(projectile))return VoxelShapes.empty();
+        if(!NativeTerrainQueries.solid()&&context instanceof EntityShapeContext entity&&entity.getEntity() instanceof net.minecraft.entity.TntEntity tnt&&NativeTntSteps.required(tnt))return VoxelShapes.empty();
         return shapes.getOrDefault(pos,VoxelShapes.fullCube());
     }
     @Override public VoxelShape getOutlineShape(BlockState state,BlockView world,BlockPos pos,ShapeContext context) {return getCollisionShape(state,world,pos,context);}

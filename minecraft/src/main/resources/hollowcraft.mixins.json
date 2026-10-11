@@ -18,6 +18,7 @@
     ,"RemotePlacementMixin"
     ,"NativeTerrainRaycastMixin"
     ,"FireworkTerrainMixin"
+    ,"NativeTntMovementMixin"
   ],
   "client": [
     "ItemRendererAccess",

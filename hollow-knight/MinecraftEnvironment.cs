@@ -39,6 +39,9 @@ namespace HollowCraft
             if((water||lava)&&((float?)runtime.Stats?[water?"waterHeight":"lavaHeight"]??1)>((float?)runtime.Stats?["swimHeight"]??.4f))return true;
             if(MinecraftControls.Grounded(player)&&Time.time>=instance.nextJump) {
                 int boost=instance.Effect("jump_boost");float velocity=(float?)runtime.Stats?["jumpVelocity"]??.42f+(boost>=0?.1f*(boost+1):0);
+                // Player-requested building assistance: the ordinary 20 Hz arc peaks
+                // at 1.5 blocks (0.4634 impulse), while potion boost remains additive.
+                float potion=boost>=0?.1f*(boost+1):0;velocity=(velocity-potion)*(.4634f/.42f)+potion;
                 instance.nextJump=Time.time+.5f;
                 instance.lastJump=Time.time;
                 JumpOriginFeet=player.GetComponent<Collider2D>().bounds.min.y;

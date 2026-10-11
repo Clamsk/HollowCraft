@@ -1,12 +1,17 @@
-param([string]$GameRoot='C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight')
+param([string]$GameRoot,[switch]$UsePrebuilt)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
+$configTask=Get-HollowCraftConfigTask
+if(-not $GameRoot) {$GameRoot=$configTask.gameRoot}
 $projectTaskRoot=Split-Path $PSScriptRoot -Parent
 $gameManagedTask=Join-Path $GameRoot 'hollow_knight_Data\Managed'
-& dotnet build (Join-Path $projectTaskRoot 'hollow-knight\HollowCraft.csproj') -c Release --verbosity quiet "-p:GameManaged=$gameManagedTask"
-if ($LASTEXITCODE -ne 0) { throw 'Hollow Knight bridge build failed' }
 $outTask=Join-Path $projectTaskRoot 'artifacts\HollowCraft'
 New-Item -ItemType Directory -Path $outTask -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $projectTaskRoot 'hollow-knight\bin\Release\net472\HollowCraft.dll') -Destination $outTask -Force
+if(-not $UsePrebuilt) {
+    & dotnet build (Join-Path $projectTaskRoot 'hollow-knight\HollowCraft.csproj') -c Release --verbosity quiet "-p:GameManaged=$gameManagedTask"
+    if ($LASTEXITCODE -ne 0) { throw 'Hollow Knight bridge build failed' }
+    Copy-Item -LiteralPath (Join-Path $projectTaskRoot 'hollow-knight\bin\Release\net472\HollowCraft.dll') -Destination $outTask -Force
+} elseif(-not(Test-Path -LiteralPath (Join-Path $outTask 'HollowCraft.dll'))) {throw 'Prebuilt HollowCraft.dll is missing. Download the Windows release ZIP.'}
 Add-Type -Path (Join-Path $projectTaskRoot 'dependencies\hk-api\Mono.Cecil.dll')
 $resolverTask=[Mono.Cecil.DefaultAssemblyResolver]::new()
 $resolverTask.AddSearchDirectory($gameManagedTask)
@@ -142,5 +147,5 @@ try {
     }
     $reportTask | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outTask 'patch-report.json') -Encoding utf8
 } finally { $gameAssemblyTask.Dispose(); $resolverTask.Dispose() }
-& (Join-Path $PSScriptRoot 'prepare-assets.ps1')
+& (Join-Path $PSScriptRoot 'prepare-assets.ps1') -MinecraftJar (Join-Path $configTask.minecraftRoot 'versions\1.20.1\1.20.1.jar')
 Write-Output "HollowCraft build ready: $outTask"

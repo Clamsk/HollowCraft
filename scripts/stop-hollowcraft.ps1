@@ -1,4 +1,6 @@
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
+$configTask=Get-HollowCraftConfigTask
 $taskRoot=Split-Path $PSScriptRoot -Parent
 function OwnedNormalProcessTask([string]$Component) {
     $recordPath=Join-Path $taskRoot ('runtime/'+$Component+'-process.json')
@@ -6,7 +8,7 @@ function OwnedNormalProcessTask([string]$Component) {
     $record=Get-Content -LiteralPath $recordPath -Raw|ConvertFrom-Json
     $process=Get-Process -Id $record.id -ErrorAction SilentlyContinue
     if(-not $process) {return $null}
-    $expected=if($Component -eq 'minecraft') {'C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe'}else{Join-Path $taskRoot 'runtime/Hollow Knight/hollow_knight.exe'}
+    $expected=if($Component -eq 'minecraft') {$configTask.javaPath}else{Join-Path $taskRoot 'runtime/Hollow Knight/hollow_knight.exe'}
     if($process.Path -ne $expected -or $process.StartTime.ToUniversalTime().Ticks -ne $record.startedTicks) {throw ('Process ownership mismatch: '+$Component)}
     return $process
 }

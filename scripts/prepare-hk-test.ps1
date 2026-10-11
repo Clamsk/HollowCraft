@@ -1,5 +1,7 @@
-param([string]$GameRoot='C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight')
+param([string]$GameRoot)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
+if(-not $GameRoot) {$GameRoot=(Get-HollowCraftConfigTask).gameRoot}
 $projectTaskRoot=Split-Path $PSScriptRoot -Parent
 $gameTestTask=Join-Path $projectTaskRoot 'runtime\Hollow Knight'
 New-Item -ItemType Directory -Path $gameTestTask -Force | Out-Null
@@ -11,7 +13,10 @@ function Link-ReadOnlyResourcesTask([string]$Source,[string]$Destination,[string
         $targetTask=Join-Path $Destination $itemTask.Name
         if (Test-Path -LiteralPath $targetTask) { continue }
         if ($itemTask.PSIsContainer) { New-Item -ItemType Junction -Path $targetTask -Target $itemTask.FullName | Out-Null }
-        else { New-Item -ItemType HardLink -Path $targetTask -Target $itemTask.FullName | Out-Null }
+        else {
+            try { New-Item -ItemType HardLink -Path $targetTask -Target $itemTask.FullName -ErrorAction Stop | Out-Null }
+            catch { Copy-Item -LiteralPath $itemTask.FullName -Destination $targetTask }
+        }
     }
 }
 Link-ReadOnlyResourcesTask $GameRoot $gameTestTask @('hollow_knight_Data','hollow_knight.exe','UnityPlayer.dll')

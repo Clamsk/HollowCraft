@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(2)+" loaded. HIM skin, creative flight and buffered jump-building; localhost:31674.");
+            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(2)+" loaded. Native TNT collision, 1.5-block jump and iron pickaxe; localhost:31674.");
         }
         public static string SaveRoot()
         {

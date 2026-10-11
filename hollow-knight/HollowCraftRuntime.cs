@@ -43,6 +43,8 @@ namespace HollowCraft
         private readonly Dictionary<int,GameObject> primedTnt=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,GameObject> projectiles=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,object> nativeProjectileSteps=new Dictionary<int,object>();
+        private readonly Dictionary<int,object> nativeTntSteps=new Dictionary<int,object>();
+        private int lastTntTick=-1;
         private readonly Dictionary<string,float> retiredProjectiles=new Dictionary<string,float>();
         private readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, int> breakingTicks = new Dictionary<string, int>();
@@ -286,6 +288,7 @@ namespace HollowCraft
                 if((string)message["type"]=="mcSound"&&(string)message["scene"]==scene)audio.Receive(message);
                 if((string)message["type"]=="mcSoundStop"&&(string)message["scene"]==scene)audio.StopAll();
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
+                if((string)message["type"]=="primed"&&(string)message["scene"]==scene)ApplyPrimed(message);
                 if((string)message["type"]=="nativeImpact"&&(string)message["scene"]==scene&&projectiles.TryGetValue((int)message["entity"],out GameObject impact)&&impact!=null)impact.GetComponent<ProjectileView>().Resolve(message);
                 if((string)message["type"]=="projectile"&&(string)message["scene"]==scene) {
                     var value=(JObject)message["value"];
@@ -608,6 +611,7 @@ namespace HollowCraft
             if(room==scene&&!SimulationPaused)nativeProjectileSteps[entity]=new {entity,uuid,age};
         }
         internal void RevokeNativeStep(int entity) {nativeProjectileSteps.Remove(entity);}
+        internal void QueueTntStep(object command,int entity,string room) {if(room==scene&&!SimulationPaused)nativeTntSteps[entity]=command;}
         internal void RetireProjectile(int entity,string uuid) {
             if(!string.IsNullOrEmpty(uuid))retiredProjectiles[uuid]=Time.unscaledTime+2;
             RevokeNativeStep(entity);
@@ -618,25 +622,31 @@ namespace HollowCraft
             if(!SimulationPaused) {
                 var values=nativeProjectileSteps.Values.ToArray();
                 for(int offset=0;offset<values.Length;offset+=64)Send(new {type="projectileStep",scene,steps=values.Skip(offset).Take(64).ToArray()});
+                var tnt=nativeTntSteps.Values.ToArray();
+                for(int offset=0;offset<tnt.Length;offset+=64)Send(new {type="tntStep",scene,steps=tnt.Skip(offset).Take(64).ToArray()});
             }
             nativeProjectileSteps.Clear();
+            nativeTntSteps.Clear();
         }
-        private void ApplySnapshot(JObject message)
-        {
-            LatestSnapshot=message;
-            EnemySystem.Apply(message["enemies"] as JArray,cachedHero);
-            ApplyProjectiles(message);
+        private void ApplyPrimed(JObject message) {
+            int tick=(int?)message["tick"]??0;if(tick<lastTntTick)return;lastTntTick=tick;
             var tntIds=new HashSet<int>();
             foreach(JObject value in message["primed"] as JArray ?? new JArray()) {
                 int id=(int)value["id"];tntIds.Add(id);
                 if(!primedTnt.TryGetValue(id,out GameObject tnt)) {
                     tnt=new GameObject("HollowCraft.PrimedTNT");DontDestroyOnLoad(tnt);var renderer=tnt.AddComponent<SpriteRenderer>();var texture=Texture("minecraft:tnt");
                     renderer.sprite=texture!=null ? Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width) : Square(Color.red);
-                    var original=cachedHero?.GetComponent<Renderer>();if(original!=null) renderer.sortingLayerID=original.sortingLayerID;renderer.sortingOrder=30;primedTnt[id]=tnt;
+                    var original=cachedHero?.GetComponent<Renderer>();if(original!=null) renderer.sortingLayerID=original.sortingLayerID;renderer.sortingOrder=30;tnt.AddComponent<PrimedTntView>();primedTnt[id]=tnt;
                 }
-                tnt.transform.position=new Vector3((float)value["x"],(float)value["y"]+.5f,-.1f);tnt.GetComponent<SpriteRenderer>().color=(int)value["fuse"]%10<5 ? Color.white : new Color(1,.55f,.55f);
+                tnt.GetComponent<PrimedTntView>().Push(value,scene);
             }
             foreach(int id in primedTnt.Keys.Where(id=>!tntIds.Contains(id)).ToArray()) {Destroy(primedTnt[id]);primedTnt.Remove(id);}
+        }
+        private void ApplySnapshot(JObject message)
+        {
+            LatestSnapshot=message;
+            EnemySystem.Apply(message["enemies"] as JArray,cachedHero);
+            ApplyProjectiles(message);ApplyPrimed(message);
             if (!snapshotLogged)
             {
                 snapshotLogged=true;
@@ -725,7 +735,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

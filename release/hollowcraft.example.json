@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "portable": true,
+  "gameRoot": "D:\\SteamLibrary\\steamapps\\common\\Hollow Knight",
+  "minecraftRoot": "D:\\Games\\Minecraft\\.minecraft",
+  "javaPath": "C:\\Program Files\\Microsoft\\jdk-21\\bin\\java.exe"
+}

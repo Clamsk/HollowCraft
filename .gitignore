@@ -6,6 +6,7 @@ runtime/
 **/build/
 **/.gradle/
 local.json
+hollowcraft.local.json
 *.log
 
 # Local investigation, personal state and disassembled game code.

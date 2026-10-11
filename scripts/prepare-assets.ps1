@@ -1,5 +1,15 @@
-param([string]$MinecraftJar='C:\Program Files (x86)\MC\.minecraft\versions\1.20.1\1.20.1.jar')
+param([string]$MinecraftJar,[string]$BetterCombatJar)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
+$configTask=Get-HollowCraftConfigTask
+if(-not $MinecraftJar) {$MinecraftJar=Join-Path $configTask.minecraftRoot 'versions\1.20.1\1.20.1.jar'}
+if(-not $BetterCombatJar) {
+    if($configTask.portable) {
+        $lockTask=Get-Content -LiteralPath (Join-Path $hollowCraftTaskRoot 'release\dependencies.lock.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $combatFileTask=($lockTask.mods | Where-Object project -EQ 'better-combat').filename
+        $BetterCombatJar=Join-Path $hollowCraftTaskRoot ('dependencies\mods\'+$combatFileTask)
+    } else {$BetterCombatJar=Join-Path $configTask.minecraftRoot 'versions\DarkRPG - RPG Quest Magic & Origins Online Adventure\mods\bettercombat-fabric-1.8.5+1.20.1.jar'}
+}
 $projectTaskRoot=Split-Path $PSScriptRoot -Parent
 $assetsTask=Join-Path $projectTaskRoot 'artifacts\HollowCraft\HollowCraftAssets'
 New-Item -ItemType Directory -Path $assetsTask -Force | Out-Null
@@ -42,7 +52,7 @@ try {
 } finally { $zipTask.Dispose() }
 $combatAnimationsTask=Join-Path $assetsTask 'bettercombat'
 New-Item -ItemType Directory -Path $combatAnimationsTask -Force | Out-Null
-$combatJarTask=[IO.Compression.ZipFile]::OpenRead('C:\Program Files (x86)\MC\.minecraft\versions\DarkRPG - RPG Quest Magic & Origins Online Adventure\mods\bettercombat-fabric-1.8.5+1.20.1.jar')
+$combatJarTask=[IO.Compression.ZipFile]::OpenRead($BetterCombatJar)
 try {
     foreach($entryTask in $combatJarTask.Entries) {
         if($entryTask.FullName -match '^assets/bettercombat/attack_animations/([a-z0-9_]+)\.json$') {

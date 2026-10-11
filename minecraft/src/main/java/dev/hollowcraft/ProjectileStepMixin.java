@@ -13,5 +13,6 @@ public abstract class ProjectileStepMixin {
     @Inject(method="tickEntity",at=@At("HEAD"),cancellable=true)
     private void hollowcraft$nativeStep(Entity entity,CallbackInfo callback) {
         if(entity instanceof ProjectileEntity projectile&&!dev.hollowcraft.HollowCraftBridge.tickNativeProjectile(projectile))callback.cancel();
+        if(entity instanceof net.minecraft.entity.TntEntity tnt&&!dev.hollowcraft.NativeTntSteps.tick(tnt))callback.cancel();
     }
 }
