@@ -25,6 +25,8 @@ namespace HollowCraft
         private bool textInputFocused;
         internal bool TextInputFocused => textInputFocused;
         private string anvilSource="";
+        private string notice="";private float noticeUntil;
+        internal void ShowNotice(string value) {notice=value??"";noticeUntil=Time.unscaledTime+3;}
         internal MinecraftUI(HollowCraftRuntime value) {runtime=value;}
         internal void DrawModes()
         {
@@ -118,6 +120,7 @@ namespace HollowCraft
         private void InventoryInput(JObject snapshot,Rect bounds) {
             var e=Event.current;
             if(e.type==EventType.KeyDown&&TextInputFocused)return;
+            if(e.type==EventType.KeyDown&&runtime.Creative&&e.keyCode>=KeyCode.Alpha1&&e.keyCode<=KeyCode.Alpha9&&(Input.GetKey(KeyCode.C)||Input.GetKey(KeyCode.X))) {e.Use();return;}
             var pointed=drawnSlots.FirstOrDefault(s=>s.Item2.Contains(pointer));int slot=pointed?.Item1??-999;
             if(dragButton>=0&&(dragHandler!=(containerOpen?"container":"player")||dragSyncId!=CurrentSync()))CancelDrag();
             bool shift=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift);
@@ -226,6 +229,7 @@ namespace HollowCraft
             }
             GUI.color=Color.white;
             if(CampaignBridge.Sitting&&!open&&!dead&&!paused) {if(Button("Leave Bench (W / Space)",Screen.width/2-110*scale,Screen.height-76*scale,220)) CampaignBridge.LeaveBench();}
+            if(Time.unscaledTime<noticeUntil&&!string.IsNullOrEmpty(notice))Text(notice,Screen.width/2-notice.Length*3*scale,top-45*scale,scale);
             if(open&&hovered!=null&&((int?)hovered["count"] ?? 0)>0) {
                 var lines=new System.Collections.Generic.List<string>{(string)hovered["name"] ?? (string)hovered["id"]};
                 foreach(var line in hovered["tooltip"] as JArray ?? new JArray()) lines.Add((string)line);
@@ -323,10 +327,12 @@ namespace HollowCraft
                 var entry=entries[catalogPage*9+i];var rect=new Rect(left+(9+i%9*18)*scale,top+(18+i/9*18)*scale,16*scale,16*scale);Item(entry,rect);
                 if(!rect.Contains(pointer))continue;hovered=entry;
                 GUI.color=new Color(1,1,1,.4f);GUI.DrawTexture(rect,Texture2D.whiteTexture);GUI.color=Color.white;
+                if((bool?)entry["locked"]==true)continue;
                 if(e.type==EventType.MouseDown&&e.button<=2) {
                     CancelDrag();bool shift=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift);
                     TakeCreative(entry,e.button==1?1:64,shift?"inventory":"cursor",0);e.Use();
                 } else if(e.type==EventType.KeyDown&&e.keyCode>=KeyCode.Alpha1&&e.keyCode<=KeyCode.Alpha9) {
+                    if(Input.GetKey(KeyCode.C)||Input.GetKey(KeyCode.X)) {e.Use();continue;}
                     TakeCreative(entry,64,"slot",(int)e.keyCode-(int)KeyCode.Alpha1);e.Use();
                 }
             }
@@ -337,7 +343,7 @@ namespace HollowCraft
             InventoryInput(runtime.LatestSnapshot,new Rect(left,top-28*scale,195*scale,192*scale));
         }
         private void TakeCreative(JToken entry,int count,string destination,int slot) {
-            runtime.Send(new {type="creativeItem",scene=runtime.Room,catalogIndex=(int)entry["catalogIndex"],count,destination,slot});
+            runtime.Send(new {type="creativeItem",scene=runtime.Room,catalogIndex=(int)entry["catalogIndex"],catalogRevision=runtime.CatalogRevision,count,destination,slot});
         }
         private void DrawCreativeInventory(JArray groups) {
             left=(Screen.width-195*scale)/2;top=(Screen.height-136*scale)/2;containerOpen=false;drawnSlots.Clear();

@@ -48,6 +48,8 @@ namespace HollowCraft
         private float nextTerrain,nextPlace;
         private string campaign="";
         private bool openingSync;
+        private float waterLandingAt=-1000;
+        private int waterLandingSerial;
         private int lastProjectileTick=-1;
         private float nextVisual;
         private Vector2Int mineCell = new Vector2Int(int.MinValue, int.MinValue);
@@ -223,11 +225,13 @@ namespace HollowCraft
                     flight.Push((JObject)message["value"],scene);
                     if((string)message["phase"]=="impact") {flight.Retire();projectiles.Remove((int)message["value"]["entity"]);}
                 }
-                if((string)message["type"]=="catalog"&&(string)message["scene"]==scene) {Catalog=message["items"] as JArray;CatalogGroups=message["groups"] as JArray;}
+                if((string)message["type"]=="catalog"&&(string)message["scene"]==scene) {Catalog=message["items"] as JArray;CatalogGroups=message["groups"] as JArray;CatalogRevision=(int?)message["revision"]??0;}
+                if((string)message["type"]=="notice"&&(string)message["scene"]==scene)ui.ShowNotice((string)message["text"]);
                 if((string)message["type"]=="impulse"&&(string)message["scene"]==scene&&cachedHero!=null) PlayerSystem.ApplyImpulse(cachedHero,new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="hurt"&&(string)message["scene"]==scene) PlayerSystem.HurtFeedback((int?)message["ticks"]??10);
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
                     LastLanding=message;LandingEvents++;
+                    if((string)message["kind"]=="water") {waterLandingAt=Time.unscaledTime;waterLandingSerial++;}
                     if((bool?)message["intro"]==true)CampaignSession.Landed();
                     if((string)message["kind"]=="hero")SteveAvatar.BeginLanding();
                 }
@@ -257,7 +261,7 @@ namespace HollowCraft
             if (name != scene || newlyConnected || campaign!=CampaignSession.Id)
             {
                 ClearBlocks(); scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
-                container=null; inventoryOpen=false; Combat.Cancel(); PlayerSystem.EnterScene(hero);
+                container=null; inventoryOpen=false;waterLandingAt=-1000; Combat.Cancel(); PlayerSystem.EnterScene(hero);
                 CatalogOpen=false;usingItem=false;MinecraftEnvironment.SceneChanged();
                 snapshotLogged=false; stableSince=Time.unscaledTime;
                 campaign=CampaignSession.Id;nextPose=0;nextTerrain=0;
@@ -298,7 +302,8 @@ namespace HollowCraft
                     pitch=usingItem&&GameCursor.WorldTarget(hero,out Vector2 aimPoint,out _)?-Mathf.Atan2(aimPoint.y-GameCursor.Eye(hero).y,Mathf.Abs(aimPoint.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0,
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
                     duration=(float?)Combat.Current?["duration"]??.5f,upswing=(float?)Combat.Current?["upswing"]??.3f,
-                    twoHanded=(bool?)Combat.Profile?["weapon"]?["two_handed"]??false,landing=SteveAvatar.LandingElapsed});
+                    twoHanded=(bool?)Combat.Profile?["weapon"]?["two_handed"]??false,landing=SteveAvatar.LandingElapsed,
+                    waterLanding=Time.unscaledTime-waterLandingAt<.6f?Time.unscaledTime-waterLandingAt:-1,waterLandingSerial});
             }
             if (connected && Time.unscaledTime >= nextPose)
             {
@@ -308,11 +313,12 @@ namespace HollowCraft
             if(building && connected && !GameplayBlocked) Combat.Tick(hero); else Combat.Cancel();
             if (Environment.GetEnvironmentVariable("HOLLOWCRAFT_SMOKE") == "1") SmokeTick(hero);
             if(Automated) return;
+            bool hotbarShortcut=HandleHotbarShortcut();
             // Native landing/knockback animation locks must not swallow MC mouse presses.
             pointerInput.Context(building&&connected&&!GameplayBlocked&&Application.isFocused);
             if (!building || !connected || GameplayBlocked) return;
             if(Spectator) {StopMining();return;}
-            for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Select(i);
+            if(!hotbarShortcut)for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Select(i);
             float scroll = Input.mouseScrollDelta.y;
             if (Math.Abs(scroll) > 0.01f) Select((selected + (scroll > 0 ? 8 : 1)) % 9);
             if(!GameCursor.WorldTarget(hero,out Vector2 mouse,out crosshair)) return;
@@ -415,6 +421,13 @@ namespace HollowCraft
         private void LateUpdate() {GameCursor.ApplyCursor();if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
         internal void CloseInterface() {ui.CancelDrag();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
         private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;Send(new {type="creativeCatalog",scene});}
+        private bool HandleHotbarShortcut() {
+            if(!creative||!bridge.Connected||!Application.isFocused||ui.TextInputFocused||GameplayBlocked&&!CatalogOpen)return false;
+            bool load=Input.GetKey(KeyCode.X),save=Input.GetKey(KeyCode.C);if(!load&&!save)return false;
+            for(int i=0;i<9;i++)if(Input.GetKeyDown(KeyCode.Alpha1+i)) {StopMining();Combat.Cancel();Send(new {type="creativeHotbar",scene,action=load?"load":"save",slot=i});return true;}
+            return false;
+        }
+        internal int CatalogRevision;
         private static bool Interactive(string name) => name.Contains("crafting_table") || name.Contains("chest") || name.Contains("furnace") || name.Contains("barrel") || name.Contains("door") || name.Contains("button") || name.Contains("lever") || name.Contains("tnt") || name.Contains("brewing_stand") || name.Contains("anvil") || name.Contains("enchanting_table") || name.Contains("smoker") || name.Contains("hopper") || name.Contains("dropper") || name.Contains("dispenser") || name.Contains("grindstone") || name.Contains("loom") || name.Contains("stonecutter") || name.Contains("smithing_table") || name.Contains("cartography_table");
         private static int Cell(float value) => Mathf.FloorToInt(value / CellSize);
         internal void Select(int value) { selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }

@@ -32,6 +32,7 @@ public final class HollowCraftClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             boolean isolated = Files.exists(client.runDirectory.toPath().resolve(".hollowcraft-profile"));
             if (!isolated) return;
+            CreativeHotbars.tick(client);
             ItemModelIcons.tick(client);
             PlayerVisualBridge.tick(client);
             String screen = client.currentScreen == null ? "in-game" : client.currentScreen.getClass().getSimpleName();

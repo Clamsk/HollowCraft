@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.11 loaded. Native-safe pearl landings, projectile props and vanilla creative inventory layout; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.12 loaded. Vanilla saved hotbars and first-ground automatic water landing; localhost:31674.");
         }
         public static string SaveRoot()
         {

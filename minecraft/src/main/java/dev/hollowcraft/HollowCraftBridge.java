@@ -357,15 +357,18 @@ public final class HollowCraftBridge implements ModInitializer {
                 boolean gliding=command.has("gliding")&&command.get("gliding").getAsBoolean();
                 if(gliding && !grounded && owner.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA)) owner.startFallFlying();else if(owner.isFallFlying()) owner.stopFallFlying();
                 if(owner.isTouchingWater()||owner.isClimbing()||gliding) fallen=0;
-                else if(hadPose&&!wasGrounded) {
-                    fallen+=Math.max(0,(float)(lastPoseY-exactY));
-                    if(grounded) {
-                        boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(fallen>=11.999f||introLanding)&&placeLandingWater();
-                        if(!creative&&!owner.isSpectator()&&!waterSave)owner.handleFallDamage(fallen,1,owner.getDamageSources().fall());
-                        if(creative&&fallen>12)landingEvent("hero",fallen);
-                        if(introLanding) {introLanding=false;campaigns.introDone=true;campaigns.save(owner);}
-                        fallen=0;owner.fallDistance=0;
+                else if(hadPose&&!wasGrounded)fallen+=Math.max(0,(float)(lastPoseY-exactY));
+                // A late connection can start after the first landing. The pending opening
+                // must still place water instead of requiring a previously observed air pose.
+                if(grounded&&((hadPose&&!wasGrounded)||introLanding)) {
+                    boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(fallen>=11.999f||introLanding)&&placeLandingWater();
+                    if(!creative&&!owner.isSpectator()&&!waterSave)owner.handleFallDamage(fallen,1,owner.getDamageSources().fall());
+                    if(creative&&fallen>12)landingEvent("hero",fallen);
+                    if(introLanding&&(waterSave||creative||owner.isSpectator())) {
+                        if(!waterSave&&!(creative&&fallen>12))landingEvent("plain",fallen);
+                        introLanding=false;campaigns.introDone=true;campaigns.save(owner);
                     }
+                    fallen=0;owner.fallDistance=0;
                 }
                 if(hadPose && !creative) {
                     if(command.has("sprinting") && command.get("sprinting").getAsBoolean()) owner.addExhaustion((float)Math.min(2,Math.abs(exactX-lastPoseX))*0.1f);
@@ -476,8 +479,10 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.clearActiveItem();owner.closeHandledScreen();openContainer=null;
                 peer.event(catalog.build(owner,scene));snapshot();
             }}
+            case "creativeHotbar" -> {if(creative)creativeHotbar(command);}
             case "creativeItem" -> {if(creative) {
                 if(command.has("catalogIndex")) {
+                    if(integer(command,"catalogRevision",-1)!=catalog.revision()) {notice("Catalogue updated; select the item again");break;}
                     ItemStack stack=catalog.stack(integer(command,"catalogIndex",-1),integer(command,"count",64));
                     if(!stack.isEmpty()) {
                         String destination=string(command,"destination","cursor");
@@ -511,15 +516,42 @@ public final class HollowCraftBridge implements ModInitializer {
         }
     }
     private BlockPos pos(int x, int y) { return new BlockPos(slot * 1024 + x, 64 + y, 0); }
+    private void creativeHotbar(JsonObject command) {
+        int index=integer(command,"slot",-1);if(index<0||index>=9)return;
+        var player=owner;var localServer=server;String campaign=campaigns.id(),room=scene;
+        if(string(command,"action","").equals("save")) {
+            var stacks=new ItemStack[9];for(int i=0;i<9;i++)stacks[i]=player.getInventory().getStack(i).copy();
+            CreativeHotbars.save(index,stacks,error->afterHotbar(localServer,()-> {
+                if(owner!=player||!campaigns.id().equals(campaign)||!scene.equals(room))return;
+                notice(error.isEmpty()?"Saved hotbar "+(index+1)+" (X + "+(index+1)+" to load)":error);
+                if(creative&&peer!=null)peer.event(catalog.build(owner,scene));
+            }));
+        } else if(string(command,"action","").equals("load")) {
+            CreativeHotbars.load(index,(stacks,error)->afterHotbar(localServer,()-> {
+                if(owner!=player||!campaigns.id().equals(campaign)||!scene.equals(room)||!creative)return;
+                if(!error.isEmpty()) {notice(error);return;}
+                owner.clearActiveItem();
+                for(int i=0;i<9;i++)owner.getInventory().setStack(i,stacks[i].isItemEnabled(owner.getWorld().getEnabledFeatures())?stacks[i]:ItemStack.EMPTY);
+                owner.playerScreenHandler.sendContentUpdates();snapshot();notice("Loaded hotbar "+(index+1));
+            }));
+        }
+    }
+    private void afterHotbar(MinecraftServer expected,Runnable update) {
+        if(expected==null||!expected.isRunning())return;
+        expected.execute(()-> {if(server==expected&&owner!=null)update.run();});
+    }
+    private void notice(String text) {
+        if(peer==null)return;var event=new JsonObject();event.addProperty("type","notice");event.addProperty("scene",scene);event.addProperty("text",text);peer.event(event);
+    }
     private boolean placeLandingWater() {
         collectLandingWater();
         BlockPos cell=pos((int)Math.floor(exactX),(int)Math.floor(exactY+.08));
         var world=owner.getServerWorld();var before=world.getBlockState(cell);
         if(!before.isReplaceable()&&!NativeTerrainBlock.proxy(before))return false;
         // Native terrain remains physically present in Unity. Replacing its MC proxy
-        // for four ticks lets water wet feet at fractional floor heights, then restores it.
+        // for eight ticks lets water wet feet at fractional floor heights, then restores it.
         if(!world.setBlockState(cell,Blocks.WATER.getDefaultState(),Block.NOTIFY_LISTENERS))return false;
-        landingWater=cell;landingWaterBefore=before;collectWaterTick=server.getTicks()+4;
+        landingWater=cell;landingWaterBefore=before;collectWaterTick=server.getTicks()+8;
         landingEvent("water",fallen);snapshot();LOG.info("Automatic landing water distance={} cell={}",fallen,cell);return true;
     }
     private void collectLandingWater() {
