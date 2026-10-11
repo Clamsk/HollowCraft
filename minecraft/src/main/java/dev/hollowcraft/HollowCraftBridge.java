@@ -386,7 +386,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if(command.has("campaign")&&!campaigns.id().equals(string(command,"campaign","")))return;
         // Finish the short clutch before player actions mutate hand items or containers.
         if(landingWater!=null&&switch(type) {
-            case "select","mode","place","mine","mining","use","itemUse","offhand","drop","slotClick","inventoryOpen","creativeCatalog","creativeItem","creativeHotbar","creativeDiscard","craft","swap","kit","adventureKit","swing","hit","damage","respawn","checkpoint","rest","containerMove","containerButton","anvilName","close","eat","nativeProjectileHit" -> true;
+            case "select","mode","place","interact","mine","mining","use","itemUse","offhand","drop","slotClick","inventoryOpen","creativeCatalog","creativeItem","creativeHotbar","creativeDiscard","craft","swap","kit","adventureKit","swing","hit","damage","respawn","checkpoint","rest","containerMove","containerButton","anvilName","close","eat","nativeProjectileHit" -> true;
             default -> false;
         })collectLandingWater();
         switch (type) {
@@ -477,6 +477,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             case "craft" -> craft(command);
             case "use" -> use(command);
+            case "interact" -> interact(command);
             case "containerMove" -> containerMove(command);
             case "close" -> { owner.closeHandledScreen(); openContainer=null; }
             case "swing" -> swing(command);
@@ -668,20 +669,21 @@ public final class HollowCraftBridge implements ModInitializer {
         if (dx*dx+dy*dy>reach*reach+.001 || y < -60 || y > 240 || x < -400 || x > 400) return null;
         return pos(x, y);
     }
-    private boolean place(JsonObject command) {
+    private boolean place(JsonObject command) {return place(command,Hand.MAIN_HAND).isAccepted();}
+    private ActionResult place(JsonObject command,Hand hand) {
         if(command.has("playerX")&&command.has("playerY")) {
             double x=command.get("playerX").getAsDouble(),y=command.get("playerY").getAsDouble();
-            if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)return false;
+            if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)return ActionResult.FAIL;
             exactX=x;exactY=y;reachY=y+(owner.isSneaking()?1.27:1.62);
         }
         BlockPos target = target(command);
         ServerWorld world = owner.getServerWorld();
-        if (target == null) { status = "Target outside bridge reach or bounds"; return false; }
-        if(owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {status="This game mode cannot place blocks";return false;}
+        if (target == null) { status = "Target outside bridge reach or bounds"; return ActionResult.FAIL; }
+        if(owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {status="This game mode cannot place blocks";return ActionResult.FAIL;}
         var nativeShape=NativeTerrainBlock.shapes.get(target);
-        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return false; }
-        if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)) { status = "Target already contains a Minecraft block"; return false; }
-        if (!(owner.getMainHandStack().getItem() instanceof BlockItem)) { status = "Select a block in the hotbar"; return false; }
+        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return ActionResult.FAIL; }
+        if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)) { status = "Target already contains a Minecraft block"; return ActionResult.FAIL; }
+        if (!(owner.getStackInHand(hand).getItem() instanceof BlockItem)) { status = "Select a block in either hand"; return ActionResult.FAIL; }
         boolean floorEdge=world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE);
         // A native floor can sit a few hundredths above a voxel edge. Keep the physical
         // floor in Unity, but let vanilla put the requested block against its supporting cell.
@@ -703,13 +705,46 @@ public final class HollowCraftBridge implements ModInitializer {
             Vec3d original=owner.getPos();owner.setPosition(slot*1024+exactX,64+exactY,10.5);
             float yaw=owner.getYaw();owner.setYaw(target.getX()+.5>=original.x?-90:90);
             ActionResult result;
-            try { result = owner.interactionManager.interactBlock(owner, world, owner.getMainHandStack(), Hand.MAIN_HAND,
+            try { result = owner.interactionManager.interactBlock(owner, world, owner.getStackInHand(hand), hand,
                 new BlockHitResult(hit, face, support, false));
             } finally {owner.setPosition(original);owner.setYaw(yaw);owner.setSneaking(crouching);}
             status = result.isAccepted() ? "Placed " + Registries.BLOCK.getId(world.getBlockState(target).getBlock()) : "Minecraft rejected placement";
             if(!result.isAccepted()) LOG.info("Placement rejected target={} below={} above={} face={} support={}",target,world.getBlockState(target.down()),world.getBlockState(target.up()),face,world.getBlockState(support));
-            return result.isAccepted();
+            return result;
         } finally { if (temporarySupport) world.setBlockState(support, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);if(floorEdge&&world.getBlockState(target).isAir())world.setBlockState(target,NativeTerrainBlock.INSTANCE.getDefaultState(),Block.NOTIFY_LISTENERS); }
+    }
+    private int itemSwingSerial;
+    private void itemSwing(Hand hand) {
+        owner.swingHand(hand,true);
+        if(peer!=null) {var event=new JsonObject();event.addProperty("type","itemSwing");event.addProperty("scene",scene);event.addProperty("serial",++itemSwingSerial);event.addProperty("hand",hand==Hand.OFF_HAND?1:0);peer.event(event);}
+    }
+    private void interact(JsonObject command) {
+        boolean[] placed={false};
+        var placement=command.deepCopy();placement.addProperty("x",integer(command,"placeX",integer(command,"x",0)));placement.addProperty("y",integer(command,"placeY",integer(command,"y",0)));
+        try {
+            if(!owner.isAlive()||owner.isSpectator()||owner.isUsingItem()||!ItemUseBridge.aim(owner,command))return;
+            var clicked=target(command);var world=owner.getServerWorld();
+            try(var scope=RemotePlacement.begin(owner,hand->{
+                if(!command.has("canPlace")||!command.get("canPlace").getAsBoolean())return ActionResult.FAIL;
+                var result=place(placement,hand);placed[0]=result.isAccepted();return result;
+            })) {
+                for(var hand:Hand.values()) {
+                    var stack=owner.getStackInHand(hand);
+                    if(!stack.isItemEnabled(world.getEnabledFeatures()))return;
+                    if(clicked!=null) {
+                        var result=owner.interactionManager.interactBlock(owner,world,stack,hand,new BlockHitResult(Vec3d.ofCenter(clicked),Direction.UP,clicked,false));
+                        if(owner.currentScreenHandler!=owner.playerScreenHandler)openContainer=clicked;
+                        if(result.isAccepted()) {if(result.shouldSwingHand())itemSwing(hand);return;}
+                        if(result==ActionResult.FAIL)return;
+                    }
+                    var result=ItemUseBridge.air(owner,hand,clicked);
+                    if(result.isAccepted()) {if(result.shouldSwingHand())itemSwing(hand);return;}
+                }
+            }
+        } finally {
+            if(peer!=null) {var event=new JsonObject();event.addProperty("type","placeResult");event.addProperty("scene",scene);event.addProperty("x",integer(placement,"x",0));event.addProperty("y",integer(placement,"y",0));event.addProperty("accepted",placed[0]);peer.event(event);}
+            owner.currentScreenHandler.sendContentUpdates();snapshot();
+        }
     }
     private void use(JsonObject command) {
         BlockPos target=target(command); if(target==null || NativeTerrainBlock.proxy(owner.getServerWorld().getBlockState(target))||owner.isSpectator()) return;

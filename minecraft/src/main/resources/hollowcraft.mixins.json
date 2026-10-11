@@ -14,6 +14,7 @@
     ,"ProjectileStepMixin"
     ,"StepSoundAccess"
     ,"RemoteSoundAudienceMixin"
+    ,"RemotePlacementMixin"
   ],
   "client": [
     "ItemRendererAccess",

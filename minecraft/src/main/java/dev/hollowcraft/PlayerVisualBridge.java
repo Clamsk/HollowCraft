@@ -34,6 +34,7 @@ public final class PlayerVisualBridge {
     private static Object mainHand,twoHands;
     private static int attackSerial=-1,sequence;
     private static int waterSerial=-1,waterPhase=-1;
+    private static int itemSwingSerial=-1;
     private static net.minecraft.entity.LimbAnimator walk;
     private static long lastRender,lastWarning;
     public static boolean rendering;
@@ -64,6 +65,10 @@ public final class PlayerVisualBridge {
                 int serial=(int)number(input,"waterLandingSerial",0),phase=(int)number(input,"waterLandingPhase",0);
                 if(serial!=waterSerial||phase!=waterPhase) {avatar.swingHand(number(input,"waterLandingHand",0)==1?net.minecraft.util.Hand.OFF_HAND:net.minecraft.util.Hand.MAIN_HAND);waterSerial=serial;waterPhase=phase;}
             } else {waterSerial=waterPhase=-1;}
+            if(flag(input,"itemSwing")&&!state.using&&!flag(input,"swinging")) {
+                int useSerial=(int)number(input,"itemSwingSerial",0);
+                if(useSerial!=itemSwingSerial) {avatar.swingHand(number(input,"itemSwingHand",0)==1?net.minecraft.util.Hand.OFF_HAND:net.minecraft.util.Hand.MAIN_HAND);itemSwingSerial=useSerial;}
+            } else if(!flag(input,"itemSwing"))itemSwingSerial=-1;
             avatar.creative=state.creative;
             avatar.setSneaking(flag(input,"crouching"));avatar.setSprinting(flag(input,"sprinting"));
             avatar.setPose(flag(input,"gliding")?EntityPose.FALL_FLYING:flag(input,"crouching")?EntityPose.CROUCHING:EntityPose.STANDING);

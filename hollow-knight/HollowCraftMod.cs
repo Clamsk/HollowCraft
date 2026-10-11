@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.17 loaded. Authentic MC one-shot audio, native footsteps and thin-platform jump building; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.18 loaded. Vanilla right-click order, checked main/offhand block placement and item swings; localhost:31674.");
         }
         public static string SaveRoot()
         {

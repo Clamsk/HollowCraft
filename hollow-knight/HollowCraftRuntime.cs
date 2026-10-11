@@ -17,6 +17,14 @@ namespace HollowCraft
         internal static HollowCraftRuntime Instance;
         internal CursorCombat Combat;
         internal string HeldItem => inventory[selected];
+        private JObject PlacementItem {
+            get {
+                var main=LatestSnapshot?["inventory"]?[selected] as JObject;
+                if((bool?)main?["block"]==true&&(int?)main["count"]>0)return main;
+                var off=Stats?["offhand"] as JObject;
+                return (bool?)off?["block"]==true&&(int?)off["count"]>0?off:null;
+            }
+        }
         internal Texture2D ItemTexture(string id) {
             if(string.IsNullOrEmpty(id) || id=="minecraft:air") return null;
             string[] parts=id.Split(':');
@@ -47,7 +55,7 @@ namespace HollowCraft
         private float mineProgress;
         private int selected;
         private float nextPose, miningStarted;
-        private float nextTerrain,nextPlace;
+        private float nextTerrain;
         private string campaign="";
         private bool openingSync;
         private float waterLandingAt=-1000;
@@ -87,20 +95,23 @@ namespace HollowCraft
             return pointed;
         }
         private void Preview(Vector2Int cell,HeroController hero) {
-            bool visible=!inventoryOpen && !paused && !Dead && ((bool?)LatestSnapshot?["inventory"]?[selected]?["block"] ?? false) && counts[selected]>0;
+            var item=PlacementItem;
+            bool visible=!inventoryOpen && !paused && !Dead && item!=null&&(bool?)Stats?["using"]!=true;
             if(!visible) {if(placementGhost!=null) placementGhost.SetActive(false);return;}
             cell=PlacementCell(cell,hero);
             if(placementGhost==null) {placementGhost=new GameObject("HollowCraft.PlacementPreview");DontDestroyOnLoad(placementGhost);placementGhost.AddComponent<SpriteRenderer>().sortingOrder=100;}
             var renderer=placementGhost.GetComponent<SpriteRenderer>();
-            if(ghostItem!=HeldItem) {ghostItem=HeldItem;var texture=Texture(ghostItem);renderer.sprite=texture!=null ? Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width) : Square(Color.white);}
+            string id=(string)item["id"];
+            if(ghostItem!=id) {ghostItem=id;var texture=Texture(ghostItem);renderer.sprite=texture!=null ? Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width) : Square(Color.white);}
             renderer.color=PlacementAllowed(cell,hero) ? new Color(1,1,1,.42f) : new Color(1,.25f,.25f,.42f);
             var original=hero.GetComponent<Renderer>();if(original!=null) renderer.sortingLayerID=original.sortingLayerID;
             placementGhost.transform.position=new Vector3(cell.x+.5f,cell.y+.5f,-.2f);placementGhost.SetActive(true);
         }
         private bool paused;
         private bool connectionFrozen;
-        private float nextFoodUse;
         private float nextHeldUse;
+        private int itemSwingSerial,itemSwingHand;
+        private float itemSwingAt=-100;
         private MinecraftUI ui;
         private bool BridgeIntro => (CampaignSession.IntroPending||openingSync)&&cachedManager!=null&&cachedManager.GetSceneNameString()=="Tutorial_01";
         internal bool InGame => cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
@@ -248,6 +259,9 @@ namespace HollowCraft
                 if((string)message["type"]=="waterCollected"&&(string)message["scene"]==scene&&(bool?)message["recovered"]==true) {
                     waterLandingAt=Time.unscaledTime;waterLandingPhase=1;waterLandingHand=(int?)message["hand"]??0;
                 }
+                if((string)message["type"]=="itemSwing"&&(string)message["scene"]==scene) {
+                    itemSwingSerial=(int?)message["serial"]??0;itemSwingHand=(int?)message["hand"]??0;itemSwingAt=Time.unscaledTime;
+                }
                 if ((string)message["type"] == "snapshot" && (string)message["scene"] == scene && (message["campaign"]==null||(string)message["campaign"]==campaign)) ApplySnapshot(message);
                 if ((string)message["type"] == "attack" && (string)message["scene"] == scene && building && !inventoryOpen) Combat.Begin(message,scene);
                 if((string)message["type"]=="attackRejected"&&(string)message["scene"]==scene)Combat.Reject(message);
@@ -316,6 +330,7 @@ namespace HollowCraft
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
                     duration=(float?)Combat.Current?["duration"]??.5f,upswing=(float?)Combat.Current?["upswing"]??.3f,
                     twoHanded=(bool?)Combat.Profile?["weapon"]?["two_handed"]??false,landing=SteveAvatar.LandingElapsed,
+                    itemSwing=Time.unscaledTime-itemSwingAt<.6f,itemSwingSerial,itemSwingHand,
                     waterLanding=Time.unscaledTime-waterLandingAt<.6f?Time.unscaledTime-waterLandingAt:-1,waterLandingSerial,waterLandingPhase,waterLandingHand});
             }
             if (connected && Time.unscaledTime >= nextPose)
@@ -349,35 +364,20 @@ namespace HollowCraft
             if(rightHeld) {MinecraftControls.Facing=mouse.x<hero.transform.position.x?-1:1;MinecraftControls.frontView=false;}
             Vector2Int cell = new Vector2Int(Cell(mouse.x), Cell(mouse.y));
             Preview(cell,hero);
-            Vector2 center = new Vector2(cell.x+0.5f,cell.y+0.5f);
-            bool food=((bool?)LatestSnapshot?["inventory"]?[selected]?["food"] ?? false) ||
-                (!((bool?)LatestSnapshot?["inventory"]?[selected]?["block"] ?? false) && ((bool?)Stats?["offhand"]?["food"] ?? false));
-            // Food uses the same vanilla start / hold / release state as bows and potions.
-            // Restart after completion while held, preserving each food's own use duration.
-            if(rightHeld && food && (rightDown || Time.unscaledTime>=nextFoodUse)) {
-                nextFoodUse=Time.unscaledTime+.2f;
-                SendItemUse(hero,mouse,true,false);usingItem=true;
-            }
-            bool heldBlock=(bool?)LatestSnapshot?["inventory"]?[selected]?["block"]??false;
-            if ((rightDown || rightHeld&&Time.unscaledTime>=(heldBlock?nextPlace:nextHeldUse)) && !food)
-            {
-                nextHeldUse=Time.unscaledTime+.2f;if(heldBlock)nextPlace=Time.unscaledTime+.2f;
-                if(blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed) && !MinecraftControls.Crouching && Interactive(pointed.name))
-                {bridge.Send(new {type="use",scene,x=cell.x,y=cell.y});return;}
-                if(!((bool?)LatestSnapshot?["inventory"]?[selected]?["block"] ?? false)) {
-                    SendItemUse(hero,mouse,true,false);usingItem=true;
-                } else {
-                // Do not materialize a solid block inside the player's collider.
+            if(rightDown||rightHeld&&Time.unscaledTime>=nextHeldUse) {
+                nextHeldUse=Time.unscaledTime+.2f;
                 var placement=PlacementCell(cell,hero);
-                if(!PlacementAllowed(placement,hero)) status = "Target occupied";
-                else {
-                    // Publish the exact physics position immediately before this placement.
-                    SendPose(hero,true);nextPlace=Time.unscaledTime+.2f;
-                    PredictPlacement(placement);
-                    bridge.Send(new { type = "place", scene, x = placement.x, y = placement.y,
-                        playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y });
-                }
-                }
+                bool canPlace=PlacementAllowed(placement,hero);
+                var item=PlacementItem;
+                // Only predict an unambiguous block action; vanilla chooses the actual hand.
+                var main=LatestSnapshot?["inventory"]?[selected] as JObject;
+                bool predict=(bool?)main?["block"]==true||(int?)main?["count"]==0;
+                if(canPlace&&item!=null)SendPose(hero,true);else SendPose(hero,false);
+                if(canPlace&&predict&&item!=null&&(!blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed)||MinecraftControls.Crouching||!Interactive(pointed.name)))PredictPlacement(placement,item);
+                var eye=GameCursor.Eye(hero);
+                Send(new {type="interact",scene,x=cell.x,y=cell.y,placeX=placement.x,placeY=placement.y,canPlace,
+                    playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,aimX=mouse.x-eye.x,aimY=mouse.y-eye.y});
+                usingItem=true;
             }
             if(usingItem && !rightHeld) {SendItemUse(hero,mouse,false,true);usingItem=false;}
             else if(usingItem && Time.unscaledTime>=nextUseAim) {nextUseAim=Time.unscaledTime+.05f;SendItemUse(hero,mouse,false,false);}
@@ -405,13 +405,14 @@ namespace HollowCraft
             }
             else {StopMining();mineCell = new Vector2Int(int.MinValue, int.MinValue);mineProgress=0;}
         }
-        private void PredictPlacement(Vector2Int cell) {
-            if((bool?)LatestSnapshot?["inventory"]?[selected]?["predictSolid"]!=true)return;
+        private void PredictPlacement(Vector2Int cell,JObject item) {
+            if((bool?)item?["predictSolid"]!=true)return;
+            string id=(string)item["id"];
             string key=Key(cell.x,cell.y);if(blocks.ContainsKey(key))return;
-            var block=new GameObject("HollowCraft.Block."+HeldItem);DontDestroyOnLoad(block);
+            var block=new GameObject("HollowCraft.Block."+id);DontDestroyOnLoad(block);
             block.transform.position=new Vector3(cell.x+.5f,cell.y+.5f,.1f);block.layer=Math.Max(0,LayerMask.NameToLayer("Terrain"));
             block.AddComponent<BoxCollider2D>().size=Vector2.one;
-            var renderer=block.AddComponent<SpriteRenderer>();var texture=Texture(HeldItem);
+            var renderer=block.AddComponent<SpriteRenderer>();var texture=Texture(id);
             renderer.sprite=texture!=null?Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width):Square(Color.white);
             blocks[key]=block;pendingPlacements[key]=Time.unscaledTime+.75f;
         }
