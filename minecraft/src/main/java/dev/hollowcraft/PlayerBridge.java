@@ -55,6 +55,7 @@ final class PlayerBridge {
         value.addProperty("jumpVelocity",motion.hollowcraft$jumpVelocity());value.addProperty("velocityMultiplier",motion.hollowcraft$velocityMultiplier());
         value.addProperty("slipperiness",player.getWorld().getBlockState(((dev.hollowcraft.mixin.EntitySurfaceAccess)player).hollowcraft$surfacePos()).getBlock().getSlipperiness());
         value.addProperty("sprinting",player.isSprinting());value.addProperty("depthStrider",net.minecraft.enchantment.EnchantmentHelper.getDepthStrider(player));
+        value.addProperty("allowFlying",player.getAbilities().allowFlying);value.addProperty("flying",player.getAbilities().flying);value.addProperty("flySpeed",player.getAbilities().getFlySpeed());
         value.addProperty("waterHeight",player.getFluidHeight(net.minecraft.registry.tag.FluidTags.WATER));value.addProperty("lavaHeight",player.getFluidHeight(net.minecraft.registry.tag.FluidTags.LAVA));value.addProperty("swimHeight",player.getSwimHeight());
         value.addProperty("onFire",player.isOnFire());value.addProperty("air",player.getAir());
         value.addProperty("water",player.isTouchingWater());value.addProperty("lava",player.isInLava());

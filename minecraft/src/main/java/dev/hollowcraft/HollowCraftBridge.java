@@ -478,10 +478,12 @@ public final class HollowCraftBridge implements ModInitializer {
                 reachY=exactY+(command.has("gliding")&&command.get("gliding").getAsBoolean()?.4:command.has("crouching")&&command.get("crouching").getAsBoolean()?1.27:1.62);
                 boolean grounded=command.has("grounded") && command.get("grounded").getAsBoolean();
                 boolean gliding=command.has("gliding")&&command.get("gliding").getAsBoolean();
+                boolean flying=owner.getAbilities().allowFlying&&(owner.isSpectator()||command.has("flying")&&command.get("flying").getAsBoolean());
+                if(owner.getAbilities().flying!=flying) {owner.getAbilities().flying=flying;owner.sendAbilitiesUpdate();}
                 boolean scripted=command.has("scripted")&&command.get("scripted").getAsBoolean();
                 if(gliding && !grounded && owner.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA)) owner.startFallFlying();else if(owner.isFallFlying()) owner.stopFallFlying();
                 if(scripted) {fallen=0;owner.fallDistance=0;footstepDistance=0;}
-                if(scripted||owner.isTouchingWater()||owner.isClimbing()||gliding) fallen=0;
+                if(scripted||owner.isTouchingWater()||owner.isClimbing()||gliding||flying)fallen=0;
                 else if(hadPose&&!wasGrounded)fallen+=Math.max(0,(float)(lastPoseY-exactY));
                 // A late connection can start after the first landing. The pending opening
                 // must still place water instead of requiring a previously observed air pose.
@@ -538,6 +540,10 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.changeGameMode(mode);creative=mode==GameMode.CREATIVE;
                 miningPos=null;miningProgress=0;owner.stopUsingItem();pendingSwing=null;pendingHit=null;
                 status = "Game mode: "+mode.getName();
+            }
+            case "flight" -> {
+                owner.getAbilities().flying=owner.getAbilities().allowFlying&&(owner.isSpectator()||command.has("flying")&&command.get("flying").getAsBoolean());
+                owner.fallDistance=0;fallen=0;owner.sendAbilitiesUpdate();snapshot();
             }
             case "place" -> {
                 boolean accepted=place(command);

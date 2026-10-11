@@ -71,6 +71,7 @@ public final class PlayerVisualBridge {
                 if(useSerial!=itemSwingSerial) {avatar.swingHand(number(input,"itemSwingHand",0)==1?net.minecraft.util.Hand.OFF_HAND:net.minecraft.util.Hand.MAIN_HAND);itemSwingSerial=useSerial;}
             } else if(!flag(input,"itemSwing"))itemSwingSerial=-1;
             avatar.creative=state.creative;
+            avatar.getAbilities().allowFlying=state.creative;avatar.getAbilities().flying=state.creative&&flag(input,"flying");
             avatar.setSneaking(flag(input,"crouching"));avatar.setSprinting(flag(input,"sprinting"));
             avatar.setPose(flag(input,"gliding")?EntityPose.FALL_FLYING:flag(input,"crouching")?EntityPose.CROUCHING:EntityPose.STANDING);
             avatar.flight(flag(input,"gliding"));
@@ -147,7 +148,7 @@ public final class PlayerVisualBridge {
     private static final class VisualPlayer extends OtherClientPlayerEntity {
         boolean creative;
         VisualPlayer(ClientWorld world) {super(world,new GameProfile(UUID.fromString("3d41453d-09f0-4e99-b4a7-38f943878f92"),"Steve"));setNoGravity(true);}
-        @Override public Identifier getSkinTexture() {return new Identifier("minecraft","textures/entity/player/wide/steve.png");}
+        @Override public Identifier getSkinTexture() {return BridgeSkin.texture(creative);}
         @Override public String getModel() {return "default";}
         @Override public boolean canRenderCapeTexture() {return false;}
         @Override public boolean isCreative() {return creative;}

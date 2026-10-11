@@ -8,6 +8,8 @@ namespace HollowCraft
     internal sealed class MinecraftEnvironment : MonoBehaviour
     {
         internal static bool Gliding;
+        internal static bool Flying;
+        internal static float? JumpOriginFeet;
         internal static Vector2 FlightVelocity;
         internal static Vector2? TestAim;
         private static MinecraftEnvironment instance;
@@ -19,11 +21,12 @@ namespace HollowCraft
         private Collider2D movementCollider;
         private bool ownGravity;
         private float nextJump,lastJump;
+        private float lastSpacePress=-1000,flightY,flightPhase,flightMoveY;
         private bool spectatorBody;private bool previousTrigger;private RigidbodyType2D previousBodyType;
         private int Effect(string id) {var effects=HollowCraftRuntime.Instance?.Stats?["effects"] as JArray;var effect=effects?.FirstOrDefault(e=>(string)e["id"]=="minecraft:"+id);return effect==null?-1:(int)effect["amplifier"];}
         private void Awake() {instance=this;}
         internal static void SetVerticalImpulse(float velocity) {if(instance!=null) {instance.motionY=velocity;instance.lastAppliedY=velocity*20;instance.normalPhase=0;instance.ownGravity=true;instance.fluidActive=false;}}
-        internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;instance.motionX=instance.walkPhase=instance.walkVelocity=instance.lastAppliedX=0;instance.fluidActive=false;}}
+        internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;Flying=false;JumpOriginFeet=null;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;instance.lastSpacePress=-1000;instance.flightY=instance.flightPhase=0;instance.motionX=instance.walkPhase=instance.walkVelocity=instance.lastAppliedX=0;instance.fluidActive=false;}}
         internal static float? HorizontalSpeed=>instance!=null&&instance.ownHorizontal?instance.lastAppliedX:(float?)null;
         internal static void SceneChanged() {StopMotion();if(instance!=null)instance.ownGravity=false;}
         internal static bool TakeJump(HeroController player)
@@ -31,12 +34,14 @@ namespace HollowCraft
             var runtime=HollowCraftRuntime.Instance;
             if(instance==null||!MinecraftControls.Active||runtime==null) return false;
             if(runtime.GameplayBlocked||player.controlReqlinquished)return true;
+            if(Flying||runtime.Spectator)return true;
             bool water=(bool?)runtime.Stats?["water"]==true,lava=(bool?)runtime.Stats?["lava"]==true;
             if((water||lava)&&((float?)runtime.Stats?[water?"waterHeight":"lavaHeight"]??1)>((float?)runtime.Stats?["swimHeight"]??.4f))return true;
             if(MinecraftControls.Grounded(player)&&Time.time>=instance.nextJump) {
                 int boost=instance.Effect("jump_boost");float velocity=(float?)runtime.Stats?["jumpVelocity"]??.42f+(boost>=0?.1f*(boost+1):0);
                 instance.nextJump=Time.time+.5f;
                 instance.lastJump=Time.time;
+                JumpOriginFeet=player.GetComponent<Collider2D>().bounds.min.y;
                 instance.motionY=velocity;instance.normalPhase=0;instance.ownGravity=true;instance.lastAppliedY=velocity*20;
                 instance.fluidActive=false;
                 var rb=player.GetComponent<Rigidbody2D>();rb.gravityScale=0;rb.linearVelocity=new Vector2(rb.linearVelocity.x,velocity*20);
@@ -55,15 +60,22 @@ namespace HollowCraft
         {
             var runtime=HollowCraftRuntime.Instance;if(runtime==null||!runtime.InGame) return;
             var current=HeroController.instance;if(current==null) return;
-            if(hero!=current) {Restore();hero=current;body=hero.GetComponent<Rigidbody2D>();movementCollider=hero.GetComponent<Collider2D>();gravity=body.gravityScale;jump=hero.JUMP_SPEED;Gliding=false;ownHorizontal=false;fluidActive=false;walkPhase=0;}
-            if(runtime.SimulationPaused) {if(runtime.Dead) Gliding=false;return;}
+            if(hero!=current) {Restore();hero=current;body=hero.GetComponent<Rigidbody2D>();movementCollider=hero.GetComponent<Collider2D>();gravity=body.gravityScale;jump=hero.JUMP_SPEED;Gliding=Flying=false;JumpOriginFeet=null;lastSpacePress=-1000;ownHorizontal=false;fluidActive=false;walkPhase=0;}
+            if(!runtime.Creative&&Flying)SetFlying(false);
+            if(runtime.SimulationPaused) {lastSpacePress=-1000;if(runtime.Dead)Gliding=Flying=false;return;}
             bool test=Environment.GetEnvironmentVariable("HOLLOWCRAFT_SMOKE")=="1";
             if(!test&&Application.isFocused&&!runtime.GameplayBlocked) {
+                if(runtime.Creative&&((bool?)runtime.Stats?["allowFlying"]??true)&&Input.GetKeyDown(KeyCode.Space)) {
+                    if(Time.unscaledTime-lastSpacePress<=.35f) {SetFlying(!Flying);lastSpacePress=-1000;}
+                    else lastSpacePress=Time.unscaledTime;
+                }
+                if(Flying&&Time.time-lastJump>.08f&&MinecraftControls.Grounded(hero)&&!Input.GetKey(KeyCode.Space))SetFlying(false);
+                if(JumpOriginFeet.HasValue&&Time.time-lastJump>.08f&&MinecraftControls.Grounded(hero))JumpOriginFeet=null;
                 if(!Input.GetKey(KeyCode.Space))nextJump=0;
-                else if(MinecraftControls.Grounded(hero))TakeJump(hero);
-                if(Input.GetKeyDown(KeyCode.Space)&&!MinecraftControls.Grounded(hero)&&Time.time-lastJump>.08f) BeginGlide(hero);
-                if(Input.GetKeyDown(KeyCode.LeftShift)) Gliding=false;
-            }
+                else if(!Flying&&MinecraftControls.Grounded(hero))TakeJump(hero);
+                if(!Flying&&Input.GetKeyDown(KeyCode.Space)&&!MinecraftControls.Grounded(hero)&&Time.time-lastJump>.08f) BeginGlide(hero);
+                if(Input.GetKeyDown(KeyCode.LeftShift))Gliding=false;
+            } else lastSpacePress=-1000;
             int boost=Effect("jump_boost");hero.JUMP_SPEED=jump*(boost>=0?(.42f+.1f*(boost+1))/.42f:1);
             if(MinecraftControls.Grounded(hero)||(bool?)runtime.Stats?["water"]==true||(string)runtime.Stats?["equipment"]?[1]?["id"]!="minecraft:elytra") Gliding=false;
         }
@@ -82,7 +94,21 @@ namespace HollowCraft
             bool water=(bool?)runtime.Stats?["water"] ?? false,lava=(bool?)runtime.Stats?["lava"]??false,climbing=(bool?)runtime.Stats?["climbing"] ?? false;
             int levitation=Effect("levitation");
             HorizontalStep(runtime,water,lava);
-            if(Gliding) {
+            if(Flying) {
+                Gliding=false;fluidActive=false;body.gravityScale=0;
+                bool input=Application.isFocused&&!runtime.GameplayBlocked;
+                float vertical=input?((Input.GetKey(KeyCode.Space)?1:0)-(Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)?1:0)):0;
+                float speed=(float?)runtime.Stats?["flySpeed"]??.05f;
+                float remaining=Time.fixedDeltaTime,displacement=0;
+                if(flightY>0&&TouchingCeiling())flightY=0;
+                if(flightY<0&&MinecraftControls.Grounded(hero))flightY=0;
+                while(remaining>.00001f) {
+                    if(flightPhase<.00001f)flightMoveY=flightY+vertical*speed*3;
+                    float segment=Math.Min(remaining,.05f-flightPhase);displacement+=flightMoveY*20*segment;remaining-=segment;flightPhase+=segment;
+                    if(flightPhase>=.04999f) {flightPhase=0;flightY=flightMoveY*.6f;}
+                }
+                lastAppliedY=displacement/Time.fixedDeltaTime;body.linearVelocity=new Vector2(body.linearVelocity.x,lastAppliedY);motionY=flightY;normalPhase=0;ownGravity=true;
+            } else if(Gliding) {
                 body.gravityScale=0;step+=Time.fixedDeltaTime;
                 while(step>=.05f) {step-=.05f;Vector2 target=TestAim??(Vector2.right*MinecraftControls.Facing);
                     if(TestAim==null&&GameCursor.WorldTarget(hero,out Vector2 cursor,out _)) target=(cursor-(Vector2)hero.transform.position).normalized;
@@ -113,7 +139,9 @@ namespace HollowCraft
                 // Keep the MC motion accumulator across native animation updates. Only
                 // contacts and explicit MC knockback may stop or replace a jump.
                 if(!ownGravity) {motionY=body.linearVelocity.y/20;normalPhase=0;ownGravity=true;}
-                if(lastAppliedY>.1f&&body.linearVelocity.y<=.001f) {motionY=0;normalPhase=0;}
+                // HK can zero Y during its own animation/state update. Only an actual
+                // ceiling contact may cancel the MC ascent; otherwise a full jump is lost.
+                if(motionY>0&&TouchingCeiling()) {motionY=0;normalPhase=0;}
                 if(MinecraftControls.Grounded(hero)&&motionY<0) {motionY=0;normalPhase=0;}
                 float remaining=Time.fixedDeltaTime,displacement=0;
                 while(remaining>.00001f) {
@@ -128,16 +156,17 @@ namespace HollowCraft
             if(!ownHorizontal) {motionX=body.linearVelocity.x/20;walkVelocity=motionX;walkPhase=0;ownHorizontal=true;}
             bool grounded=MinecraftControls.Grounded(hero),sprint=MinecraftControls.Sprinting;
             float input=MinecraftControls.TestMovement??(Application.isFocused&&!runtime.GameplayBlocked?(Input.GetKey(KeyCode.A)?-1:0)+(Input.GetKey(KeyCode.D)?1:0):0);
-            if(MinecraftControls.Crouching)input*=.3f;
+            if(MinecraftControls.Crouching&&!Flying)input*=.3f;
             if((bool?)runtime.Stats?["using"]==true)input*=.2f;
             input=Mathf.Clamp(input,-1,1)*.98f;
             float speed=(float?)runtime.Stats?["speed"]??.1f;
             speed=speed/((bool?)runtime.Stats?["sprinting"]==true?1.3f:1)*(sprint?1.3f:1);
             float friction=Mathf.Clamp((float?)runtime.Stats?["slipperiness"]??.6f,.1f,1),drag=grounded?friction*.91f:.91f;
             float acceleration=grounded?speed*.21600002f/(friction*friction*friction):sprint?.026f:.02f;
-            if(water) {float depth=Math.Min(3,(int?)runtime.Stats?["depthStrider"]??0)*(grounded?1:.5f)/3;drag=Mathf.Lerp(sprint?.9f:.8f,.54600006f,depth);acceleration=Mathf.Lerp(.02f,speed,depth);if(Effect("dolphins_grace")>=0)drag=.96f;}
+            if(Flying) {drag=.91f;acceleration=((float?)runtime.Stats?["flySpeed"]??.05f)*(sprint?2:1);}
+            else if(water) {float depth=Math.Min(3,(int?)runtime.Stats?["depthStrider"]??0)*(grounded?1:.5f)/3;drag=Mathf.Lerp(sprint?.9f:.8f,.54600006f,depth);acceleration=Mathf.Lerp(.02f,speed,depth);if(Effect("dolphins_grace")>=0)drag=.96f;}
             else if(lava) {drag=.5f;acceleration=.02f;}
-            float multiplier=Mathf.Clamp((float?)runtime.Stats?["velocityMultiplier"]??1,0,4);
+            float multiplier=Flying?1:Mathf.Clamp((float?)runtime.Stats?["velocityMultiplier"]??1,0,4);
             float remaining=Time.fixedDeltaTime,displacement=0;
             while(remaining>.00001f) {
                 if(walkPhase<.00001f) {if(Math.Abs(motionX)<.003f)motionX=0;walkVelocity=motionX+acceleration*input;}
@@ -155,6 +184,21 @@ namespace HollowCraft
             if(safe!=lastAppliedX) {motionX=walkVelocity=0;walkPhase=0;lastAppliedX=safe;}
             body.linearVelocity=new Vector2(lastAppliedX,body.linearVelocity.y);
         }
+        private bool TouchingCeiling() {
+            if(movementCollider==null)return false;
+            var filter=new ContactFilter2D();filter.SetLayerMask(LayerMask.GetMask("Terrain","Default"));filter.useTriggers=false;
+            int count=movementCollider.Cast(Vector2.up,filter,wallHits,.025f);
+            float head=movementCollider.bounds.max.y;
+            // Casts can report an initial floor overlap with a synthetic downward
+            // normal. Require a hit at head height, so takeoff cannot look like a ceiling.
+            for(int i=0;i<count;i++)if(wallHits[i].collider!=null&&Math.Abs(wallHits[i].point.y-head)<.055f&&wallHits[i].collider.GetComponentInParent<HeroController>()==null&&wallHits[i].collider.GetComponentInParent<HealthManager>()==null&&wallHits[i].normal.y<-.5f)return true;
+            return false;
+        }
+        private void SetFlying(bool value) {
+            Flying=value;Gliding=false;JumpOriginFeet=null;flightPhase=0;flightY=value?body.linearVelocity.y/20:0;
+            if(!value) {motionY=flightY=0;normalPhase=0;ownGravity=true;body.linearVelocity=new Vector2(body.linearVelocity.x,0);}
+            HollowCraftRuntime.Instance?.Send(new {type="flight",scene=HollowCraftRuntime.Instance.Room,flying=value});
+        }
         // Minecraft 1.20.1 LivingEntity.travel's elytra equations projected onto the XY plane, at 20 Hz.
         internal static Vector2 StepFlight(Vector2 velocity,Vector2 look,bool rocket)
         {
@@ -167,6 +211,6 @@ namespace HollowCraft
             return new Vector2(velocity.x*.99f,velocity.y*.98f);
         }
         private void Restore() {if(hero!=null) {hero.JUMP_SPEED=jump;if(spectatorBody)hero.GetComponent<Collider2D>().isTrigger=previousTrigger;}if(body!=null) {body.gravityScale=gravity;if(spectatorBody)body.bodyType=previousBodyType;}spectatorBody=false;}
-        private void OnDestroy() {Restore();Gliding=false;instance=null;TestAim=null;}
+        private void OnDestroy() {Restore();Gliding=Flying=false;JumpOriginFeet=null;instance=null;TestAim=null;}
     }
 }

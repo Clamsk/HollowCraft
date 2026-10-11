@@ -10,4 +10,8 @@ public abstract class RemoteMovementMixin {
     private void hollowcraft$keepRemotePose(CallbackInfo callback) {
         if(dev.hollowcraft.HollowCraftBridge.remoteActive()) callback.cancel();
     }
+    @Inject(method="sendAbilitiesUpdate",at=@At("HEAD"),cancellable=true)
+    private void hollowcraft$keepRemoteFlight(CallbackInfo callback) {
+        if(dev.hollowcraft.HollowCraftBridge.remoteActive())callback.cancel();
+    }
 }

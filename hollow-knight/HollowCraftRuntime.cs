@@ -81,6 +81,8 @@ namespace HollowCraft
         private bool usingItem;
         private float nextUseAim;
         private string ghostItem;
+        private Vector2Int? queuedTower;
+        private float queuedTowerUntil;
         private List<float[]> terrainCells=new List<float[]>();
         internal bool PlacementAllowed(Vector2Int cell,HeroController hero) {
             if(!GameCursor.BlockInReach(cell,hero))return false;
@@ -91,6 +93,7 @@ namespace HollowCraft
             return !Physics2D.OverlapBoxAll(bounds.center,new Vector2(.98f,.98f),0).Any(c=>!c.isTrigger && c.GetComponentInParent<HealthManager>()!=null);
         }
         private Vector2Int PlacementCell(Vector2Int pointed,HeroController hero) {
+            if(JumpPlacementCell(pointed,hero,out Vector2Int tower))return tower;
             // Clicking the native ground selects its free upper face, like clicking the top
             // face of a Minecraft terrain block. Empty cursor cells keep their exact target.
             if(blocks.ContainsKey(Key(pointed.x,pointed.y))||terrainCells.Any(p=>p[0]==pointed.x&&p[1]==pointed.y)) {
@@ -103,6 +106,20 @@ namespace HollowCraft
                 if(PlacementAllowed(above,hero))return above;
             }
             return pointed;
+        }
+        private bool JumpPlacementCell(Vector2Int pointed,HeroController hero,out Vector2Int cell) {
+            cell=pointed;
+            if(MinecraftEnvironment.Flying||Spectator||MinecraftEnvironment.Gliding)return false;
+            var body=hero.GetComponent<Collider2D>();if(body==null)return false;
+            float? origin=MinecraftEnvironment.JumpOriginFeet;
+            if(!origin.HasValue&&Input.GetKey(KeyCode.Space)&&MinecraftControls.Grounded(hero))origin=body.bounds.min.y;
+            if(!origin.HasValue||Math.Abs(pointed.x+.5f-hero.transform.position.x)>.85f||pointed.y+.5f>body.bounds.min.y+.35f)return false;
+            var candidate=new Vector2Int(Cell(hero.transform.position.x),Cell(origin.Value+.001f));
+            // A full native voxel is the clicked support; partial floors can instead
+            // receive a foundation in their own voxel, avoiding a two-block first jump.
+            if(terrainCells.Any(p=>p[0]==candidate.x&&p[1]==candidate.y&&(p.Length<6||p[5]>=.999f)))candidate+=Vector2Int.up;
+            cell=candidate;
+            return !blocks.ContainsKey(Key(cell.x,cell.y));
         }
         private void Preview(Vector2Int cell,HeroController hero) {
             var item=PlacementItem;
@@ -368,7 +385,7 @@ namespace HollowCraft
                     viewWidth=camera!=null?camera.orthographicSize*2*camera.aspect:36,viewHeight=camera!=null?camera.orthographicSize*2:24,
                     guiWidth=Mathf.FloorToInt(Screen.width/guiScale),guiHeight=Mathf.FloorToInt(Screen.height/guiScale),guiMouseX=pointer.x/Screen.width,guiMouseY=(Screen.height-pointer.y)/Screen.height,
                     guiMods=NativeGuiView.Modifiers,guiC=Input.GetKey(KeyCode.C),guiX=Input.GetKey(KeyCode.X),
-                    crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,
+                    crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,flying=MinecraftEnvironment.Flying,
                     pitch=usingItem&&GameCursor.WorldTarget(hero,out Vector2 aimPoint,out _)?-Mathf.Atan2(aimPoint.y-GameCursor.Eye(hero).y,Mathf.Abs(aimPoint.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0,
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
                     duration=(float?)Combat.Current?["duration"]??.5f,upswing=(float?)Combat.Current?["upswing"]??.3f,
@@ -387,13 +404,13 @@ namespace HollowCraft
             bool hotbarShortcut=HandleHotbarShortcut();
             // Native landing/knockback animation locks must not swallow MC mouse presses.
             pointerInput.Context(building&&connected&&!GameplayBlocked&&Application.isFocused);
-            if (!building || !connected || GameplayBlocked) return;
+            if (!building || !connected || GameplayBlocked) {queuedTower=null;return;}
             if(Spectator) {StopMining();return;}
             if(!hotbarShortcut)for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Select(i);
             float scroll = Input.mouseScrollDelta.y;
             if (Math.Abs(scroll) > 0.01f) Select((selected + (scroll > 0 ? 8 : 1)) % 9);
             if(!GameCursor.WorldTarget(hero,out Vector2 mouse,out crosshair)) return;
-            if(!Application.isFocused) {StopMining();return;}
+            if(!Application.isFocused) {queuedTower=null;StopMining();return;}
             bool nativeLeft=false,nativeRight=false;
             while(pointerInput.Read(out NativePointerBuffer.Press press,out Vector2 screen)) {
                 if(!GameCursor.WorldTarget(hero,screen,out Vector2 pressed,out _))continue;
@@ -407,20 +424,30 @@ namespace HollowCraft
             if(rightHeld) {MinecraftControls.Facing=mouse.x<hero.transform.position.x?-1:1;MinecraftControls.frontView=false;}
             Vector2Int cell = new Vector2Int(Cell(mouse.x), Cell(mouse.y));
             Preview(cell,hero);
-            if(rightDown||rightHeld&&Time.unscaledTime>=nextHeldUse) {
-                nextHeldUse=Time.unscaledTime+.2f;
-                var placement=PlacementCell(cell,hero);
+            if(queuedTower.HasValue&&(Time.unscaledTime>queuedTowerUntil||Math.Abs(mouse.x-hero.transform.position.x)>1||mouse.y>hero.GetComponent<Collider2D>().bounds.min.y+.6f||PlacementItem==null))queuedTower=null;
+            bool buffered=queuedTower.HasValue;
+            if(rightDown||rightHeld&&Time.unscaledTime>=nextHeldUse||buffered) {
+                var placement=buffered?queuedTower.Value:PlacementCell(cell,hero);
                 bool canPlace=PlacementAllowed(placement,hero);
                 var item=PlacementItem;
-                // Only predict an unambiguous block action; vanilla chooses the actual hand.
-                var main=LatestSnapshot?["inventory"]?[selected] as JObject;
-                bool predict=(bool?)main?["block"]==true||(int?)main?["count"]==0;
-                if(canPlace&&item!=null)SendPose(hero,true);else SendPose(hero,false);
-                if(canPlace&&predict&&item!=null&&(!blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed)||MinecraftControls.Crouching||!Interactive(pointed.name)))PredictPlacement(placement,item);
-                var eye=GameCursor.Eye(hero);
-                Send(new {type="interact",scene,x=cell.x,y=cell.y,placeX=placement.x,placeY=placement.y,canPlace,
-                    playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,aimX=mouse.x-eye.x,aimY=mouse.y-eye.y});
-                usingItem=true;
+                bool tower=buffered||JumpPlacementCell(cell,hero,out _);
+                if(!canPlace&&tower&&(bool?)item?["predictSolid"]==true) {
+                    if(!buffered) {queuedTower=placement;queuedTowerUntil=Time.unscaledTime+.55f;}
+                    // Recheck clearance each frame while airborne, instead of spending
+                    // the 4-tick use delay before the feet clear the new block's top.
+                    nextHeldUse=Time.unscaledTime+.02f;
+                } else {
+                    queuedTower=null;nextHeldUse=Time.unscaledTime+.2f;
+                    // Only predict an unambiguous block action; vanilla chooses the actual hand.
+                    var main=LatestSnapshot?["inventory"]?[selected] as JObject;
+                    bool predict=(bool?)main?["block"]==true||(int?)main?["count"]==0;
+                    if(canPlace&&item!=null)SendPose(hero,true);else SendPose(hero,false);
+                    if(canPlace&&predict&&item!=null&&(!blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed)||MinecraftControls.Crouching||!Interactive(pointed.name)))PredictPlacement(placement,item);
+                    var eye=GameCursor.Eye(hero);
+                    Send(new {type="interact",scene,x=cell.x,y=cell.y,placeX=placement.x,placeY=placement.y,canPlace,
+                        playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,aimX=mouse.x-eye.x,aimY=mouse.y-eye.y});
+                    usingItem=true;
+                }
             }
             if(usingItem && !rightHeld) {SendItemUse(hero,mouse,false,true);usingItem=false;}
             else if(usingItem && Time.unscaledTime>=nextUseAim) {nextUseAim=Time.unscaledTime+.05f;SendItemUse(hero,mouse,false,false);}
@@ -471,7 +498,7 @@ namespace HollowCraft
             int x=Cell(hero.transform.position.x),y=Cell(hero.transform.position.y);
             var pose=new JObject { ["type"]="pose",["scene"]=scene,["x"]=x,["y"]=y,
                 ["exactX"]=hero.transform.position.x,["exactY"]=hero.GetComponent<Collider2D>().bounds.min.y,
-                ["grounded"]=MinecraftControls.Grounded(hero),["gliding"]=MinecraftEnvironment.Gliding,
+                ["grounded"]=MinecraftControls.Grounded(hero),["gliding"]=MinecraftEnvironment.Gliding,["flying"]=MinecraftEnvironment.Flying,
                 ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked };
             if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));}
             bridge.Send(pose);
@@ -506,7 +533,7 @@ namespace HollowCraft
                 else if(nativeHiddenRenderers.TryGetValue(renderer,out bool previous)) {renderer.enabled=previous;nativeHiddenRenderers.Remove(renderer);}
             }
         }
-        internal void CloseInterface() {ui.CancelDrag();UiRequest=0;Gui?.Reset();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
+        internal void CloseInterface() {queuedTower=null;ui.CancelDrag();UiRequest=0;Gui?.Reset();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
         private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;UiRequest=++uiRequests;Send(new {type="creativeCatalog",scene,uiRequest=UiRequest});}
         private bool HandleHotbarShortcut() {
             if(!creative||!bridge.Connected||!Application.isFocused||ui.TextInputFocused||Gui?.Active==true||GameplayBlocked&&!CatalogOpen)return false;
@@ -517,7 +544,7 @@ namespace HollowCraft
         internal int CatalogRevision;
         private static bool Interactive(string name) => name.Contains("crafting_table") || name.Contains("chest") || name.Contains("furnace") || name.Contains("barrel") || name.Contains("shulker_box") || name.Contains("door") || name.Contains("button") || name.Contains("lever") || name.Contains("tnt") || name.Contains("brewing_stand") || name.Contains("anvil") || name.Contains("enchanting_table") || name.Contains("smoker") || name.Contains("hopper") || name.Contains("dropper") || name.Contains("dispenser") || name.Contains("grindstone") || name.Contains("loom") || name.Contains("stonecutter") || name.Contains("smithing_table") || name.Contains("cartography_table");
         private static int Cell(float value) => Mathf.FloorToInt(value / CellSize);
-        internal void Select(int value) { selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }
+        internal void Select(int value) { queuedTower=null;selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }
         private List<float[]> ProbeTerrain(int cx, int cy)
         {
             var result = new List<float[]>();
