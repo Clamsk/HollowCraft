@@ -53,6 +53,7 @@ namespace HollowCraft
         private float waterLandingAt=-1000;
         private int waterLandingSerial;
         private int waterLandingPhase,waterLandingHand;
+        private MinecraftAudio audio;
         private int lastProjectileTick=-1;
         private float nextVisual;
         private Vector2Int mineCell = new Vector2Int(int.MinValue, int.MinValue);
@@ -65,7 +66,7 @@ namespace HollowCraft
         private List<float[]> terrainCells=new List<float[]>();
         internal bool PlacementAllowed(Vector2Int cell,HeroController hero) {
             if(!GameCursor.BlockInReach(cell,hero))return false;
-            if(Spectator||Mode=="adventure"||blocks.ContainsKey(Key(cell.x,cell.y)) || terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[3]>.001f||p[5]>=.999f))) return false;
+            if(Spectator||Mode=="adventure"||blocks.ContainsKey(Key(cell.x,cell.y)) || terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[5]>=.999f))) return false;
             var body=hero.GetComponent<Collider2D>();
             var bounds=new Bounds(new Vector3(cell.x+0.5f,cell.y+0.5f,hero.transform.position.z),new Vector3(0.98f,0.98f,1));
             if(body!=null && body.bounds.Intersects(bounds)) return false;
@@ -112,6 +113,7 @@ namespace HollowCraft
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
         internal bool GameplayBlocked=>cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
         internal bool SimulationPaused=>paused||connectionFrozen||Dead;
+        internal bool AudioPaused=>paused||connectionFrozen;
         internal bool CatalogOpen;
         internal JArray Catalog;
         internal JArray CatalogGroups;
@@ -154,6 +156,7 @@ namespace HollowCraft
             assets = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "HollowCraftAssets");
             bridge = new BridgeClient();
             Instance=this; Combat=new CursorCombat(bridge.Send);
+            audio=gameObject.AddComponent<MinecraftAudio>();audio.Initialize(this,assets);
             Application.runInBackground=true;
             ui=new MinecraftUI(this);
         }
@@ -222,6 +225,8 @@ namespace HollowCraft
             while (bridge.TryRead(out JObject message))
             {
                 if(message["campaign"]!=null&&(string)message["campaign"]!=campaign)continue;
+                if((string)message["type"]=="mcSound"&&(string)message["scene"]==scene)audio.Receive(message);
+                if((string)message["type"]=="mcSoundStop"&&(string)message["scene"]==scene)audio.StopAll();
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
                 if((string)message["type"]=="nativeImpact"&&(string)message["scene"]==scene&&projectiles.TryGetValue((int)message["entity"],out GameObject impact)&&impact!=null)impact.GetComponent<ProjectileView>().Resolve(message);
                 if((string)message["type"]=="projectile"&&(string)message["scene"]==scene) {
@@ -620,7 +625,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { audio?.StopAll();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

@@ -27,6 +27,7 @@ import net.minecraft.world.level.LevelInfo;
 public final class HollowCraftClient implements ClientModInitializer {
     private boolean started;
     private Boolean previousPause;
+    private Double previousMusic;
     private String lastScreen = "";
     @Override public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -35,6 +36,16 @@ public final class HollowCraftClient implements ClientModInitializer {
             CreativeHotbars.tick(client);
             ItemModelIcons.tick(client);
             PlayerVisualBridge.tick(client);
+            if(client.getServer()!=null&&HollowCraftBridge.remoteActive()) {
+                if(previousMusic==null)previousMusic=(double)client.options.getSoundVolume(net.minecraft.sound.SoundCategory.MUSIC);
+                if(client.options.getSoundVolume(net.minecraft.sound.SoundCategory.MUSIC)!=0) {
+                    client.options.getSoundVolumeOption(net.minecraft.sound.SoundCategory.MUSIC).setValue(0d);
+                    client.getSoundManager().updateSoundVolume(net.minecraft.sound.SoundCategory.MUSIC,0);
+                }
+            } else if(previousMusic!=null) {
+                client.options.getSoundVolumeOption(net.minecraft.sound.SoundCategory.MUSIC).setValue(previousMusic);
+                client.getSoundManager().updateSoundVolume(net.minecraft.sound.SoundCategory.MUSIC,previousMusic.floatValue());previousMusic=null;
+            }
             String screen = client.currentScreen == null ? "in-game" : client.currentScreen.getClass().getSimpleName();
             if (!screen.equals(lastScreen)) { LoggerFactory.getLogger("HollowCraft").info("Client screen: {}",screen); lastScreen=screen; }
             if (client.getServer() != null) {

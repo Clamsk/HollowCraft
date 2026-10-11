@@ -146,6 +146,7 @@ public final class PlayerVisualBridge {
         @Override public boolean canRenderCapeTexture() {return false;}
         @Override public boolean isCreative() {return creative;}
         @Override public boolean isSpectator() {return false;}
+        @Override public void playSound(net.minecraft.sound.SoundEvent sound,float volume,float pitch) { }
         void flight(boolean value) {setFlag(7,value);}
         void applyUse(ItemStack stack,int ticks) {activeItemStack=stack;itemUseTimeLeft=Math.max(1,stack.getMaxUseTime()-ticks);}
     }

@@ -12,6 +12,8 @@
     ,"ProjectileAccess"
     ,"ProjectileTargetMixin"
     ,"ProjectileStepMixin"
+    ,"StepSoundAccess"
+    ,"RemoteSoundAudienceMixin"
   ],
   "client": [
     "ItemRendererAccess",
@@ -23,6 +25,7 @@
     ,"PlayerPoseMixin"
     ,"LimbAnimatorAccess"
     ,"LoomPreviewAccess"
+    ,"NativeSoundMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -44,6 +44,7 @@ $pathsTask.Add((Join-Path $MinecraftRoot 'versions\1.20.1\1.20.1.jar'))
 $classpathTask=$pathsTask -join ';'
 $jvmTask=@('-Xmx2G','-Dhollowcraft.autoWorld=true',('-Dhollowcraft.icons='+(Join-Path $projectTaskRoot 'artifacts\HollowCraft\HollowCraftAssets\item_models_rgba')),('-Djava.library.path='+(Join-Path $MinecraftRoot 'versions\1.20.1\1.20.1-natives')),'-cp',$classpathTask)
 if($Smoke) {$jvmTask=@('-Dhollowcraft.smoke=true')+$jvmTask}
+$jvmTask=@('-Dhollowcraft.audio='+(Join-Path $projectTaskRoot 'artifacts\HollowCraft\HollowCraftAssets\mc_audio'))+$jvmTask
 $gameArgsTask=@('net.fabricmc.loader.impl.launch.knot.KnotClient','--username','HollowCraftDev','--version','HollowCraft-0.1','--gameDir',$profileTask,'--assetsDir',(Join-Path $MinecraftRoot 'assets'),'--assetIndex',$baseMetaTask.assetIndex.id,'--uuid','3d41453d09f04e99b4a738f943878f92','--accessToken','0','--userType','legacy','--width','960','--height','540')
 # Java @argfile avoids Windows' command line length limit. This development launch has no account tokens.
 $argumentLinesTask=($jvmTask+$gameArgsTask) | ForEach-Object { '"'+$_.Replace('\','\\').Replace('"','\"')+'"' }

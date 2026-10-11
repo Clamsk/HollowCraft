@@ -53,6 +53,14 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     public static volatile boolean remotePaused;
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
+    public static boolean audioRequested() {return instance!=null&&instance.peer!=null&&instance.peer.audio;}
+    public static boolean audioReady(String key) {var peer=instance==null?null:instance.peer;return peer!=null&&peer.audio&&peer.audioFiles.contains(key);}
+    public static boolean audioEvent(JsonObject event) {
+        var peer=instance==null?null:instance.peer;var state=PlayerRenderState.latest;
+        if(peer==null||!peer.audio||state==null)return false;
+        event.addProperty("scene",state.scene);event.addProperty("campaign",state.campaign);peer.event(event);return true;
+    }
+    public static void audioStop() {var event=new JsonObject();event.addProperty("type","mcSoundStop");audioEvent(event);}
     public static boolean projectileStepsEnabled() {return instance!=null&&instance.peer!=null&&instance.peer.projectileSteps;}
     public static boolean tickNativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeProjectileSteps.tick(projectile);}
     public static boolean nativeProjectileVisible(net.minecraft.entity.projectile.ProjectileEntity projectile) {
@@ -106,6 +114,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private double exactX,exactY,lastPoseX,lastPoseY;
     private boolean hadPose,wasGrounded;
     private float fallen;
+    private double footstepDistance;
     private BlockPos landingWater;
     private BlockState landingWaterBefore;
     private LandingBucket landingBucket;
@@ -182,7 +191,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean());
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\"}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -265,7 +274,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.teleport(owner.getServerWorld(), slot * 1024 + exactX, 64 + exactY, 0.5, owner.getYaw(), owner.getPitch());
                 owner.setVelocity(Vec3d.ZERO);
                 owner.setOnGround(wasGrounded);
-                PlayerRenderState.publish(owner,scene,campaigns.id());
+                PlayerRenderState.publish(owner,scene,campaigns.id(),slot*1024);
                 enemies.tick();
                 ItemUseBridge.tick(owner,slot*1024,centerX,centerY);
                 if(peer!=null) {
@@ -281,7 +290,7 @@ public final class HollowCraftBridge implements ModInitializer {
                         BlockState state=owner.getServerWorld().getBlockState(miningPos);
                         if(state.isAir() || NativeTerrainBlock.proxy(state)) {miningPos=null;miningProgress=0;}
                         else {miningProgress=creative ? 1 : state.calcBlockBreakingDelta(owner,owner.getServerWorld(),miningPos)*(server.getTicks()-miningStartedTick+1);
-                            if(miningProgress>=1) {owner.interactionManager.tryBreakBlock(miningPos);miningPos=null;miningProgress=0;}
+                            if(miningProgress>=1) {breakRemoteBlock(miningPos);miningPos=null;miningProgress=0;}
                         }
                     }
                 }
@@ -337,6 +346,9 @@ public final class HollowCraftBridge implements ModInitializer {
         LOG.info("Iron starter loadout granted; fresh={}",fresh);
     }
     private void execute(JsonObject command) throws IOException {
+        try(var effects=RemoteEffects.begin()) {executeCommand(command);}
+    }
+    private void executeCommand(JsonObject command) throws IOException {
         String type = string(command, "type", "");
         if (type.equals("scene")) {
             String name = string(command, "scene", "");
@@ -366,7 +378,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             slot = scenes.get(sceneKey);
             centerX = integer(command, "x", 0); centerY = integer(command, "y", 0);
-            exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;
+            exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;footstepDistance=0;
             status = "Minecraft connected: " + name;
             return;
         }
@@ -378,6 +390,12 @@ public final class HollowCraftBridge implements ModInitializer {
             default -> false;
         })collectLandingWater();
         switch (type) {
+            case "audioFile" -> {
+                String key=string(command,"key","");if(peer!=null&&peer.audio&&key.matches("[0-9a-f]{64}")) {
+                    if(command.has("ready")&&command.get("ready").getAsBoolean()) {if(peer.audioFiles.size()>=512)peer.audioFiles.clear();peer.audioFiles.add(key);}
+                    else peer.audioFiles.remove(key);
+                }
+            }
             case "pose" -> {
                 if(server.getTicks()<teleportWaiting) break;
                 centerX = clamp(integer(command, "x", 0), -400, 400); centerY = clamp(integer(command, "y", 0), -60, 240);
@@ -405,6 +423,14 @@ public final class HollowCraftBridge implements ModInitializer {
                     if(command.has("sprinting") && command.get("sprinting").getAsBoolean()) owner.addExhaustion((float)Math.min(2,Math.abs(exactX-lastPoseX))*0.1f);
                     if(wasGrounded && !grounded && exactY>lastPoseY+0.02) owner.addExhaustion(0.05f);
                 }
+                if(hadPose&&wasGrounded&&grounded&&!owner.isSpectator()&&!(command.has("crouching")&&command.get("crouching").getAsBoolean())&&!owner.isTouchingWater()) {
+                    footstepDistance+=Math.min(2,Math.abs(exactX-lastPoseX))*.6;
+                    if(footstepDistance>=1) {
+                        footstepDistance%=1;var floor=pos((int)Math.floor(exactX),(int)Math.floor(exactY-.05));var state=owner.getServerWorld().getBlockState(floor);
+                        if(state.isAir()) {floor=floor.down();state=owner.getServerWorld().getBlockState(floor);}
+                        if(!state.isAir())((dev.hollowcraft.mixin.StepSoundAccess)owner).hollowcraft$stepSound(floor,state);
+                    }
+                } else footstepDistance=0;
                 hadPose=true;lastPoseX=exactX;lastPoseY=exactY;wasGrounded=grounded;
                 owner.setOnGround(grounded);
                 if(command.has("enemies")) enemies.observe(owner,command.getAsJsonArray("enemies"),slot*1024);
@@ -653,7 +679,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if (target == null) { status = "Target outside bridge reach or bounds"; return false; }
         if(owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {status="This game mode cannot place blocks";return false;}
         var nativeShape=NativeTerrainBlock.shapes.get(target);
-        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMin(Direction.Axis.Y)>.001||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return false; }
+        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return false; }
         if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)) { status = "Target already contains a Minecraft block"; return false; }
         if (!(owner.getMainHandStack().getItem() instanceof BlockItem)) { status = "Select a block in the hotbar"; return false; }
         boolean floorEdge=world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE);
@@ -787,6 +813,9 @@ public final class HollowCraftBridge implements ModInitializer {
         if(request>0&&!uuid.isEmpty())projectileImpacts.put(uuid,event);
         if(peer!=null)peer.event(event);
     }
+    private boolean breakRemoteBlock(BlockPos position) {
+        try(var effects=RemoteEffects.begin()) {return owner.interactionManager.tryBreakBlock(position);}
+    }
     private void mine(JsonObject command) {
         BlockPos target = target(command);
         if (target == null || NativeTerrainBlock.proxy(owner.getServerWorld().getBlockState(target))) { status = "Hollow Knight terrain cannot be mined"; return; }
@@ -796,7 +825,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if (!creative && progress <= 0) { status = "This block cannot be mined with this tool"; return; }
         // Client sends elapsed hold time; server checks the vanilla hardness/tool rate.
         if (!creative && integer(command, "heldTicks", 0) * progress < 1) { status = "Hold longer to mine"; return; }
-        boolean broken = owner.interactionManager.tryBreakBlock(target);
+        boolean broken = breakRemoteBlock(target);
         if (broken) {
             var items = owner.getServerWorld().getEntitiesByClass(net.minecraft.entity.ItemEntity.class,
                 new Box(target).expand(2), entity -> true);
@@ -969,10 +998,13 @@ public final class HollowCraftBridge implements ModInitializer {
         final Socket socket;
         final BufferedWriter writer;
         final boolean projectileSteps;
+        final boolean audio;
+        final Set<String> audioFiles=ConcurrentHashMap.newKeySet();
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio) {
             this.projectileSteps=projectileSteps;
+            this.audio=audio;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {
                 try { while (!socket.isClosed()) {
@@ -985,7 +1017,7 @@ public final class HollowCraftBridge implements ModInitializer {
         }
         void enqueue(String value) { if (!output.offer(value)) { output.poll(); output.offer(value); } }
         void event(JsonObject message) {
-            if(message.has("scene")&&instance!=null&&instance.campaigns!=null)message.addProperty("campaign",instance.campaigns.id());
+            if(message.has("scene")&&!message.has("campaign")&&instance!=null&&instance.campaigns!=null)message.addProperty("campaign",instance.campaigns.id());
             if(!events.offer(message.toString())) {try {socket.close();}catch(IOException ignored){}}
         }
         synchronized void send(String value) throws IOException { writer.write(value); writer.newLine(); writer.flush(); }
