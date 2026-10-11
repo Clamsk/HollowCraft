@@ -88,6 +88,15 @@ try {
         $jumpIlTask.InsertBefore($jumpFirstTask,$jumpIlTask.Create([Mono.Cecil.Cil.OpCodes]::Brfalse,$jumpFirstTask))
         $jumpIlTask.InsertBefore($jumpFirstTask,$jumpIlTask.Create([Mono.Cecil.Cil.OpCodes]::Ret))
     }
+    # Minecraft jumps have a fixed impulse. The Knight's release handler otherwise
+    # zeros Y velocity even though HeroJump was replaced, truncating short presses.
+    $releaseHookTask=[Mono.Cecil.MethodReference]::new('SuppressKnightJumpRelease',$moduleTask.TypeSystem.Boolean,$playerTypeTask)
+    $releaseTask=$heroTypeTask.Methods | Where-Object Name -EQ 'JumpReleased' | Select-Object -First 1
+    if(-not $releaseTask.HasBody) {throw 'HeroController.JumpReleased missing; abort patch'}
+    $releaseIlTask=$releaseTask.Body.GetILProcessor();$releaseFirstTask=$releaseTask.Body.Instructions[0]
+    $releaseIlTask.InsertBefore($releaseFirstTask,$releaseIlTask.Create([Mono.Cecil.Cil.OpCodes]::Call,$releaseHookTask))
+    $releaseIlTask.InsertBefore($releaseFirstTask,$releaseIlTask.Create([Mono.Cecil.Cil.OpCodes]::Brfalse,$releaseFirstTask))
+    $releaseIlTask.InsertBefore($releaseFirstTask,$releaseIlTask.Create([Mono.Cecil.Cil.OpCodes]::Ret))
     $abilityHookTask=[Mono.Cecil.MethodReference]::new('SuppressKnightAbilities',$moduleTask.TypeSystem.Boolean,$playerTypeTask)
     foreach($abilityNameTask in @('CanDoubleJump','CanWallJump')) {
         $abilityTask=$heroTypeTask.Methods | Where-Object Name -EQ $abilityNameTask | Select-Object -First 1

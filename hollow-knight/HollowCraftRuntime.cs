@@ -28,6 +28,7 @@ namespace HollowCraft
         private JObject container;
         private readonly Dictionary<string, GameObject> blocks = new Dictionary<string, GameObject>();
         private readonly Dictionary<string,string> blockStates=new Dictionary<string,string>();
+        private readonly Dictionary<string,float> pendingPlacements=new Dictionary<string,float>();
         private readonly Dictionary<int,GameObject> drops=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,GameObject> primedTnt=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,GameObject> projectiles=new Dictionary<int,GameObject>();
@@ -90,7 +91,7 @@ namespace HollowCraft
         }
         private bool paused;
         private bool connectionFrozen;
-        private float eatingSince=-1;
+        private float nextFoodUse;
         private MinecraftUI ui;
         private bool BridgeIntro => (CampaignSession.IntroPending||openingSync)&&cachedManager!=null&&cachedManager.GetSceneNameString()=="Tutorial_01";
         internal bool InGame => cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
@@ -105,6 +106,7 @@ namespace HollowCraft
         internal bool SimulationPaused=>paused||connectionFrozen||Dead;
         internal bool CatalogOpen;
         internal JArray Catalog;
+        internal JArray CatalogGroups;
         internal int SelectedSlot=>selected;
         internal bool Dead => (bool?)LatestSnapshot?["stats"]?["dead"] ?? false;
         internal string Room => scene;
@@ -209,12 +211,13 @@ namespace HollowCraft
             while (bridge.TryRead(out JObject message))
             {
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
+                if((string)message["type"]=="nativeImpact"&&(string)message["scene"]==scene&&projectiles.TryGetValue((int)message["entity"],out GameObject impact)&&impact!=null)impact.GetComponent<ProjectileView>().Resolve(message);
                 if((string)message["type"]=="projectile"&&(string)message["scene"]==scene) {
                     var flight=Projectile((JObject)message["value"]);
                     flight.Push((JObject)message["value"],scene);
                     if((string)message["phase"]=="impact") {flight.Retire();projectiles.Remove((int)message["value"]["entity"]);}
                 }
-                if((string)message["type"]=="catalog"&&(string)message["scene"]==scene) Catalog=message["items"] as JArray;
+                if((string)message["type"]=="catalog"&&(string)message["scene"]==scene) {Catalog=message["items"] as JArray;CatalogGroups=message["groups"] as JArray;}
                 if((string)message["type"]=="impulse"&&(string)message["scene"]==scene&&cachedHero!=null) PlayerSystem.ApplyImpulse(cachedHero,new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="hurt"&&(string)message["scene"]==scene) PlayerSystem.HurtFeedback((int?)message["ticks"]??10);
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
@@ -224,6 +227,11 @@ namespace HollowCraft
                 }
                 if ((string)message["type"] == "snapshot" && (string)message["scene"] == scene && (message["campaign"]==null||(string)message["campaign"]==campaign)) ApplySnapshot(message);
                 if ((string)message["type"] == "attack" && (string)message["scene"] == scene && building && !inventoryOpen) Combat.Begin(message,scene);
+                if((string)message["type"]=="attackRejected"&&(string)message["scene"]==scene)Combat.Reject(message);
+                if((string)message["type"]=="placeResult"&&(string)message["scene"]==scene&&(bool?)message["accepted"]!=true) {
+                    string rejected=Key((int)message["x"],(int)message["y"]);
+                    if(pendingPlacements.Remove(rejected)&&blocks.TryGetValue(rejected,out GameObject block)) {block.SetActive(false);Destroy(block);blocks.Remove(rejected);}
+                }
                 if((string)message["type"]=="explosion" && (string)message["scene"]==scene) StartCoroutine(Explosion(new Vector2((float)message["x"],(float)message["y"])));
                 if((string)message["type"]=="teleport" && (string)message["scene"]==scene && cachedHero!=null) {
                     float x=(float)message["x"],y=(float)message["y"];
@@ -251,9 +259,13 @@ namespace HollowCraft
             if (!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
                 bridge.Send(new { type = "mode", scene, mode = creative ? "survival" : "creative" });
             if(!Automated&&Application.isFocused&&connected) Modes.Tick(this,Input.GetKey(KeyCode.F3),Input.GetKeyDown(KeyCode.F4),Input.GetKeyDown(KeyCode.Escape));
-            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E))) {if(inventoryOpen) CloseInterface();else {inventoryOpen=true;bridge.Send(new {type="inventoryOpen",scene});}}
+            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.SearchFocused)) {
+                if(inventoryOpen||CatalogOpen)CloseInterface();
+                else if(creative)OpenCatalog();
+                else {inventoryOpen=true;bridge.Send(new {type="inventoryOpen",scene});}
+            }
             if(!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.Escape)&&!Modes.ConsumedEscape) {if(NativeShop.Visible) NativeShop.Close();else if(NativeChoice.Visible) NativeChoice.Decide(false);else if(CatalogOpen) CatalogOpen=false;else if(inventoryOpen) CloseInterface();else {paused=!paused;Time.timeScale=paused||connectionFrozen ? 0 : 1;bridge.Send(new {type="pause",paused});}}
-            if(!Automated&&Application.isFocused&&!NativeShop.Visible&&Input.GetKeyDown(KeyCode.F11)&&creative) {CatalogOpen=!CatalogOpen;if(CatalogOpen) {CloseInterface();CatalogOpen=true;Send(new {type="creativeCatalog",scene});}}
+            if(!Automated&&Application.isFocused&&!NativeShop.Visible&&Input.GetKeyDown(KeyCode.F11)&&creative) {if(CatalogOpen)CloseInterface();else OpenCatalog();}
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.F)) SwapHands();
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.Q)) bridge.Send(new {type="drop",scene,all=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)});
             PlayerSystem.Tick(hero);
@@ -302,10 +314,12 @@ namespace HollowCraft
             Vector2 center = new Vector2(cell.x+0.5f,cell.y+0.5f);
             bool food=((bool?)LatestSnapshot?["inventory"]?[selected]?["food"] ?? false) ||
                 (!((bool?)LatestSnapshot?["inventory"]?[selected]?["block"] ?? false) && ((bool?)Stats?["offhand"]?["food"] ?? false));
-            if(rightHeld && food) {
-                if(eatingSince<0) eatingSince=Time.unscaledTime;
-                if(Time.unscaledTime-eatingSince>=1.6f) {bridge.Send(new {type="eat",scene});eatingSince=Time.unscaledTime;}
-            } else eatingSince=-1;
+            // Food uses the same vanilla start / hold / release state as bows and potions.
+            // Restart after completion while held, preserving each food's own use duration.
+            if(rightHeld && food && (rightDown || Time.unscaledTime>=nextFoodUse)) {
+                nextFoodUse=Time.unscaledTime+.2f;
+                SendItemUse(hero,mouse,true,false);usingItem=true;
+            }
             if ((rightDown || rightHeld&&Time.unscaledTime>=nextPlace&&((bool?)LatestSnapshot?["inventory"]?[selected]?["block"]??false)) && !food)
             {
                 if(blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed) && !MinecraftControls.Crouching && Interactive(pointed.name))
@@ -319,6 +333,7 @@ namespace HollowCraft
                 else {
                     // Publish the exact physics position immediately before this placement.
                     SendPose(hero,true);nextPlace=Time.unscaledTime+.2f;
+                    PredictPlacement(placement);
                     bridge.Send(new { type = "place", scene, x = placement.x, y = placement.y,
                         playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y });
                 }
@@ -350,6 +365,16 @@ namespace HollowCraft
             }
             else {StopMining();mineCell = new Vector2Int(int.MinValue, int.MinValue);mineProgress=0;}
         }
+        private void PredictPlacement(Vector2Int cell) {
+            if((bool?)LatestSnapshot?["inventory"]?[selected]?["predictSolid"]!=true)return;
+            string key=Key(cell.x,cell.y);if(blocks.ContainsKey(key))return;
+            var block=new GameObject("HollowCraft.Block."+HeldItem);DontDestroyOnLoad(block);
+            block.transform.position=new Vector3(cell.x+.5f,cell.y+.5f,.1f);block.layer=Math.Max(0,LayerMask.NameToLayer("Terrain"));
+            block.AddComponent<BoxCollider2D>().size=Vector2.one;
+            var renderer=block.AddComponent<SpriteRenderer>();var texture=Texture(HeldItem);
+            renderer.sprite=texture!=null?Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),texture.width):Square(Color.white);
+            blocks[key]=block;pendingPlacements[key]=Time.unscaledTime+.75f;
+        }
         internal void SwapHands() {
             StopMining();Combat.Cancel();usingItem=false;
             Send(new {type="itemUse",scene,cancel=true});Send(new {type="offhand",scene});
@@ -368,8 +393,9 @@ namespace HollowCraft
             bridge.Send(pose);
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;}
-        private void LateUpdate() {GameCursor.ApplyCursor();if(placementGhost!=null && (inventoryOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
+        private void LateUpdate() {GameCursor.ApplyCursor();if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
         internal void CloseInterface() {ui.CancelDrag();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
+        private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;Send(new {type="creativeCatalog",scene});}
         private static bool Interactive(string name) => name.Contains("crafting_table") || name.Contains("chest") || name.Contains("furnace") || name.Contains("barrel") || name.Contains("door") || name.Contains("button") || name.Contains("lever") || name.Contains("tnt") || name.Contains("brewing_stand") || name.Contains("anvil") || name.Contains("enchanting_table") || name.Contains("smoker") || name.Contains("hopper") || name.Contains("dropper") || name.Contains("dispenser") || name.Contains("grindstone") || name.Contains("loom") || name.Contains("stonecutter") || name.Contains("smithing_table") || name.Contains("cartography_table");
         private static int Cell(float value) => Mathf.FloorToInt(value / CellSize);
         internal void Select(int value) { selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }
@@ -480,6 +506,7 @@ namespace HollowCraft
             {
                 int x = (int)cell["x"], y = (int)cell["y"];
                 string key = Key(x,y); present.Add(key);
+                pendingPlacements.Remove(key);
                 string id = (string)cell["id"];
                 breakingTicks[key] = (int?)cell["breakTicks"] ?? 20;
                 string state=((string)cell["state"] ?? id)+cell["collision"]?.ToString(Newtonsoft.Json.Formatting.None);
@@ -514,6 +541,8 @@ namespace HollowCraft
             }
             foreach (string key in blocks.Keys.Where(k => !present.Contains(k)).ToArray())
             {
+                if(pendingPlacements.TryGetValue(key,out float deadline)&&Time.unscaledTime<deadline)continue;
+                pendingPlacements.Remove(key);
                 blocks[key].SetActive(false); Destroy(blocks[key]); blocks.Remove(key); blockStates.Remove(key);breakingTicks.Remove(key);
             }
         }
@@ -525,7 +554,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

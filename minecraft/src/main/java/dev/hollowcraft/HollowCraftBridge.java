@@ -99,6 +99,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private String lastWeapon="";
     private BlockPos openContainer;
     private final EnemyBridge enemies=new EnemyBridge();
+    private final CreativeCatalog catalog=new CreativeCatalog();
     private BlockPos miningPos;
     private float miningProgress;
     private int lastMiningTick;
@@ -106,6 +107,8 @@ public final class HollowCraftBridge implements ModInitializer {
     private double attackMultiplier=1, reachY;
     private JsonObject pendingHit;
     private JsonObject pendingSwing;
+    private JsonObject lastAttackEvent;
+    private int lastAttackRequest,cancelledAttackRequest;
 
     @Override public void onInitialize() {
         instance=this;
@@ -319,6 +322,7 @@ public final class HollowCraftBridge implements ModInitializer {
             owner.closeHandledScreen(); openContainer=null; combo=0; activeAttack=0;
             enemies.clear();miningPos=null;miningProgress=0;
             pendingHit=null;pendingSwing=null;
+            nextSwingTick=0;lastAttackEvent=null;lastAttackRequest=cancelledAttackRequest=0;
             for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}
             cleanupTerrain(); scene = name;
             String sceneKey=campaign+":"+name;
@@ -389,7 +393,11 @@ public final class HollowCraftBridge implements ModInitializer {
                 miningPos=null;miningProgress=0;owner.stopUsingItem();pendingSwing=null;pendingHit=null;
                 status = "Game mode: "+mode.getName();
             }
-            case "place" -> {place(command);snapshot();}
+            case "place" -> {
+                boolean accepted=place(command);
+                if(peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","placeResult");event.addProperty("scene",scene);event.addProperty("x",integer(command,"x",0));event.addProperty("y",integer(command,"y",0));event.addProperty("accepted",accepted);peer.event(event.toString());}
+                snapshot();
+            }
             case "mine" -> mine(command);
             case "mining" -> {
                 if(command.has("active") && !command.get("active").getAsBoolean()) {miningPos=null;miningProgress=0;break;}
@@ -402,6 +410,11 @@ public final class HollowCraftBridge implements ModInitializer {
             case "containerMove" -> containerMove(command);
             case "close" -> { owner.closeHandledScreen(); openContainer=null; }
             case "swing" -> swing(command);
+            case "cancelAttack" -> {
+                int request=integer(command,"request",0);cancelledAttackRequest=Math.max(cancelledAttackRequest,request);
+                if(lastAttackRequest<=request) {activeAttack=0;pendingHit=null;}
+                if(pendingSwing!=null&&integer(pendingSwing,"request",0)<=request)pendingSwing=null;
+            }
             case "damage" -> {if(!creative && !owner.isSpectator() && !owner.isDead()) {
                 if(command.has("velocityX")&&command.has("velocityY")) {double vx=command.get("velocityX").getAsDouble(),vy=command.get("velocityY").getAsDouble();if(Double.isFinite(vx)&&Double.isFinite(vy))owner.setVelocity(Math.max(-4,Math.min(4,vx)),Math.max(-4,Math.min(4,vy)),0);}
                 var source=enemies.source(integer(command,"enemy",0));String kind=string(command,"kind","mob");var damage=owner.getDamageSources().generic();
@@ -414,6 +427,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }}
             case "eat" -> PlayerBridge.eat(owner);
             case "itemUse" -> ItemUseBridge.use(owner,command,target(command));
+            case "nativeProjectileHit" -> {nativeProjectileHit(command);snapshot();}
             case "offhand" -> PlayerBridge.offhand(owner);
             case "drop" -> owner.dropSelectedItem(command.has("all") && command.get("all").getAsBoolean());
             case "slotClick" -> PlayerBridge.click(owner,command);
@@ -449,14 +463,25 @@ public final class HollowCraftBridge implements ModInitializer {
                 status="Adventure kit added";
             }}
             case "creativeCatalog" -> {if(creative&&peer!=null) {
-                JsonArray items=new JsonArray();for(Item item:Registries.ITEM) if(item!=Items.AIR) items.add(PlayerBridge.item(new ItemStack(item)));
-                for(var potion:Registries.POTION) for(Item item:new Item[]{Items.POTION,Items.SPLASH_POTION,Items.LINGERING_POTION,Items.TIPPED_ARROW}) items.add(PlayerBridge.item(net.minecraft.potion.PotionUtil.setPotion(new ItemStack(item),potion)));
-                JsonObject event=new JsonObject();event.addProperty("type","catalog");event.addProperty("scene",scene);event.add("items",items);peer.event(event.toString());
+                owner.clearActiveItem();owner.closeHandledScreen();openContainer=null;
+                peer.event(catalog.build(owner,scene).toString());snapshot();
             }}
             case "creativeItem" -> {if(creative) {
+                if(command.has("catalogIndex")) {
+                    ItemStack stack=catalog.stack(integer(command,"catalogIndex",-1),integer(command,"count",64));
+                    if(!stack.isEmpty()) {
+                        String destination=string(command,"destination","cursor");
+                        if(destination.equals("cursor"))owner.playerScreenHandler.setCursorStack(stack);
+                        else if(destination.equals("inventory"))give(stack);
+                        else owner.getInventory().setStack(clamp(integer(command,"slot",owner.getInventory().selectedSlot),0,8),stack);
+                        owner.playerScreenHandler.sendContentUpdates();snapshot();
+                    }
+                    break;
+                }
                 Identifier id=Identifier.tryParse(string(command,"id",""));
                 if(id!=null&&Registries.ITEM.containsId(id)) {int index=clamp(integer(command,"slot",owner.getInventory().selectedSlot),0,35);ItemStack stack=new ItemStack(Registries.ITEM.get(id));stack.setCount(clamp(integer(command,"count",1),1,stack.getMaxCount()));Identifier potion=Identifier.tryParse(string(command,"potion",""));if(potion!=null&&Registries.POTION.containsId(potion)) net.minecraft.potion.PotionUtil.setPotion(stack,Registries.POTION.get(potion));owner.getInventory().setStack(index,stack);}
             }}
+            case "creativeDiscard" -> {if(creative) {owner.playerScreenHandler.setCursorStack(ItemStack.EMPTY);snapshot();}}
             case "clearTestFluids" -> {if(creative&&Boolean.getBoolean("hollowcraft.smoke")) {
                 for(int x=centerX-12;x<=centerX+12;x++) for(int y=centerY-10;y<=centerY+10;y++) {BlockPos p=pos(x,y);BlockState state=owner.getServerWorld().getBlockState(p);if(state.isOf(Blocks.WATER)||state.isOf(Blocks.LAVA)||state.isOf(Blocks.FIRE)) owner.getServerWorld().setBlockState(p,Blocks.AIR.getDefaultState(),Block.NOTIFY_ALL);}
             }}
@@ -499,20 +524,20 @@ public final class HollowCraftBridge implements ModInitializer {
         if (dx*dx+dy*dy>reach*reach+.001 || y < -60 || y > 240 || x < -400 || x > 400) return null;
         return pos(x, y);
     }
-    private void place(JsonObject command) {
+    private boolean place(JsonObject command) {
         if(command.has("playerX")&&command.has("playerY")) {
             double x=command.get("playerX").getAsDouble(),y=command.get("playerY").getAsDouble();
-            if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)return;
+            if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)return false;
             exactX=x;exactY=y;reachY=y+(owner.isSneaking()?1.27:1.62);
         }
         BlockPos target = target(command);
         ServerWorld world = owner.getServerWorld();
-        if (target == null) { status = "Target outside bridge reach or bounds"; return; }
-        if(owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {status="This game mode cannot place blocks";return;}
+        if (target == null) { status = "Target outside bridge reach or bounds"; return false; }
+        if(owner.isSpectator()||!owner.getAbilities().allowModifyWorld) {status="This game mode cannot place blocks";return false;}
         var nativeShape=NativeTerrainBlock.shapes.get(target);
-        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMin(Direction.Axis.Y)>.001||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return; }
-        if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)) { status = "Target already contains a Minecraft block"; return; }
-        if (!(owner.getMainHandStack().getItem() instanceof BlockItem)) { status = "Select a block in the hotbar"; return; }
+        if (terrain.contains(target)&&(nativeShape==null||nativeShape.getMin(Direction.Axis.Y)>.001||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return false; }
+        if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)) { status = "Target already contains a Minecraft block"; return false; }
+        if (!(owner.getMainHandStack().getItem() instanceof BlockItem)) { status = "Select a block in the hotbar"; return false; }
         boolean floorEdge=world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE);
         // A native floor can sit a few hundredths above a voxel edge. Keep the physical
         // floor in Unity, but let vanilla put the requested block against its supporting cell.
@@ -539,6 +564,7 @@ public final class HollowCraftBridge implements ModInitializer {
             } finally {owner.setPosition(original);owner.setYaw(yaw);owner.setSneaking(crouching);}
             status = result.isAccepted() ? "Placed " + Registries.BLOCK.getId(world.getBlockState(target).getBlock()) : "Minecraft rejected placement";
             if(!result.isAccepted()) LOG.info("Placement rejected target={} below={} above={} face={} support={}",target,world.getBlockState(target.down()),world.getBlockState(target.up()),face,world.getBlockState(support));
+            return result.isAccepted();
         } finally { if (temporarySupport) world.setBlockState(support, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);if(floorEdge&&world.getBlockState(target).isAir())world.setBlockState(target,NativeTerrainBlock.INSTANCE.getDefaultState(),Block.NOTIFY_LISTENERS); }
     }
     private void use(JsonObject command) {
@@ -563,7 +589,11 @@ public final class HollowCraftBridge implements ModInitializer {
         handler.onSlotClick(index,0,SlotActionType.QUICK_MOVE,owner);handler.sendContentUpdates();
     }
     private void swing(JsonObject command) {
-        if(!owner.isAlive()||owner.isSpectator())return;
+        int request=integer(command,"request",0);
+        if(request>0&&request<=cancelledAttackRequest)return;
+        if(request>0&&request==lastAttackRequest&&lastAttackEvent!=null) {if(peer!=null)peer.event(lastAttackEvent.toString());return;}
+        if(request>0&&request<lastAttackRequest)return;
+        if(!owner.isAlive()||owner.isSpectator()) {rejectAttack(request,"Player cannot attack");return;}
         int now=server.getTicks(); if(now<nextSwingTick) {pendingSwing=command;return;}
         owner.clearActiveItem();
         double direction=command.has("aimX")?command.get("aimX").getAsDouble():1;
@@ -574,7 +604,7 @@ public final class HollowCraftBridge implements ModInitializer {
         lastWeapon=weapon;
         JsonObject attributes=profile.getAsJsonObject("weapon");
         JsonArray attacks=attributes.getAsJsonArray("attacks");
-        if(attacks==null || attacks.isEmpty()) return;
+        if(attacks==null || attacks.isEmpty()) {rejectAttack(request,"No attack profile");return;}
         JsonObject attack=attacks.get(combo%attacks.size()).getAsJsonObject(); combo++;
         double duration=1/Math.max(0.2,profile.get("speed").getAsDouble());
         double upswing=attack.has("upswing") ? attack.get("upswing").getAsDouble() : 0.5;
@@ -590,8 +620,44 @@ public final class HollowCraftBridge implements ModInitializer {
         event.add("move",attack);event.addProperty("combo",combo);event.addProperty("item",weapon);
         event.addProperty("aimX",command.has("aimX") ? command.get("aimX").getAsDouble() : 1);
         event.addProperty("aimY",command.has("aimY") ? command.get("aimY").getAsDouble() : 0);
+        lastAttackRequest=request;lastAttackEvent=event.deepCopy();
         Peer current=peer;if(current!=null) current.event(event.toString());
         if(!creative) owner.addExhaustion(0.1f);
+    }
+    private void rejectAttack(int request,String reason) {
+        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","attackRejected");event.addProperty("scene",scene);event.addProperty("request",request);event.addProperty("reason",reason);peer.event(event.toString());
+    }
+    private void nativeProjectileHit(JsonObject command) {
+        int id=integer(command,"entity",-1);var entity=owner.getServerWorld().getEntityById(id);
+        boolean accepted=false,removed=entity==null;boolean grounded=false;
+        if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&projectile.getOwner()==owner&&projectile.getUuidAsString().equals(string(command,"uuid",""))) {
+            double x=command.get("x").getAsDouble(),y=command.get("y").getAsDouble();
+            if(Double.isFinite(x)&&Double.isFinite(y)&&Math.abs(x)<=400&&y>=-60&&y<=240) {
+                Vec3d point=new Vec3d(slot*1024+x,64+y,.5);
+                double tolerance=4+projectile.getVelocity().length()*5;
+                if(projectile.getPos().squaredDistanceTo(point)<=tolerance*tolerance&&!projectile.isRemoved()&&!projectile.getCommandTags().contains("hollowcraft_native_anchor")) {
+                    if(command.has("enemies"))enemies.observe(owner,command.getAsJsonArray("enemies"),slot*1024);
+                    var target=enemies.source(integer(command,"target",0));
+                    double nx=command.has("normalX")?command.get("normalX").getAsDouble():0,ny=command.has("normalY")?command.get("normalY").getAsDouble():1;
+                    if(!Double.isFinite(nx)||!Double.isFinite(ny))return;
+                    Direction side=Math.abs(nx)>Math.abs(ny)?(nx<0?Direction.WEST:Direction.EAST):(ny<0?Direction.DOWN:Direction.UP);
+                    Vec3d position=point;
+                    if(projectile instanceof net.minecraft.entity.projectile.thrown.EnderPearlEntity&&command.has("landingX")&&command.has("landingY")) {
+                        double lx=command.get("landingX").getAsDouble(),ly=command.get("landingY").getAsDouble();
+                        if(Double.isFinite(lx)&&Double.isFinite(ly)&&Math.abs(lx-x)<=3&&Math.abs(ly-y)<=3&&Math.abs(lx)<=400&&ly>=-60&&ly<=240)position=new Vec3d(slot*1024+lx,64+ly,.5);
+                    }
+                    projectile.setPosition(position);
+                    net.minecraft.util.hit.HitResult collision=target!=null?new net.minecraft.util.hit.EntityHitResult(target,point):new BlockHitResult(point,side,BlockPos.ofFloored(point.add(-nx*.02,-ny*.02,0)),false);
+                    ((dev.hollowcraft.mixin.ProjectileAccess)projectile).hollowcraft$collide(collision);
+                    accepted=true;removed=projectile.isRemoved();
+                    if(target==null&&!removed&&projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity arrow) {ItemUseBridge.anchor(arrow,point);grounded=true;}
+                    LOG.info("Native projectile collision entity={} target={} point={} removed={}",id,integer(command,"target",0),point,removed);
+                }
+            }
+        }
+        if(peer!=null) {
+            JsonObject event=new JsonObject();event.addProperty("type","nativeImpact");event.addProperty("scene",scene);event.addProperty("entity",id);event.addProperty("accepted",accepted);event.addProperty("removed",removed);event.addProperty("grounded",grounded);peer.event(event.toString());
+        }
     }
     private void mine(JsonObject command) {
         BlockPos target = target(command);

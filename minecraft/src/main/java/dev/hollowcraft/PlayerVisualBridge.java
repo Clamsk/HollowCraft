@@ -101,7 +101,7 @@ public final class PlayerVisualBridge {
         try {
             if(framebuffer==null) {
                 framebuffer=new SimpleFramebuffer(SIZE,SIZE,true,MinecraftClient.IS_SYSTEM_MAC);
-                pixels=ByteBuffer.allocateDirect(SIZE*SIZE*4);transfer=new byte[16+SIZE*SIZE*4];
+                pixels=ByteBuffer.allocateDirect(SIZE*SIZE*4);transfer=new byte[32+SIZE*SIZE*4];
             }
             framebuffer.setClearColor(0,0,0,0);framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);framebuffer.beginWrite(true);
             RenderSystem.enableDepthTest();
@@ -112,11 +112,14 @@ public final class PlayerVisualBridge {
             InventoryScreen.drawEntity(draw,SIZE/2,208,SCALE,new Quaternionf().rotateZ((float)Math.PI),new Quaternionf(),avatar);
             draw.draw();
             pixels.clear();GL11.glReadPixels(0,0,SIZE,SIZE,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,pixels);
-            ByteBuffer.wrap(transfer).order(ByteOrder.LITTLE_ENDIAN).putInt(0x48435037).putInt(++sequence).putInt(SIZE).putInt(SIZE);
-            pixels.get(transfer,16,SIZE*SIZE*4);
+            ByteBuffer header=ByteBuffer.wrap(transfer).order(ByteOrder.LITTLE_ENDIAN);
+            header.putInt(0x48435039).putInt(++sequence).putInt(SIZE).putInt(SIZE).putLong(FRAME_SESSION).putInt(state.scene.hashCode());
+            pixels.get(transfer,28,SIZE*SIZE*4);
+            header.putInt(28+SIZE*SIZE*4,sequence);
             Path directory=Path.of(root).getParent().resolve("player_frames");Files.createDirectories(directory);
-            Path temp=directory.resolve("current.tmp"),file=directory.resolve("current.bin");
-            Files.write(temp,transfer);Files.move(temp,file,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
+            // Windows/Unity can deny rename even with a delete-shared reader. Rotate
+            // three writable files; readers reject incomplete or mixed-sequence frames.
+            Files.write(directory.resolve("frame-"+(sequence%3)+".bin"),transfer);
         } catch(Exception e) {warn(e);}
         finally {
             rendering=false;dispatcher.setRotation(cameraRotation);dispatcher.setRenderShadows(true);
@@ -124,6 +127,7 @@ public final class PlayerVisualBridge {
             client.getFramebuffer().beginWrite(true);
         }
     }
+    private static final long FRAME_SESSION=System.currentTimeMillis();
     private static void warn(Exception e) {if(System.nanoTime()-lastWarning>5_000_000_000L){lastWarning=System.nanoTime();LoggerFactory.getLogger("HollowCraft").warn("Native player renderer",e);}}
     private static float number(JsonObject data,String key,float fallback) {return data!=null&&data.has(key)?data.get(key).getAsFloat():fallback;}
     private static String text(JsonObject data,String key,String fallback) {return data!=null&&data.has(key)?data.get(key).getAsString():fallback;}

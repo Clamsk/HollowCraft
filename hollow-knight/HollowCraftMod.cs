@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.8 loaded. Campaign inventory banks, three-hit iron sword balance, opening water and jump building; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.9 loaded. Native projectile collision, vanilla food use, creative inventory and responsive jump building; localhost:31674.");
         }
         public static string SaveRoot()
         {

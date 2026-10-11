@@ -14,6 +14,9 @@ try {
         if($entryTask.FullName -match '^assets/minecraft/textures/mob_effect/([a-z0-9_]+)\.png$') {[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask ('effect_'+$Matches[1]+'.png')),$true)}
         if($entryTask.FullName -eq 'assets/minecraft/textures/entity/chest/normal.png') {[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask 'chest_model.png'),$true)}
         if($entryTask.FullName -eq 'assets/minecraft/textures/entity/shield_base.png') {[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask 'shield_model.png'),$true)}
+        if($entryTask.FullName -match '^assets/minecraft/textures/gui/container/creative_inventory/([a-z0-9_]+)\.png$') {
+            [IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask ('gui_creative_'+$Matches[1]+'.png')),$true)
+        }
         if($entryTask.FullName -match '^assets/minecraft/textures/gui/(icons|widgets|container/[a-z0-9_]+)\.png$') {
             $guiNameTask='gui_'+($Matches[1] -replace 'container/','')+'.png'
             [IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask $guiNameTask),$true)

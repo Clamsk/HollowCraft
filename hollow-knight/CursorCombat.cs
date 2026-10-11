@@ -21,6 +21,7 @@ namespace HollowCraft
         private readonly Queue<Vector2> queuedClicks=new Queue<Vector2>();
         private int requestId;
         private bool awaiting;
+        private float nextRetry;
         private bool Ready => !awaiting&&!Swinging&&(Current==null||struck);
         private string predictedWeapon;
         private float lastRequest;
@@ -29,13 +30,21 @@ namespace HollowCraft
         internal void Begin(JObject message,string scene)
         {
             if(message["request"]!=null&&(int)message["request"]!=requestId)return;
+            if((int?)message["attack"]>0&&(int?)Current?["attack"]==(int?)message["attack"])return;
             if((int?)message["attack"]>0)awaiting=false;
             bool predicted=Current!=null && (int?)Current["attack"]==0;
             Current=message;if(!predicted) {started=Time.time;AnimationSerial++;}struck=false;room=scene;
             Aim=new Vector2((float)message["aimX"],(float)message["aimY"]).normalized;
             if(Aim.sqrMagnitude<0.5f) Aim=Vector2.right;
         }
-        internal void Cancel() {Current=null;struck=true;awaiting=false;queuedClicks.Clear();requestId++;}
+        internal void Cancel() {
+            if((Current!=null&&!struck||awaiting)&&!string.IsNullOrEmpty(room))send(new {type="cancelAttack",scene=room,request=requestId});
+            Current=null;struck=true;awaiting=false;queuedClicks.Clear();requestId++;
+        }
+        internal void Reject(JObject message) {
+            if((int?)message["request"]!=requestId)return;
+            awaiting=false;Current=null;struck=true;
+        }
         internal bool HasEnemy(HeroController hero,Vector2 mouse)
         {
             float range=GameCursor.AttackReach;var eye=GameCursor.Eye(hero);
@@ -52,8 +61,9 @@ namespace HollowCraft
             }
             // A prediction that has finished still waits for its matching server impact.
             // Otherwise its late acknowledgement could overwrite the next click's animation.
-            if(!Ready) {if(queueClick)queuedClicks.Enqueue(mouse);return;}
             Vector2 aim=mouse.x<hero.transform.position.x?Vector2.left:Vector2.right;
+            if(!Ready) {if(queueClick)queuedClicks.Enqueue(aim);return;}
+            room=scene;
             MinecraftControls.Facing=aim.x<0?-1:1;MinecraftControls.frontView=false;
             var moves=Profile?["weapon"]?["attacks"] as JArray;
             string weapon=(string)Profile?["item"]??"";
@@ -64,11 +74,18 @@ namespace HollowCraft
                 Begin(new JObject { ["attack"]=0,["duration"]=1/Math.Max(.2,(float?)Profile["speed"] ?? 4),["upswing"]=(float?)move["upswing"] ?? .3f,
                     ["range"]=GameCursor.AttackReach,["damage"]=(float?)Profile["damage"] ?? 1,["move"]=move.DeepClone(),["aimX"]=aim.x,["aimY"]=aim.y},scene);
             }
-            awaiting=true;send(new {type="swing",scene,request=requestId,aimX=aim.x,aimY=aim.y});
+            Aim=aim;awaiting=true;nextRetry=Time.unscaledTime+.4f;
+            send(new {type="swing",scene,request=requestId,aimX=aim.x,aimY=aim.y});
         }
         internal void Tick(HeroController hero)
         {
-            if(Ready&&queuedClicks.Count>0&&!HollowCraftRuntime.Instance.GameplayBlocked)Request(room,hero,queuedClicks.Dequeue());
+            if(awaiting&&Time.unscaledTime>=nextRetry) {
+                nextRetry=Time.unscaledTime+.4f;
+                send(new {type="swing",scene=room,request=requestId,aimX=Aim.x,aimY=Aim.y});
+            }
+            if(Ready&&queuedClicks.Count>0&&!HollowCraftRuntime.Instance.GameplayBlocked) {
+                var side=queuedClicks.Dequeue();Request(room,hero,(Vector2)hero.transform.position+side,true);
+            }
             if(Current==null || (int?)Current["attack"]==0 || struck || Progress<(float)Current["upswing"]) return;
             struck=true;
             float range=(float)Current["range"];

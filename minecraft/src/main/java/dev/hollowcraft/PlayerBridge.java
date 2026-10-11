@@ -15,6 +15,9 @@ final class PlayerBridge {
         value.addProperty("count",stack.getCount());value.addProperty("damage",stack.getDamage());value.addProperty("maxDamage",stack.getMaxDamage());
         value.addProperty("maxCount",stack.getMaxCount());
         value.addProperty("food",stack.isFood());value.addProperty("block",stack.getItem() instanceof BlockItem);
+        boolean cube=false;
+        if(stack.getItem() instanceof BlockItem block)try {cube=net.minecraft.block.Block.isShapeFullCube(block.getBlock().getDefaultState().getCollisionShape(net.minecraft.world.EmptyBlockView.INSTANCE,net.minecraft.util.math.BlockPos.ORIGIN));}catch(RuntimeException ignored) { }
+        value.addProperty("predictSolid",cube);
         value.addProperty("name",stack.getName().getString());
         value.addProperty("enchanted",stack.hasEnchantments());
         JsonArray tooltip=new JsonArray();for(var entry:net.minecraft.enchantment.EnchantmentHelper.get(stack).entrySet()) tooltip.add(entry.getKey().getName(entry.getValue()).getString());
@@ -76,7 +79,9 @@ final class PlayerBridge {
         ItemStack food=player.getMainHandStack();Hand hand=Hand.MAIN_HAND;
         if(!food.isFood()) {food=player.getOffHandStack();hand=Hand.OFF_HAND;}
         if(!food.isFood() || !player.canConsume(food.getItem().getFoodComponent().isAlwaysEdible())) return;
-        player.setStackInHand(hand,food.finishUsing(player.getServerWorld(),player));
+        // Compatibility with old clients: start the real action rather than bypassing
+        // its duration, effects, animation and interruption rules with finishUsing.
+        if(!player.isUsingItem())player.interactionManager.interactItem(player,player.getServerWorld(),food,hand);
     }
     static void offhand(ServerPlayerEntity player) {
         player.clearActiveItem();

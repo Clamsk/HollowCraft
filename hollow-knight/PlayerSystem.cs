@@ -6,6 +6,7 @@ namespace HollowCraft
 {
     public static class PlayerSystem
     {
+        public static bool SuppressKnightJumpRelease() => MinecraftControls.Active && HollowCraftRuntime.Instance?.InGame==true && HeroController.instance?.controlReqlinquished!=true;
         private static float nextHud;
         private static HeroController hero;
         private static Vector3 spawn;
@@ -72,6 +73,7 @@ namespace HollowCraft
             // Vanilla already halves previous horizontal velocity and caps grounded lift at .4.
             // Replace with that result once; adding it used to multiply repeated impacts.
             knockUntil=Time.time+.25f;knockX=velocity.x*20;body.linearVelocity=new Vector2(knockX,velocity.y*20);
+            MinecraftEnvironment.SetVerticalImpulse(velocity.y);
         }
         internal static void DecayKnockback(float elapsed,bool grounded) {if(KnockbackActive)knockX*=Mathf.Pow(grounded?.546f:.91f,elapsed/.05f);}
         public static bool SuppressKnightResources() => HollowCraftRuntime.Instance!=null;

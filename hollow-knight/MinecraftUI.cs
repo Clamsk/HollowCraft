@@ -21,7 +21,9 @@ namespace HollowCraft
         private Font dialogueFont;
         private string anvilName="";
         private JToken hovered;
-        private string catalogSearch="";private int catalogPage,shopPage;
+        private string catalogSearch="";private int catalogPage,shopPage,catalogTab;
+        private bool searchFocused;
+        internal bool SearchFocused => runtime.CatalogOpen&&searchFocused;
         internal MinecraftUI(HollowCraftRuntime value) {runtime=value;}
         internal void DrawModes()
         {
@@ -207,7 +209,7 @@ namespace HollowCraft
                 GUI.color=dead ? new Color(0.4f,0,0,0.65f) : new Color(0,0,0,0.65f);GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);GUI.color=Color.white;
                 string heading=dead ? "You died!" : "Game Menu";Text(heading,Screen.width/2-heading.Length*9,Screen.height/2-100,3);
                 if(Button(dead ? "Respawn" : "Back to Game",Screen.width/2-100*scale,Screen.height/2)) {if(dead) runtime.Send(new {type="respawn",scene=runtime.Room});else runtime.Resume();}
-            } else if(runtime.CatalogOpen) DrawCatalog();
+            } else if(runtime.CatalogOpen) {DrawCatalog();searchFocused=GUI.GetNameOfFocusedControl()=="HollowCraftCreativeSearch";}
             else if(open && inventory!=null) DrawInventory(snapshot,container,inventory,stats);
             if(NativeShop.Visible&&!dead&&!paused) DrawShop();
             if(NativeChoice.Visible&&!dead&&!paused) {if(Button("Yes",Screen.width/2-105*scale,Screen.height*.88f,100)) NativeChoice.Decide(true);if(Button("No",Screen.width/2+5*scale,Screen.height*.88f,100)) NativeChoice.Decide(false);}
@@ -287,16 +289,64 @@ namespace HollowCraft
         private void DrawCatalog()
         {
             GUI.color=new Color(0,0,0,.65f);GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);GUI.color=Color.white;
-            left=(Screen.width-176*scale)/2;top=(Screen.height-166*scale)/2;Tile("gui_generic_54",0,0,176,166,0,0,176,166);
-            string search=GUI.TextField(new Rect(left+8*scale,top+4*scale,160*scale,12*scale),catalogSearch,64);if(search!=catalogSearch) {catalogSearch=search;catalogPage=0;}
-            var entries=(runtime.Catalog??new JArray()).Where(e=>((string)e["id"]).IndexOf(catalogSearch,StringComparison.OrdinalIgnoreCase)>=0||((string)e["name"]??"").IndexOf(catalogSearch,StringComparison.OrdinalIgnoreCase)>=0).ToArray();
-            int pages=Math.Max(1,(entries.Length+53)/54);catalogPage=Mathf.Clamp(catalogPage,0,pages-1);
-            for(int i=0;i<54&&catalogPage*54+i<entries.Length;i++) {var entry=entries[catalogPage*54+i];var rect=new Rect(left+(8+i%9*18)*scale,top+(18+i/9*18)*scale,16*scale,16*scale);Item(entry,rect);
-                if(rect.Contains(pointer)) {hovered=entry;if(Event.current.type==EventType.MouseDown&&Event.current.button==0) {runtime.Send(new {type="creativeItem",scene=runtime.Room,id=(string)entry["id"],potion=(string)entry["potion"]??"",count=64,slot=runtime.SelectedSlot});Event.current.Use();}}
+            var groups=runtime.CatalogGroups??new JArray();catalogTab=Mathf.Clamp(catalogTab,0,Math.Max(0,groups.Count-1));
+            var group=groups.Count>0?groups[catalogTab]:null;string type=(string)group?["type"]??"SEARCH";
+            if(type=="INVENTORY") {
+                left=(Screen.width-176*scale)/2;top=(Screen.height-166*scale)/2;
+                DrawCreativeTabs(groups,195,166);
+                DrawInventory(runtime.LatestSnapshot,null,(JArray)runtime.LatestSnapshot["inventory"],runtime.Stats);
+                DrawCreativeTabs(groups,195,166);return;
             }
-            if(Button("<",left+8*scale,top+140*scale,30)) catalogPage--;
-            if(Button(">",left+138*scale,top+140*scale,30)) catalogPage++;
-            Text((catalogPage+1)+" / "+pages,left+62*scale,top+146*scale,scale);
+            left=(Screen.width-195*scale)/2;top=(Screen.height-136*scale)/2;containerOpen=false;drawnSlots.Clear();
+            Tile(type=="SEARCH"?"gui_creative_tab_item_search":"gui_creative_tab_items",0,0,195,136,0,0,195,136);
+            if(type=="SEARCH") {
+                GUI.SetNextControlName("HollowCraftCreativeSearch");
+                string search=GUI.TextField(new Rect(left+82*scale,top+6*scale,80*scale,12*scale),catalogSearch,64);
+                if(search!=catalogSearch) {catalogSearch=search;catalogPage=0;}
+            } else Text((string)group?["name"]??"Creative Inventory",left+8*scale,top+6*scale,scale,new Color(.25f,.25f,.25f));
+            var catalog=runtime.Catalog??new JArray();var indices=group?["entries"] as JArray;
+            var entries=(indices!=null?indices.Where(i=>(int)i>=0&&(int)i<catalog.Count).Select(i=>catalog[(int)i]):catalog.AsEnumerable())
+                .Where(e=>type!="SEARCH"||((string)e["id"]).IndexOf(catalogSearch,StringComparison.OrdinalIgnoreCase)>=0||((string)e["name"]??"").IndexOf(catalogSearch,StringComparison.OrdinalIgnoreCase)>=0).ToArray();
+            int rows=Math.Max(0,(entries.Length+8)/9-5);catalogPage=Mathf.Clamp(catalogPage,0,rows);
+            var e=Event.current;var grid=new Rect(left+8*scale,top+18*scale,162*scale,90*scale);
+            if(e.type==EventType.ScrollWheel&&grid.Contains(pointer)) {catalogPage=Mathf.Clamp(catalogPage+(e.delta.y>0?1:-1),0,rows);e.Use();}
+            var scrollbar=new Rect(left+175*scale,top+18*scale,12*scale,90*scale);
+            if((e.type==EventType.MouseDown||e.type==EventType.MouseDrag)&&e.button==0&&scrollbar.Contains(pointer)) {
+                catalogPage=Mathf.RoundToInt(Mathf.Clamp01((pointer.y-scrollbar.y-7.5f*scale)/(75*scale))*rows);e.Use();
+            }
+            Region("gui_creative_tabs",new Rect(scrollbar.x,scrollbar.y+(rows>0?(float)catalogPage/rows:0)*75*scale,12*scale,15*scale),rows>0?232:244,0,12,15);
+            for(int i=0;i<45&&catalogPage*9+i<entries.Length;i++) {
+                var entry=entries[catalogPage*9+i];var rect=new Rect(left+(9+i%9*18)*scale,top+(18+i/9*18)*scale,16*scale,16*scale);Item(entry,rect);
+                if(!rect.Contains(pointer))continue;hovered=entry;
+                GUI.color=new Color(1,1,1,.4f);GUI.DrawTexture(rect,Texture2D.whiteTexture);GUI.color=Color.white;
+                if(e.type==EventType.MouseDown&&e.button<=2) {
+                    CancelDrag();bool shift=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift);
+                    TakeCreative(entry,e.button==1?1:64,shift?"inventory":"cursor",0);e.Use();
+                } else if(e.type==EventType.KeyDown&&e.keyCode>=KeyCode.Alpha1&&e.keyCode<=KeyCode.Alpha9) {
+                    TakeCreative(entry,64,"slot",(int)e.keyCode-(int)KeyCode.Alpha1);e.Use();
+                }
+            }
+            var inventory=runtime.LatestSnapshot?["inventory"] as JArray;
+            if(inventory!=null)for(int i=0;i<9;i++)Slot(inventory[i],36+i,9+i*18,112);
+            DrawCreativeTabs(groups,195,136);
+            if(e.type==EventType.MouseDown&&!new Rect(left,top-28*scale,195*scale,192*scale).Contains(pointer)) {runtime.Send(new {type="creativeDiscard",scene=runtime.Room});e.Use();}
+            InventoryInput(runtime.LatestSnapshot,new Rect(left,top-28*scale,195*scale,192*scale));
+        }
+        private void TakeCreative(JToken entry,int count,string destination,int slot) {
+            runtime.Send(new {type="creativeItem",scene=runtime.Room,catalogIndex=(int)entry["catalogIndex"],count,destination,slot});
+        }
+        private void DrawCreativeTabs(JArray groups,int width,int height) {
+            for(int i=0;i<groups.Count;i++) {
+                var group=groups[i];bool bottom=(string)group["row"]=="BOTTOM",special=(string)group["type"]=="SEARCH"||(string)group["type"]=="INVENTORY";
+                int column=(int)group["column"];float x=special?width-27:column*28,y=bottom?height-4:-28;
+                var rect=new Rect(left+x*scale,top+y*scale,28*scale,32*scale);
+                Region("gui_creative_tabs",rect,column*28,(bottom?64:0)+(i==catalogTab?32:0),28,32);
+                Item(group["icon"],new Rect(rect.x+6*scale,rect.y+(bottom?6:9)*scale,16*scale,16*scale));
+                if(rect.Contains(pointer)) {
+                    hovered=group["icon"];
+                    if(Event.current.type==EventType.MouseDown&&Event.current.button==0) {CancelDrag();catalogTab=i;catalogPage=0;GUI.FocusControl(null);Event.current.Use();}
+                }
+            }
         }
         private void DrawShop() {
             GUI.color=new Color(0,0,0,.65f);GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);GUI.color=Color.white;

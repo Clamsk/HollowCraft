@@ -5,4 +5,5 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(PersistentProjectileEntity.class)
 public interface ArrowAccess {
     @Accessor("inGround") boolean hollowcraft$inGround();
+    @Accessor("inGround") void hollowcraft$inGround(boolean value);
 }

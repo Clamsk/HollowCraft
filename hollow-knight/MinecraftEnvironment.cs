@@ -18,6 +18,7 @@ namespace HollowCraft
         private bool spectatorBody;private bool previousTrigger;private RigidbodyType2D previousBodyType;
         private int Effect(string id) {var effects=HollowCraftRuntime.Instance?.Stats?["effects"] as JArray;var effect=effects?.FirstOrDefault(e=>(string)e["id"]=="minecraft:"+id);return effect==null?-1:(int)effect["amplifier"];}
         private void Awake() {instance=this;}
+        internal static void SetVerticalImpulse(float velocity) {if(instance!=null) {instance.motionY=velocity;instance.lastAppliedY=velocity*20;instance.normalPhase=0;instance.ownGravity=true;}}
         internal static bool TakeJump(HeroController player)
         {
             var runtime=HollowCraftRuntime.Instance;
@@ -85,7 +86,10 @@ namespace HollowCraft
             } else {
                 // Integrate each 20 Hz vanilla gravity step across Unity's physics intervals.
                 // This preserves the 1.25-block jump without the Knight's held-jump acceleration.
-                if(!ownGravity||Math.Abs(body.linearVelocity.y-lastAppliedY)>.05f) {motionY=body.linearVelocity.y/20;normalPhase=0;ownGravity=true;}
+                // Keep the MC motion accumulator across native animation updates. Only
+                // contacts and explicit MC knockback may stop or replace a jump.
+                if(!ownGravity) {motionY=body.linearVelocity.y/20;normalPhase=0;ownGravity=true;}
+                if(lastAppliedY>.1f&&body.linearVelocity.y<=.001f) {motionY=0;normalPhase=0;}
                 if(MinecraftControls.Grounded(hero)&&motionY<0) {motionY=0;normalPhase=0;}
                 float remaining=Time.fixedDeltaTime,displacement=0;
                 while(remaining>.00001f) {
