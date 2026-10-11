@@ -11,6 +11,10 @@ namespace HollowCraft
         private Vector2 velocity;
         private float received,retireAt=-1;
         private bool initialized,grounded,noClip,nativeCollision=true;
+        private bool stepRequired;
+        private int age=-1,lastStepAge=-1,impactRequest;
+        private static int nextImpactRequest;
+        private float nextStepRetry;
         private string room,kind;
         private int entity;
         private string uuid;
@@ -27,20 +31,28 @@ namespace HollowCraft
             room=scene;kind=(string)value["kind"];entity=(int)value["entity"];uuid=(string)value["uuid"];
             var target=new Vector3((float)value["x"],(float)value["y"],-.15f);
             bool landed=(bool?)value["grounded"]??false;
+            int currentAge=(int?)value["age"]??-1;
+            bool changed=!initialized||age!=currentAge||serverPoint!=target||grounded!=landed;
+            age=currentAge;stepRequired=(bool?)value["stepRequired"]??false;
             noClip=(bool?)value["noClip"]??false;nativeCollision=(bool?)value["nativeCollision"]??true;
             if(noClip)awaitingImpact=false;
             if(landed)awaitingImpact=false;
             if(initialized&&!landed&&!awaitingImpact)Sweep(serverPoint,target);
             serverPoint=target;
             if(!initialized){transform.position=target;initialized=true;}
-            from=transform.position;to=target;received=Time.unscaledTime;retireAt=-1;
+            if(changed){from=transform.position;to=target;received=Time.unscaledTime;}retireAt=-1;
             velocity=new Vector2((float?)value["vx"]??0,(float?)value["vy"]??0);grounded=(bool?)value["grounded"]??false;
             if(!landed&&!awaitingImpact)Sweep(target,target+new Vector3(velocity.x,velocity.y,0),true);
+            if(stepRequired&&!awaitingImpact&&(lastStepAge!=age||Time.unscaledTime>=nextStepRetry)) {
+                lastStepAge=age;nextStepRetry=Time.unscaledTime+.2f;
+                HollowCraftRuntime.Instance?.QueueNativeStep(entity,uuid,age,room);
+            }
         }
         internal void Retire(){retireAt=Time.unscaledTime+.08f;}
         internal void Resolve(JObject message) {
+            if(message["uuid"]!=null&&(string)message["uuid"]!=uuid||message["request"]!=null&&(int)message["request"]!=impactRequest)return;
             if((bool?)message["accepted"]==true&&pendingTarget!=0)hitTargets.Add(pendingTarget);
-            if((bool?)message["removed"]==true) {Retire();return;}
+            if((bool?)message["removed"]==true) {HollowCraftRuntime.Instance?.RetireProjectile(entity,uuid);return;}
             if(noClip) {awaitingImpact=false;return;}
             if((bool?)message["accepted"]==true&&(bool?)message["grounded"]==true) {grounded=true;awaitingImpact=false;from=to=impactPoint;velocity=Vector2.zero;}
             else awaitingImpact=false;
@@ -67,8 +79,9 @@ namespace HollowCraft
                 impactPoint=new Vector3(hit.centroid.x,hit.centroid.y,-.15f);awaitingImpact=true;retryAt=Time.unscaledTime+.4f;
                 impactAt=Time.unscaledTime+(predicted?.05f:0);
                 pendingTarget=targetId;
+                impactRequest=++nextImpactRequest;runtime.RevokeNativeStep(entity);
                 int target=enemy!=null?EnemySystem.Register(enemy):breakable!=null?EnemySystem.Register(breakable):0;
-                hitCommand=new {type="nativeProjectileHit",scene=room,entity,uuid,x=point.x,y=point.y,normalX=normal.x,normalY=normal.y,
+                hitCommand=new {type="nativeProjectileHit",scene=room,entity,uuid,age,request=impactRequest,x=point.x,y=point.y,normalX=normal.x,normalY=normal.y,
                     landingX=landing.x,landingY=landing.y,target,enemies=EnemySystem.Observe(hero,target)};
                 runtime.Send(hitCommand);return;
             }

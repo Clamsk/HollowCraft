@@ -53,6 +53,13 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     public static volatile boolean remotePaused;
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
+    public static boolean projectileStepsEnabled() {return instance!=null&&instance.peer!=null&&instance.peer.projectileSteps;}
+    public static boolean tickNativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeProjectileSteps.tick(projectile);}
+    public static boolean nativeProjectileVisible(net.minecraft.entity.projectile.ProjectileEntity projectile) {
+        var bridge=instance;
+        return bridge!=null&&projectile.getWorld().getServer()==bridge.server
+            &&Math.abs(projectile.getX()-bridge.slot*1024-bridge.centerX)<=28&&Math.abs(projectile.getY()-64-bridge.centerY)<=24&&Math.abs(projectile.getZ())<=4;
+    }
     public static void vanillaTeleport(ServerPlayerEntity player,Vec3d normal) {
         if(instance==null||instance.owner!=player||instance.peer==null||instance.scene.isEmpty()) return;
         instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;instance.fallen=0;
@@ -80,6 +87,9 @@ public final class HollowCraftBridge implements ModInitializer {
     private final Set<BlockPos> terrain = new HashSet<>();
     private final Map<Integer,net.minecraft.entity.ItemEntity> trackedDrops=new HashMap<>();
     private final Map<Integer,Integer> dropObserved=new HashMap<>();
+    private final Map<String,JsonObject> projectileImpacts=new LinkedHashMap<>() {
+        @Override protected boolean removeEldestEntry(Map.Entry<String,JsonObject> entry) {return size()>512;}
+    };
     private volatile Peer peer;
     private volatile boolean running;
     private ServerSocket listener;
@@ -127,6 +137,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(world.getServer()==server&&peer!=null&&!scene.isEmpty()&&entity instanceof net.minecraft.entity.ItemEntity dropped&&Math.abs(dropped.getX()-slot*1024)<=400) {trackedDrops.put(dropped.getId(),dropped);dropped.setNoGravity(true);dropped.setPosition(dropped.getX(),dropped.getY(),.5);}
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity,world)-> {
+            if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile)projectileEvent(projectile,"impact",null);
             if(entity instanceof TntEntity tnt && tnt.getFuse()<=0 && server==world.getServer() && peer!=null && !scene.isEmpty()) {
                 LOG.info("TNT explosion local {}, {}",tnt.getX()-slot*1024,tnt.getY()-64);
                 JsonObject event=new JsonObject();event.addProperty("type","explosion");event.addProperty("scene",scene);
@@ -168,7 +179,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer);
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\"}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -194,6 +205,7 @@ public final class HollowCraftBridge implements ModInitializer {
         return text.isEmpty() ? null : text.toString();
     }
     private void stop() {
+        NativeProjectileSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
         saveCampaign();
         PlayerRenderState.clear();
         collectLandingWater();
@@ -226,6 +238,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
         }
         if (peer == null) {
+            NativeProjectileSteps.clear();projectileImpacts.clear();
             if (owner != null) {saveCampaign();collectLandingWater();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
             return;
         }
@@ -325,6 +338,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if (type.equals("scene")) {
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;
+            NativeProjectileSteps.clear();projectileImpacts.clear();
             String campaign=string(command,"campaign","legacy");
             if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");}
             boolean fresh=campaigns.select(owner,campaign,command.has("legacy")&&command.get("legacy").getAsBoolean());
@@ -448,6 +462,14 @@ public final class HollowCraftBridge implements ModInitializer {
             }}
             case "eat" -> PlayerBridge.eat(owner);
             case "itemUse" -> ItemUseBridge.use(owner,command,target(command));
+            case "projectileStep" -> {
+                if(command.has("steps")&&command.get("steps").isJsonArray()) {
+                    int count=0;for(var element:command.getAsJsonArray("steps")) {
+                        if(++count>64)break;var step=element.getAsJsonObject();var entity=owner.getServerWorld().getEntityById(integer(step,"entity",-1));
+                        if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&projectile.getOwner()==owner&&projectile.getUuidAsString().equals(string(step,"uuid","")))NativeProjectileSteps.allow(projectile,integer(step,"age",-1));
+                    }
+                }
+            }
             case "nativeProjectileHit" -> {nativeProjectileHit(command);snapshot();}
             case "offhand" -> PlayerBridge.offhand(owner);
             case "drop" -> owner.dropSelectedItem(command.has("all") && command.get("all").getAsBoolean());
@@ -682,36 +704,46 @@ public final class HollowCraftBridge implements ModInitializer {
         if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","attackRejected");event.addProperty("scene",scene);event.addProperty("request",request);event.addProperty("reason",reason);peer.event(event);
     }
     private void nativeProjectileHit(JsonObject command) {
-        int id=integer(command,"entity",-1);var entity=owner.getServerWorld().getEntityById(id);
+        int id=integer(command,"entity",-1),request=integer(command,"request",0);String uuid=string(command,"uuid","");
+        var cached=projectileImpacts.get(uuid);
+        if(request>0&&cached!=null&&request<=integer(cached,"request",0)) {
+            if(request==integer(cached,"request",0)&&peer!=null)peer.event(cached.deepCopy());
+            return;
+        }
+        var entity=owner.getServerWorld().getEntityById(id);
         boolean accepted=false,removed=entity==null;boolean grounded=false;
-        if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&projectile.getOwner()==owner&&projectile.getUuidAsString().equals(string(command,"uuid",""))) {
+        if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&projectile.getOwner()==owner&&projectile.getUuidAsString().equals(uuid)
+            &&(!NativeProjectileSteps.required(projectile)||integer(command,"age",-1)==projectile.age)) {
             double x=command.get("x").getAsDouble(),y=command.get("y").getAsDouble();
-            if(Double.isFinite(x)&&Double.isFinite(y)&&Math.abs(x)<=400&&y>=-60&&y<=240) {
+            double nx=command.has("normalX")?command.get("normalX").getAsDouble():0,ny=command.has("normalY")?command.get("normalY").getAsDouble():1;
+            if(Double.isFinite(x)&&Double.isFinite(y)&&Double.isFinite(nx)&&Double.isFinite(ny)&&Math.abs(x)<=400&&y>=-60&&y<=240) {
                 Vec3d point=new Vec3d(slot*1024+x,64+y,.5);
                 double tolerance=4+projectile.getVelocity().length()*5;
                 if(projectile.getPos().squaredDistanceTo(point)<=tolerance*tolerance&&!projectile.isRemoved()&&!projectile.getCommandTags().contains("hollowcraft_native_anchor")&&!(projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity arrow&&arrow.isNoClip())) {
                     if(command.has("enemies"))enemies.observe(owner,command.getAsJsonArray("enemies"),slot*1024);
                     var target=enemies.source(integer(command,"target",0));
-                    double nx=command.has("normalX")?command.get("normalX").getAsDouble():0,ny=command.has("normalY")?command.get("normalY").getAsDouble():1;
-                    if(!Double.isFinite(nx)||!Double.isFinite(ny))return;
                     Direction side=Math.abs(nx)>Math.abs(ny)?(nx<0?Direction.WEST:Direction.EAST):(ny<0?Direction.DOWN:Direction.UP);
+                    Vec3d stepStart=projectile.getPos();
                     Vec3d position=point;
                     if(projectile instanceof net.minecraft.entity.projectile.thrown.EnderPearlEntity&&command.has("landingX")&&command.has("landingY")) {
                         double lx=command.get("landingX").getAsDouble(),ly=command.get("landingY").getAsDouble();
                         if(Double.isFinite(lx)&&Double.isFinite(ly)&&Math.abs(lx-x)<=3&&Math.abs(ly-y)<=3&&Math.abs(lx)<=400&&ly>=-60&&ly<=240)position=new Vec3d(slot*1024+lx,64+ly,.5);
                     }
-                    projectile.setPosition(position);
+                    NativeProjectileSteps.revoke(projectile);projectile.setPosition(position);
                     net.minecraft.util.hit.HitResult collision=target!=null?new net.minecraft.util.hit.EntityHitResult(target,point):new BlockHitResult(point,side,BlockPos.ofFloored(point.add(-nx*.02,-ny*.02,0)),false);
                     ((dev.hollowcraft.mixin.ProjectileAccess)projectile).hollowcraft$collide(collision);
                     accepted=true;removed=projectile.isRemoved();
                     if(target==null&&!removed&&projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity arrow) {ItemUseBridge.anchor(arrow,point);grounded=true;}
+                    // Piercing may hit several targets in this same permitted step. Keep its original
+                    // start so each native hit does not add another full tick of travel distance.
+                    if(target!=null&&!removed&&NativeProjectileSteps.required(projectile)&&projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity arrow&&arrow.getPierceLevel()>0)projectile.setPosition(stepStart);
                     LOG.info("Native projectile collision entity={} target={} point={} removed={}",id,integer(command,"target",0),point,removed);
                 }
             }
         }
-        if(peer!=null) {
-            JsonObject event=new JsonObject();event.addProperty("type","nativeImpact");event.addProperty("scene",scene);event.addProperty("entity",id);event.addProperty("accepted",accepted);event.addProperty("removed",removed);event.addProperty("grounded",grounded);peer.event(event);
-        }
+        JsonObject event=new JsonObject();event.addProperty("type","nativeImpact");event.addProperty("scene",scene);event.addProperty("entity",id);event.addProperty("uuid",uuid);event.addProperty("request",request);event.addProperty("accepted",accepted);event.addProperty("removed",removed);event.addProperty("grounded",grounded);
+        if(request>0&&!uuid.isEmpty())projectileImpacts.put(uuid,event);
+        if(peer!=null)peer.event(event);
     }
     private void mine(JsonObject command) {
         BlockPos target = target(command);
@@ -894,9 +926,11 @@ public final class HollowCraftBridge implements ModInitializer {
     private static final class Peer {
         final Socket socket;
         final BufferedWriter writer;
+        final boolean projectileSteps;
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps) {
+            this.projectileSteps=projectileSteps;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {
                 try { while (!socket.isClosed()) {

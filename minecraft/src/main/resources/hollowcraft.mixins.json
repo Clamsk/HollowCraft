@@ -11,6 +11,7 @@
     ,"ProjectileCollisionMixin"
     ,"ProjectileAccess"
     ,"ProjectileTargetMixin"
+    ,"ProjectileStepMixin"
   ],
   "client": [
     "ItemRendererAccess",

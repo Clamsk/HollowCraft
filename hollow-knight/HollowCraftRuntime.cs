@@ -34,6 +34,8 @@ namespace HollowCraft
         private readonly Dictionary<int,GameObject> drops=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,GameObject> primedTnt=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,GameObject> projectiles=new Dictionary<int,GameObject>();
+        private readonly Dictionary<int,object> nativeProjectileSteps=new Dictionary<int,object>();
+        private readonly Dictionary<string,float> retiredProjectiles=new Dictionary<string,float>();
         private readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, int> breakingTicks = new Dictionary<string, int>();
         private readonly string[] inventory = new string[36];
@@ -222,9 +224,10 @@ namespace HollowCraft
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
                 if((string)message["type"]=="nativeImpact"&&(string)message["scene"]==scene&&projectiles.TryGetValue((int)message["entity"],out GameObject impact)&&impact!=null)impact.GetComponent<ProjectileView>().Resolve(message);
                 if((string)message["type"]=="projectile"&&(string)message["scene"]==scene) {
-                    var flight=Projectile((JObject)message["value"]);
-                    flight.Push((JObject)message["value"],scene);
-                    if((string)message["phase"]=="impact") {flight.Retire();projectiles.Remove((int)message["value"]["entity"]);}
+                    var value=(JObject)message["value"];
+                    if((string)message["phase"]=="impact") {RetireProjectile((int)value["entity"],(string)value["uuid"]);continue;}
+                    if(value["uuid"]!=null&&retiredProjectiles.ContainsKey((string)value["uuid"]))continue;
+                    Projectile(value).Push(value,scene);
                 }
                 if((string)message["type"]=="catalog"&&(string)message["scene"]==scene) {Catalog=message["items"] as JArray;CatalogGroups=message["groups"] as JArray;CatalogRevision=(int?)message["revision"]??0;}
                 if((string)message["type"]=="notice"&&(string)message["scene"]==scene)ui.ShowNotice((string)message["text"]);
@@ -421,7 +424,7 @@ namespace HollowCraft
             bridge.Send(pose);
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;}
-        private void LateUpdate() {GameCursor.ApplyCursor();if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
+        private void LateUpdate() {FlushNativeSteps();GameCursor.ApplyCursor();if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
         internal void CloseInterface() {ui.CancelDrag();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
         private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;Send(new {type="creativeCatalog",scene});}
         private bool HandleHotbarShortcut() {
@@ -483,11 +486,32 @@ namespace HollowCraft
         }
         private void ApplyProjectiles(JObject message) {
             int tick=(int?)message["tick"]??0;if(tick<=lastProjectileTick)return;lastProjectileTick=tick;
+            foreach(string uuid in retiredProjectiles.Keys.Where(key=>retiredProjectiles[key]<=Time.unscaledTime).ToArray())retiredProjectiles.Remove(uuid);
             var ids=new HashSet<int>();
-            foreach(JObject value in message["projectiles"] as JArray??new JArray()) {ids.Add((int)value["entity"]);Projectile(value).Push(value,scene);}
+            foreach(JObject value in message["projectiles"] as JArray??new JArray()) {
+                if(value["uuid"]!=null&&retiredProjectiles.ContainsKey((string)value["uuid"]))continue;
+                ids.Add((int)value["entity"]);Projectile(value).Push(value,scene);
+            }
             foreach(int id in projectiles.Keys.Where(id=>!ids.Contains(id)).ToArray()) {
                 if(projectiles[id]!=null)projectiles[id].GetComponent<ProjectileView>().Retire();projectiles.Remove(id);
             }
+        }
+        internal void QueueNativeStep(int entity,string uuid,int age,string room) {
+            if(room==scene&&!SimulationPaused)nativeProjectileSteps[entity]=new {entity,uuid,age};
+        }
+        internal void RevokeNativeStep(int entity) {nativeProjectileSteps.Remove(entity);}
+        internal void RetireProjectile(int entity,string uuid) {
+            if(!string.IsNullOrEmpty(uuid))retiredProjectiles[uuid]=Time.unscaledTime+2;
+            RevokeNativeStep(entity);
+            if(projectiles.TryGetValue(entity,out GameObject go)&&go!=null)go.GetComponent<ProjectileView>().Retire();
+            projectiles.Remove(entity);
+        }
+        private void FlushNativeSteps() {
+            if(!SimulationPaused) {
+                var values=nativeProjectileSteps.Values.ToArray();
+                for(int offset=0;offset<values.Length;offset+=64)Send(new {type="projectileStep",scene,steps=values.Skip(offset).Take(64).ToArray()});
+            }
+            nativeProjectileSteps.Clear();
         }
         private void ApplySnapshot(JObject message)
         {
@@ -592,7 +616,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

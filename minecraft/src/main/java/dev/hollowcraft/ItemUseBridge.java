@@ -63,6 +63,7 @@ final class ItemUseBridge {
     static JsonObject projectile(ProjectileEntity projectile,int offset) {
         JsonObject value=new JsonObject();value.addProperty("entity",projectile.getId());value.addProperty("kind",Registries.ENTITY_TYPE.getId(projectile.getType()).toString());
         value.addProperty("uuid",projectile.getUuidAsString());
+        value.addProperty("age",projectile.age);value.addProperty("stepRequired",NativeProjectileSteps.required(projectile));
         value.addProperty("x",projectile.getX()-offset);value.addProperty("y",projectile.getY()-64);value.addProperty("vx",projectile.getVelocity().x);value.addProperty("vy",projectile.getVelocity().y);
         boolean grounded=projectile instanceof PersistentProjectileEntity arrow&&((dev.hollowcraft.mixin.ArrowAccess)arrow).hollowcraft$inGround();
         value.addProperty("grounded",grounded);

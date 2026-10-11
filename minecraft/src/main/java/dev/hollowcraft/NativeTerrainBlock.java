@@ -17,7 +17,7 @@ final class NativeTerrainBlock extends Block {
     static boolean proxy(BlockState state) {return state.isOf(INSTANCE)||state.isOf(Blocks.BARRIER);}
     static boolean delegated(net.minecraft.entity.projectile.ProjectileEntity projectile) {
         return (projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity||projectile instanceof net.minecraft.entity.projectile.thrown.ThrownEntity)
-            &&projectile.getOwner() instanceof net.minecraft.server.network.ServerPlayerEntity player&&HollowCraftBridge.isRemotePlayer(player);
+            &&projectile.getOwner() instanceof net.minecraft.server.network.ServerPlayerEntity player&&HollowCraftBridge.isRemotePlayer(player)&&HollowCraftBridge.nativeProjectileVisible(projectile);
     }
     @Override public VoxelShape getCollisionShape(BlockState state,BlockView world,BlockPos pos,ShapeContext context) {
         if(context instanceof EntityShapeContext entity&&entity.getEntity() instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&delegated(projectile))return VoxelShapes.empty();
