@@ -22,14 +22,17 @@ final class PlayerBridge {
         value.addProperty("enchanted",stack.hasEnchantments());
         JsonArray tooltip=new JsonArray();for(var entry:net.minecraft.enchantment.EnchantmentHelper.get(stack).entrySet()) tooltip.add(entry.getKey().getName(entry.getValue()).getString());
         for(var effect:net.minecraft.potion.PotionUtil.getPotionEffects(stack)) tooltip.add(effect.getEffectType().getName().getString()+" "+(effect.getAmplifier()+1)+" ("+(effect.getDuration()/20)+"s)");value.add("tooltip",tooltip);
-        value.addProperty("render",renderKey(stack));
+        value.addProperty("render",renderKey(stack));ItemModelIcons.request(stack);
         if(stack.getItem() instanceof PotionItem||stack.isOf(Items.TIPPED_ARROW)) value.addProperty("potion",Registries.POTION.getId(net.minecraft.potion.PotionUtil.getPotion(stack)).toString());
         return value;
     }
     static String renderKey(ItemStack stack) {
         String id=Registries.ITEM.getId(stack.getItem()).toString();
-        if(stack.getItem() instanceof PotionItem || stack.getItem()==net.minecraft.item.Items.TIPPED_ARROW) {
-            return id+"_potion_"+Registries.POTION.getId(net.minecraft.potion.PotionUtil.getPotion(stack)).toString().replace(':','_');
+        if(stack.hasNbt()) {
+            try {
+                var hash=java.security.MessageDigest.getInstance("SHA-256").digest(stack.getNbt().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                return id+"_nbt_"+java.util.HexFormat.of().formatHex(hash,0,8);
+            } catch(java.security.NoSuchAlgorithmException impossible) {throw new IllegalStateException(impossible);}
         }
         return id;
     }

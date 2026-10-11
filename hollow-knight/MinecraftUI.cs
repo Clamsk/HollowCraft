@@ -26,6 +26,7 @@ namespace HollowCraft
         internal bool TextInputFocused => textInputFocused;
         private string anvilSource="";
         private string notice="";private float noticeUntil;
+        private string choiceKey="";private int choiceRow;
         internal void ShowNotice(string value) {notice=value??"";noticeUntil=Time.unscaledTime+3;}
         internal MinecraftUI(HollowCraftRuntime value) {runtime=value;}
         internal void DrawModes()
@@ -69,7 +70,7 @@ namespace HollowCraft
         private void Item(JToken entry,Rect bounds)
         {
             if(entry==null || ((int?)entry["count"] ?? 0)<=0) return;
-            var texture=runtime.ItemTexture((string)entry["render"] ?? (string)entry["id"]);
+            var texture=runtime.ItemTexture((string)entry["render"] ?? (string)entry["id"])??runtime.ItemTexture((string)entry["id"]);
             if(texture!=null) GUI.DrawTexture(bounds,texture,ScaleMode.ScaleToFit);
             int count=(int)entry["count"];
             if(count>1) Text(count.ToString(),bounds.xMax-count.ToString().Length*6*scale,bounds.yMax-8*scale,scale);
@@ -250,7 +251,7 @@ namespace HollowCraft
             float height=chest ? rows*18+114 : id.Contains("hopper") ? 133 : 166,inventoryY=chest ? rows*18+31 : 84;
             left=(Screen.width-176*scale)/2;top=(Screen.height-height*scale)/2;
             if(chest) {Tile("gui_generic_54",0,0,176,rows*18+17,0,0,176,rows*18+17);Tile("gui_generic_54",0,rows*18+17,176,96,0,126,176,96);}
-            else Tile(furnace ? "gui_furnace" : craft ? "gui_crafting_table" : other ? "gui_"+id.Split(':').Last().Replace("damaged_anvil","anvil").Replace("chipped_anvil","anvil").Replace("dropper","dispenser") : "gui_inventory",0,0,176,height,0,0,176,height);
+            else Tile((string)container?["texture"]??(furnace ? "gui_furnace" : craft ? "gui_crafting_table" : other ? "gui_"+id.Split(':').Last().Replace("damaged_anvil","anvil").Replace("chipped_anvil","anvil").Replace("dropper","dispenser") : "gui_inventory"),0,0,176,height,0,0,176,height);
             if(!containerOpen) {
                 var equipment=stats?["equipment"] as JArray;
                 for(int i=0;i<4;i++) Slot(equipment?[i],5+i,8,8+i*18);
@@ -260,7 +261,7 @@ namespace HollowCraft
                 Slot(grid?[0],0,154,28);
                 Portrait();Text("Crafting",left+96*scale,top+6*scale,scale,new Color(0.25f,0.25f,0.25f));
             } else {
-                Text(furnace ? "Furnace" : craft ? "Crafting" : brewing ? "Brewing Stand" : anvil ? "Repair & Name" : enchant ? "Enchant" : chest ? "Chest" : id.Split(':').Last().Replace('_',' '),left+8*scale,top+6*scale,scale,new Color(0.25f,0.25f,0.25f));
+                Text((string)container["title"]??(furnace ? "Furnace" : craft ? "Crafting" : brewing ? "Brewing Stand" : anvil ? "Repair & Name" : enchant ? "Enchant" : chest ? "Chest" : id.Split(':').Last().Replace('_',' ')),left+8*scale,top+6*scale,scale,new Color(0.25f,0.25f,0.25f));
                 for(int i=0;i<slots.Count;i++) {
                     float x,y;
                     if(furnace) {x=i==2 ? 116 : 56;y=i==0 ? 17 : i==1 ? 53 : 35;}
@@ -284,9 +285,10 @@ namespace HollowCraft
                 }
                 if(enchant) {
                     var choices=container["enchants"] as JArray;for(int i=0;i<3;i++) {int cost=(int?)choices?[i]?["cost"] ?? 0;
-                        if(cost>0&&Button(((string)choices[i]["name"])+" "+cost,left+60*scale,top+(14+i*19)*scale,108)) runtime.Send(new {type="containerButton",scene=runtime.Room,button=i});
+                        if(cost>0&&Button(((string)choices[i]["name"])+" "+cost,left+60*scale,top+(14+i*19)*scale,108)) ContainerButton(container,i);
                     }
                 }
+                DrawContainerChoices(container);
                 Text("Inventory",left+8*scale,top+(inventoryY-11)*scale,scale,new Color(0.25f,0.25f,0.25f));
             }
             for(int i=0;i<36;i++) {
@@ -296,6 +298,36 @@ namespace HollowCraft
                 Slot(inventory[i],serverSlot,x,y);
             }
             InventoryInput(snapshot,new Rect(left,top,176*scale,height*scale));
+        }
+        private void ContainerButton(JObject container,int button) {CancelDrag();runtime.Send(new {type="containerButton",scene=runtime.Room,button,syncId=(int?)container["syncId"]??-1});}
+        private void DrawContainerChoices(JObject container) {
+            string kind=(string)container["selector"];if(kind!="loom"&&kind!="stonecutter")return;
+            string key=container["syncId"]+"|"+container["slots"]?[0]?["id"];
+            if(key!=choiceKey) {choiceKey=key;choiceRow=0;}
+            bool loom=kind=="loom";var choices=container["choices"] as JArray??new JArray();
+            int visibleRows=loom?4:3,cellWidth=loom?14:16,cellHeight=loom?14:18;
+            int maximum=Math.Max(0,(choices.Count+3)/4-visibleRows);choiceRow=Mathf.Clamp(choiceRow,0,maximum);
+            float x=loom?60:52,y=loom?13:16;string texture=loom?"gui_loom":"gui_stonecutter";
+            var grid=new Rect(left+x*scale,top+y*scale,4*cellWidth*scale,visibleRows*cellHeight*scale);var e=Event.current;
+            if(e.type==EventType.ScrollWheel&&grid.Contains(pointer)) {choiceRow=Mathf.Clamp(choiceRow+(e.delta.y>0?1:-1),0,maximum);e.Use();}
+            var scrollbar=new Rect(left+119*scale,top+15*scale,12*scale,56*scale);
+            if(maximum>0&&(e.type==EventType.MouseDown||e.type==EventType.MouseDrag)&&e.button==0&&scrollbar.Contains(pointer)) {choiceRow=Mathf.RoundToInt(Mathf.Clamp01((pointer.y-scrollbar.y-7.5f*scale)/(41*scale))*maximum);e.Use();}
+            Region(texture,new Rect(scrollbar.x,scrollbar.y+(maximum>0?(float)choiceRow/maximum:0)*41*scale,12*scale,15*scale),maximum>0?176:188,0,12,15);
+            if(loom) {
+                var slots=container["slots"] as JArray;
+                if(slots!=null)for(int i=0;i<3&&i<slots.Count;i++)if(((int?)slots[i]["count"]??0)<=0)Tile(texture,(float)slots[i]["x"],(float)slots[i]["y"],16,16,176+i*16,0,16,16);
+                if((bool?)container["patternFull"]==true)return;
+                var output=slots?.FirstOrDefault(slot=>(int?)slot["slot"]==3);
+                if(output!=null)Item(output,new Rect(left+139*scale,top+13*scale,24*scale,40*scale));
+            }
+            for(int i=0;i<visibleRows*4&&choiceRow*4+i<choices.Count;i++) {
+                var choice=choices[choiceRow*4+i];var rect=new Rect(left+(x+i%4*cellWidth)*scale,top+(y+i/4*cellHeight)*scale,cellWidth*scale,cellHeight*scale);
+                bool hover=rect.Contains(pointer),selected=(int?)container["selectedChoice"]==(int?)choice["button"];
+                Region(texture,rect,0,166+(selected?cellHeight:hover?cellHeight*2:0),cellWidth,cellHeight);
+                Item(choice,loom?rect:new Rect(rect.x,rect.y,16*scale,16*scale));
+                if(!hover)continue;hovered=choice;
+                if(e.type==EventType.MouseDown&&e.button==0) {ContainerButton(container,(int)choice["button"]);e.Use();}
+            }
         }
         private void DrawCatalog()
         {

@@ -397,7 +397,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "checkpoint" -> {campaigns.save(owner);server.save(false,true,true);status="World and player data saved";}
             case "nativeDeath" -> enemies.confirmDeath(integer(command,"id",0),integer(command,"generation",-1));
             case "rest" -> {if(owner.isAlive()) {owner.setHealth(owner.getMaxHealth());owner.getHungerManager().setFoodLevel(20);owner.getHungerManager().setSaturationLevel(5);campaigns.save(owner);server.save(false,true,true);status="Rested and saved at campaign checkpoint";}}
-            case "containerButton" -> {if(openContainer!=null) {int button=integer(command,"button",-1);if(button>=0&&button<1000) {owner.currentScreenHandler.onButtonClick(owner,button);owner.currentScreenHandler.sendContentUpdates();}}}
+            case "containerButton" -> {if(openContainer!=null&&integer(command,"syncId",-1)==owner.currentScreenHandler.syncId) {int button=integer(command,"button",-1);if(button>=0&&button<1000) {owner.currentScreenHandler.onButtonClick(owner,button);owner.currentScreenHandler.sendContentUpdates();snapshot();}}}
             case "anvilName" -> {if(openContainer!=null&&owner.currentScreenHandler instanceof net.minecraft.screen.AnvilScreenHandler anvil) anvil.setNewItemName(string(command,"name","").substring(0,Math.min(50,string(command,"name","").length())));}
             case "select" -> {owner.getInventory().selectedSlot = clamp(integer(command, "slot", 0), 0, 8);owner.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket(owner.getInventory().selectedSlot));}
             case "mode" -> {
@@ -872,6 +872,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(handler instanceof net.minecraft.screen.EnchantmentScreenHandler enchant) {
                 JsonArray choices=new JsonArray();for(int i=0;i<3;i++) {JsonObject choice=new JsonObject();choice.addProperty("cost",enchant.enchantmentPower[i]);choice.addProperty("level",enchant.enchantmentLevel[i]);var kind=Registries.ENCHANTMENT.get(enchant.enchantmentId[i]);choice.addProperty("name",kind==null?"":kind.getName(enchant.enchantmentLevel[i]).getString());choices.add(choice);}container.add("enchants",choices);
             }
+            ContainerView.append(container,owner,openContainer);
             result.add("container",container);
         }
         Peer current = peer;
