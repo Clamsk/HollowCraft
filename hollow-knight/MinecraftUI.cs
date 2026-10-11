@@ -22,8 +22,9 @@ namespace HollowCraft
         private string anvilName="";
         private JToken hovered;
         private string catalogSearch="";private int catalogPage,shopPage,catalogTab;
-        private bool searchFocused;
-        internal bool SearchFocused => runtime.CatalogOpen&&searchFocused;
+        private bool textInputFocused;
+        internal bool TextInputFocused => textInputFocused;
+        private string anvilSource="";
         internal MinecraftUI(HollowCraftRuntime value) {runtime=value;}
         internal void DrawModes()
         {
@@ -116,6 +117,7 @@ namespace HollowCraft
         }
         private void InventoryInput(JObject snapshot,Rect bounds) {
             var e=Event.current;
+            if(e.type==EventType.KeyDown&&TextInputFocused)return;
             var pointed=drawnSlots.FirstOrDefault(s=>s.Item2.Contains(pointer));int slot=pointed?.Item1??-999;
             if(dragButton>=0&&(dragHandler!=(containerOpen?"container":"player")||dragSyncId!=CurrentSync()))CancelDrag();
             bool shift=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift);
@@ -209,8 +211,10 @@ namespace HollowCraft
                 GUI.color=dead ? new Color(0.4f,0,0,0.65f) : new Color(0,0,0,0.65f);GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);GUI.color=Color.white;
                 string heading=dead ? "You died!" : "Game Menu";Text(heading,Screen.width/2-heading.Length*9,Screen.height/2-100,3);
                 if(Button(dead ? "Respawn" : "Back to Game",Screen.width/2-100*scale,Screen.height/2)) {if(dead) runtime.Send(new {type="respawn",scene=runtime.Room});else runtime.Resume();}
-            } else if(runtime.CatalogOpen) {DrawCatalog();searchFocused=GUI.GetNameOfFocusedControl()=="HollowCraftCreativeSearch";}
+            } else if(runtime.CatalogOpen) DrawCatalog();
             else if(open && inventory!=null) DrawInventory(snapshot,container,inventory,stats);
+            string focused=GUI.GetNameOfFocusedControl();
+            textInputFocused=open&&!dead&&!paused&&(focused=="HollowCraftCreativeSearch"||focused=="HollowCraftAnvilName");
             if(NativeShop.Visible&&!dead&&!paused) DrawShop();
             if(NativeChoice.Visible&&!dead&&!paused) {if(Button("Yes",Screen.width/2-105*scale,Screen.height*.88f,100)) NativeChoice.Decide(true);if(Button("No",Screen.width/2+5*scale,Screen.height*.88f,100)) NativeChoice.Decide(false);}
             if(!open && !NativeShop.Visible && !NativeChoice.Visible && !dead && !paused) {
@@ -267,6 +271,9 @@ namespace HollowCraft
                 }
                 if(brewing) {float progress=1-((int?)container["brew"] ?? 0)/400f;if((int?)container["brew"]>0) Tile("gui_brewing_stand",97,16,9,28*progress,176,0,9,28*progress);int fuel=(int?)container["brewFuel"] ?? 0;if(fuel>0) Tile("gui_brewing_stand",60,44,18*fuel/20f,4,176,29,18*fuel/20f,4);}
                 if(anvil) {
+                    string source=container["syncId"]+"|"+slots[0];
+                    if(source!=anvilSource) {anvilSource=source;anvilName=((int?)slots[0]["count"]??0)>0?(string)slots[0]["name"]??"":"";}
+                    GUI.SetNextControlName("HollowCraftAnvilName");
                     string name=GUI.TextField(new Rect(left+62*scale,top+24*scale,103*scale,12*scale),anvilName,50);
                     if(name!=anvilName) {anvilName=name;runtime.Send(new {type="anvilName",scene=runtime.Room,name});}
                     int cost=(int?)container["cost"] ?? 0;if(cost>0) Text("Cost: "+cost,left+85*scale,top+69*scale,scale,Color.green);
@@ -292,10 +299,7 @@ namespace HollowCraft
             var groups=runtime.CatalogGroups??new JArray();catalogTab=Mathf.Clamp(catalogTab,0,Math.Max(0,groups.Count-1));
             var group=groups.Count>0?groups[catalogTab]:null;string type=(string)group?["type"]??"SEARCH";
             if(type=="INVENTORY") {
-                left=(Screen.width-176*scale)/2;top=(Screen.height-166*scale)/2;
-                DrawCreativeTabs(groups,195,166);
-                DrawInventory(runtime.LatestSnapshot,null,(JArray)runtime.LatestSnapshot["inventory"],runtime.Stats);
-                DrawCreativeTabs(groups,195,166);return;
+                DrawCreativeInventory(groups);return;
             }
             left=(Screen.width-195*scale)/2;top=(Screen.height-136*scale)/2;containerOpen=false;drawnSlots.Clear();
             Tile(type=="SEARCH"?"gui_creative_tab_item_search":"gui_creative_tab_items",0,0,195,136,0,0,195,136);
@@ -335,13 +339,32 @@ namespace HollowCraft
         private void TakeCreative(JToken entry,int count,string destination,int slot) {
             runtime.Send(new {type="creativeItem",scene=runtime.Room,catalogIndex=(int)entry["catalogIndex"],count,destination,slot});
         }
+        private void DrawCreativeInventory(JArray groups) {
+            left=(Screen.width-195*scale)/2;top=(Screen.height-136*scale)/2;containerOpen=false;drawnSlots.Clear();
+            DrawCreativeTabs(groups,195,136);
+            Tile("gui_creative_tab_inventory",0,0,195,136,0,0,195,136);
+            var snapshot=runtime.LatestSnapshot;var stats=runtime.Stats;var equipment=stats?["equipment"] as JArray;
+            for(int i=0;i<4;i++)Slot(equipment?[i],5+i,54+(i/2)*54,6+(i%2)*27);
+            Slot(stats?["offhand"],45,35,20);
+            Portrait(73,6,30,40);
+            var inventory=snapshot?["inventory"] as JArray;
+            if(inventory!=null)for(int i=0;i<36;i++)Slot(inventory[i],i<9?36+i:i,9+i%9*18,i<9?112:54+(i/9-1)*18);
+            var delete=new Rect(left+173*scale,top+112*scale,16*scale,16*scale);
+            var e=Event.current;
+            if(delete.Contains(pointer)) {
+                GUI.color=new Color(1,1,1,.4f);GUI.DrawTexture(delete,Texture2D.whiteTexture);GUI.color=Color.white;
+                if(e.type==EventType.MouseDown&&e.button<=1) {CancelDrag();runtime.Send(new {type="creativeDiscard",scene=runtime.Room,all=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)});e.Use();}
+            }
+            DrawCreativeTabs(groups,195,136);
+            InventoryInput(snapshot,new Rect(left,top-28*scale,195*scale,192*scale));
+        }
         private void DrawCreativeTabs(JArray groups,int width,int height) {
             for(int i=0;i<groups.Count;i++) {
-                var group=groups[i];bool bottom=(string)group["row"]=="BOTTOM",special=(string)group["type"]=="SEARCH"||(string)group["type"]=="INVENTORY";
-                int column=(int)group["column"];float x=special?width-27:column*28,y=bottom?height-4:-28;
-                var rect=new Rect(left+x*scale,top+y*scale,28*scale,32*scale);
-                Region("gui_creative_tabs",rect,column*28,(bottom?64:0)+(i==catalogTab?32:0),28,32);
-                Item(group["icon"],new Rect(rect.x+6*scale,rect.y+(bottom?6:9)*scale,16*scale,16*scale));
+                var group=groups[i];bool bottom=(string)group["row"]=="BOTTOM",special=(bool?)group["special"]??((string)group["type"]=="SEARCH"||(string)group["type"]=="INVENTORY");
+                int column=(int)group["column"];float x=special?width-27*(7-column)+1:column*27,y=bottom?height-4:-28;
+                var rect=new Rect(left+x*scale,top+y*scale,26*scale,32*scale);
+                Region("gui_creative_tabs",rect,column*26,(bottom?64:0)+(i==catalogTab?32:0),26,32);
+                Item(group["icon"],new Rect(rect.x+5*scale,rect.y+(bottom?7:9)*scale,16*scale,16*scale));
                 if(rect.Contains(pointer)) {
                     hovered=group["icon"];
                     if(Event.current.type==EventType.MouseDown&&Event.current.button==0) {CancelDrag();catalogTab=i;catalogPage=0;GUI.FocusControl(null);Event.current.Use();}
@@ -367,10 +390,11 @@ namespace HollowCraft
                 if(pages>1) {if(Button("<",x+8*scale,y+142*scale,34)) shopPage--;if(Button(">",x+168*scale,y+142*scale,34)) shopPage++;}
             }
         }
-        private void Portrait()
+        private void Portrait(float x=26,float y=8,float width=51,float height=70)
         {
-            if(SteveAvatar.NativeTexture!=null) {GUI.DrawTextureWithTexCoords(new Rect(left+26*scale,top+8*scale,51*scale,70*scale),SteveAvatar.NativeTexture,new Rect(.25f,.14f,.5f,.65f));return;}
-            if(SteveAvatar.PortraitTexture!=null) {GUI.DrawTexture(new Rect(left+26*scale,top+8*scale,51*scale,70*scale),SteveAvatar.PortraitTexture,ScaleMode.ScaleToFit);return;}
+            if(SteveAvatar.NativeTexture!=null) {GUI.DrawTextureWithTexCoords(new Rect(left+x*scale,top+y*scale,width*scale,height*scale),SteveAvatar.NativeTexture,new Rect(.25f,.14f,.5f,.65f));return;}
+            if(SteveAvatar.PortraitTexture!=null) {GUI.DrawTexture(new Rect(left+x*scale,top+y*scale,width*scale,height*scale),SteveAvatar.PortraitTexture,ScaleMode.ScaleToFit);return;}
+            if(width!=51) {Tile("steve_skin",x+width*.35f,y+2,width*.3f,height*.3f,8,8,8,8);Tile("steve_skin",x+width*.35f,y+height*.35f,width*.3f,height*.5f,20,20,8,12);return;}
             Tile("steve_skin",45,13,16,16,8,8,8,8);Tile("steve_skin",45,29,16,24,20,20,8,12);
             Tile("steve_skin",37,29,8,24,44,20,4,12);Tile("steve_skin",61,29,8,24,36,52,4,12);
             Tile("steve_skin",45,53,8,24,4,20,4,12);Tile("steve_skin",53,53,8,24,20,52,4,12);

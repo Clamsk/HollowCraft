@@ -243,9 +243,11 @@ namespace HollowCraft
                     float x=(float)message["x"],y=(float)message["y"];
                     var body=cachedHero.GetComponent<Collider2D>();float feetOffset=cachedHero.transform.position.y-body.bounds.min.y;
                     if(float.IsNaN(x)||float.IsNaN(y)||Math.Abs(x)>400||y<-60||y>240) continue;
+                    var landing=NativeLanding.Resolve(cachedHero,new Vector2(x,y),new Vector2((float?)message["normalX"]??0,(float?)message["normalY"]??1));
+                    x=landing.x;y=landing.y;
                     cachedHero.transform.position=new Vector3(x,y+feetOffset,cachedHero.transform.position.z);cachedHero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
                     MinecraftEnvironment.StopMotion();
-                    bridge.Send(new {type="teleportAck",scene,x,y});
+                    bridge.Send(new {type="teleportAck",scene,x,y,teleport=(int?)message["teleport"]??-1});
                 }
             }
             if (!Playable(out HeroController hero)) { MinecraftControls.Tick(null,false,false); Combat.Cancel(); return; }
@@ -269,7 +271,7 @@ namespace HollowCraft
             if (!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
                 bridge.Send(new { type = "mode", scene, mode = creative ? "survival" : "creative" });
             if(!Automated&&Application.isFocused&&connected) Modes.Tick(this,Input.GetKey(KeyCode.F3),Input.GetKeyDown(KeyCode.F4),Input.GetKeyDown(KeyCode.Escape));
-            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.SearchFocused)) {
+            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused)) {
                 if(inventoryOpen||CatalogOpen)CloseInterface();
                 else if(creative)OpenCatalog();
                 else {inventoryOpen=true;bridge.Send(new {type="inventoryOpen",scene});}

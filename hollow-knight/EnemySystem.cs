@@ -27,7 +27,7 @@ namespace HollowCraft
         internal static int Register(Breakable value) {
             int id=value.GetInstanceID();if(!enemies.ContainsKey(id)) enemies[id]=new Adapter {Breakable=value,Resource=true,NativeMax=1,LastNative=1,Max=1,Health=1};return id;
         }
-        internal static object[] Observe(HeroController hero) {
+        internal static object[] Observe(HeroController hero,int required=0) {
             foreach(var pair in enemies) {var entry=pair.Value;if(entry.Health<=0&&!entry.Rewarded&&(entry.Resource ? entry.Breakable==null||!entry.Breakable.gameObject.activeInHierarchy||(bool)(brokenField?.GetValue(entry.Breakable)??false) : entry.Enemy==null||entry.Enemy.isDead)) {entry.Rewarded=true;HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id=pair.Key,generation=entry.Generation});}}
             var observed=new HashSet<int>();var result=new List<object>();
             foreach(var collider in Physics2D.OverlapCircleAll(hero.transform.position,20)) {
@@ -44,6 +44,16 @@ namespace HollowCraft
                 var breakable=collider.GetComponentInParent<Breakable>();if(breakable==null || !breakable.gameObject.activeInHierarchy) continue;
                 int id=Register(breakable);if(!observed.Add(id)) continue;
                 result.Add(new {id,maxHealth=1,health=enemies[id].Health,generation=0,kind="resource",name=breakable.name,x=breakable.transform.position.x,y=collider.bounds.min.y,width=collider.bounds.size.x,height=collider.bounds.size.y});
+            }
+            if(required!=0&&!observed.Contains(required)&&enemies.TryGetValue(required,out Adapter extra)) {
+                var actor=extra.Resource?extra.Breakable?.gameObject:extra.Enemy?.gameObject;
+                if(actor!=null&&actor.activeInHierarchy&&(extra.Resource||!extra.Enemy.isDead)) {
+                    var body=actor.GetComponent<Collider2D>()??actor.GetComponentInChildren<Collider2D>();
+                    if(body!=null) {
+                        string kind=extra.Resource?"resource":actor.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||actor.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0?"undead":"arthropod";
+                        result.Add(new {id=required,maxHealth=extra.Max,health=extra.Health,generation=extra.Generation,kind,name=actor.name,x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,invulnerable=extra.Enemy!=null&&extra.Enemy.IsInvincible});
+                    }
+                }
             }
             return result.ToArray();
         }

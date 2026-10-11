@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
@@ -18,6 +19,8 @@ namespace HollowCraft
         private float retryAt;
         private object hitCommand;
         private MeshRenderer[] meshes;
+        private int pendingTarget;
+        private readonly HashSet<int> hitTargets=new HashSet<int>();
         private void Awake() {meshes=GetComponentsInChildren<MeshRenderer>();}
         internal void Push(JObject value,string scene) {
             room=scene;kind=(string)value["kind"];entity=(int)value["entity"];uuid=(string)value["uuid"];
@@ -32,9 +35,10 @@ namespace HollowCraft
         }
         internal void Retire(){retireAt=Time.unscaledTime+.08f;}
         internal void Resolve(JObject message) {
+            if((bool?)message["accepted"]==true&&pendingTarget!=0)hitTargets.Add(pendingTarget);
             if((bool?)message["removed"]==true) {Retire();return;}
             if((bool?)message["accepted"]==true&&(bool?)message["grounded"]==true) {grounded=true;awaitingImpact=false;from=to=impactPoint;velocity=Vector2.zero;}
-            else if((bool?)message["accepted"]!=true)awaitingImpact=false;
+            else awaitingImpact=false;
         }
         private void Sweep(Vector3 start,Vector3 end) {
             if(awaitingImpact||grounded||retireAt>=0||string.IsNullOrEmpty(uuid)||kind=="minecraft:falling_block"||kind=="minecraft:firework_rocket")return;
@@ -42,28 +46,22 @@ namespace HollowCraft
             foreach(var hit in Physics2D.CircleCastAll(start,kind=="minecraft:ender_pearl"?.125f:.08f,delta.normalized,delta.magnitude)) {
                 var collider=hit.collider;if(collider==null||collider.name.StartsWith("HollowCraft.Block")||collider.GetComponentInParent<HeroController>()!=null)continue;
                 var enemy=collider.GetComponentInParent<HealthManager>();
-                if(enemy==null&&(collider.isTrigger||collider.gameObject.layer!=LayerMask.NameToLayer("Terrain")&&collider.gameObject.layer!=LayerMask.NameToLayer("Default")))continue;
+                var breakable=collider.GetComponentInParent<Breakable>();
+                int targetId=enemy!=null?enemy.GetInstanceID():breakable!=null?breakable.GetInstanceID():0;
+                if(targetId!=0&&hitTargets.Contains(targetId))continue;
+                if(enemy==null&&breakable==null&&(collider.isTrigger||collider.gameObject.layer!=LayerMask.NameToLayer("Terrain")&&collider.gameObject.layer!=LayerMask.NameToLayer("Default")))continue;
                 if(enemy!=null&&enemy.isDead)continue;
                 if(hit.distance<=.001f&&Vector2.Dot(hit.normal,delta)>=0)continue;
                 var runtime=HollowCraftRuntime.Instance;var hero=HeroController.instance;if(runtime==null||hero==null)return;
                 Vector2 normal=hit.normal.sqrMagnitude>.01f?hit.normal:-delta.normalized;
-                Vector2 point=hit.point,landing=PearlLanding(point,normal,hero);
+                Vector2 point=hit.point,landing=kind=="minecraft:ender_pearl"?NativeLanding.FromSurface(hero,point,normal):NativeLanding.CurrentFeet(hero);
                 impactPoint=new Vector3(hit.centroid.x,hit.centroid.y,-.15f);awaitingImpact=true;retryAt=Time.unscaledTime+.4f;
+                pendingTarget=targetId;
+                int target=enemy!=null?EnemySystem.Register(enemy):breakable!=null?EnemySystem.Register(breakable):0;
                 hitCommand=new {type="nativeProjectileHit",scene=room,entity,uuid,x=point.x,y=point.y,normalX=normal.x,normalY=normal.y,
-                    landingX=landing.x,landingY=landing.y,target=enemy!=null?EnemySystem.Register(enemy):0,enemies=EnemySystem.Observe(hero)};
+                    landingX=landing.x,landingY=landing.y,target,enemies=EnemySystem.Observe(hero,target)};
                 runtime.Send(hitCommand);return;
             }
-        }
-        private static Vector2 PearlLanding(Vector2 point,Vector2 normal,HeroController hero) {
-            var body=hero.GetComponent<Collider2D>();var size=new Vector2(body.bounds.size.x,body.bounds.size.y);
-            var baseFeet=point+new Vector2(normal.x*(size.x*.5f+.03f),normal.y>0?.03f:normal.y<0?-size.y-.03f:0);
-            for(int step=0;step<16;step++) {
-                var feet=baseFeet+normal*(step*.1f);bool occupied=false;
-                foreach(var collider in Physics2D.OverlapBoxAll(feet+Vector2.up*size.y*.5f,size*.98f,0,LayerMask.GetMask("Terrain","Default")))
-                    if(!collider.isTrigger&&collider.GetComponentInParent<HeroController>()==null&&collider.GetComponentInParent<HealthManager>()==null) {occupied=true;break;}
-                if(!occupied)return feet;
-            }
-            return new Vector2(hero.transform.position.x,body.bounds.min.y);
         }
         private void Update() {
             if(HollowCraftRuntime.Instance==null||HollowCraftRuntime.Instance.Room!=room||(retireAt>=0&&Time.unscaledTime>=retireAt)){Destroy(gameObject);return;}

@@ -17,6 +17,7 @@ final class CreativeCatalog {
             JsonObject tab=new JsonObject();tab.addProperty("id",Registries.ITEM_GROUP.getId(group).toString());
             tab.addProperty("name",group.getDisplayName().getString());tab.addProperty("type",group.getType().name());
             tab.addProperty("column",group.getColumn());tab.addProperty("row",group.getRow().name());
+            tab.addProperty("special",group.isSpecial());
             tab.add("icon",PlayerBridge.item(group.getIcon()));JsonArray entries=new JsonArray();
             var contents=group.getType()==ItemGroup.Type.SEARCH?group.getSearchTabStacks():group.getDisplayStacks();
             for(ItemStack stack:contents) {

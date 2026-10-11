@@ -52,12 +52,13 @@ public final class HollowCraftBridge implements ModInitializer {
         LOG.info("Bridge player hurt kind={} HP={} hurtTicks={}",source.getName(),entity.getHealth(),entity.hurtTime);
     }
     public static volatile boolean remotePaused;
-    public static void vanillaTeleport(ServerPlayerEntity player) {
+    public static void vanillaTeleport(ServerPlayerEntity player,Vec3d normal) {
         if(instance==null||instance.owner!=player||instance.peer==null||instance.scene.isEmpty()) return;
         instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;instance.fallen=0;
         instance.hadPose=false;instance.wasGrounded=false;
         instance.teleportWaiting=instance.server.getTicks()+40;
-        JsonObject event=new JsonObject();event.addProperty("type","teleport");event.addProperty("scene",instance.scene);event.addProperty("x",instance.exactX);event.addProperty("y",instance.exactY);instance.peer.event(event);
+        JsonObject event=new JsonObject();event.addProperty("type","teleport");event.addProperty("scene",instance.scene);event.addProperty("x",instance.exactX);event.addProperty("y",instance.exactY);
+        event.addProperty("normalX",normal.x);event.addProperty("normalY",normal.y);event.addProperty("teleport",++instance.teleportSerial);instance.peer.event(event);
     }
     private static final Logger LOG = LoggerFactory.getLogger("HollowCraft");
     public static void projectileEvent(net.minecraft.entity.projectile.ProjectileEntity entity,String phase,Vec3d point) {
@@ -96,7 +97,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private BlockPos landingWater;
     private BlockState landingWaterBefore;
     private int collectWaterTick;
-    private int teleportWaiting;
+    private int teleportWaiting,teleportSerial;
     private int nextSwingTick, combo, attackSerial, activeAttack, hitReadyTick;
     private String lastWeapon="";
     private BlockPos openContainer;
@@ -317,7 +318,7 @@ public final class HollowCraftBridge implements ModInitializer {
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;
             String campaign=string(command,"campaign","legacy");
-            if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;}
+            if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");}
             boolean fresh=campaigns.select(owner,campaign,command.has("legacy")&&command.get("legacy").getAsBoolean());
             if(fresh)grantIronStarter();creative=owner.isCreative();campaigns.save(owner);
             introLanding=command.has("intro")&&command.get("intro").getAsBoolean()&&!campaigns.introDone&&name.equals("Tutorial_01");
@@ -383,7 +384,13 @@ public final class HollowCraftBridge implements ModInitializer {
                 FluidBridge.seal(owner.getServerWorld(),pos(centerX,centerY));
                 if(openContainer!=null && (Math.abs(openContainer.getX()-slot*1024-centerX)>6 || Math.abs(openContainer.getY()-64-centerY)>6)) {owner.closeHandledScreen();openContainer=null;}
             }
-            case "teleportAck" -> {teleportWaiting=0;exactX=command.get("x").getAsDouble();exactY=command.get("y").getAsDouble();fallen=0;hadPose=false;wasGrounded=false;}
+            case "teleportAck" -> {
+                if(integer(command,"teleport",-1)!=teleportSerial)break;
+                double x=command.get("x").getAsDouble(),y=command.get("y").getAsDouble();
+                if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)break;
+                teleportWaiting=0;exactX=x;exactY=y;fallen=0;hadPose=false;wasGrounded=false;
+                owner.setPosition(slot*1024+x,64+y,.5);owner.fallDistance=0;
+            }
             case "checkpoint" -> {campaigns.save(owner);server.save(false,true,true);status="World and player data saved";}
             case "nativeDeath" -> enemies.confirmDeath(integer(command,"id",0),integer(command,"generation",-1));
             case "rest" -> {if(owner.isAlive()) {owner.setHealth(owner.getMaxHealth());owner.getHungerManager().setFoodLevel(20);owner.getHungerManager().setSaturationLevel(5);campaigns.save(owner);server.save(false,true,true);status="Rested and saved at campaign checkpoint";}}
@@ -436,7 +443,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "slotClick" -> PlayerBridge.click(owner,command);
             case "inventoryOpen" -> {owner.clearActiveItem();pendingSwing=null;owner.closeHandledScreen();openContainer=null;}
             case "respawn" -> {
-                if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");hadPose=false;}
+                if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");hadPose=false;}
             }
             case "hit" -> {
                 if(activeAttack!=0 && integer(command,"attack",0)==activeAttack && server.getTicks()<hitReadyTick) {pendingHit=command;break;}
@@ -484,7 +491,11 @@ public final class HollowCraftBridge implements ModInitializer {
                 Identifier id=Identifier.tryParse(string(command,"id",""));
                 if(id!=null&&Registries.ITEM.containsId(id)) {int index=clamp(integer(command,"slot",owner.getInventory().selectedSlot),0,35);ItemStack stack=new ItemStack(Registries.ITEM.get(id));stack.setCount(clamp(integer(command,"count",1),1,stack.getMaxCount()));Identifier potion=Identifier.tryParse(string(command,"potion",""));if(potion!=null&&Registries.POTION.containsId(potion)) net.minecraft.potion.PotionUtil.setPotion(stack,Registries.POTION.get(potion));owner.getInventory().setStack(index,stack);}
             }}
-            case "creativeDiscard" -> {if(creative) {owner.playerScreenHandler.setCursorStack(ItemStack.EMPTY);snapshot();}}
+            case "creativeDiscard" -> {if(creative) {
+                owner.playerScreenHandler.setCursorStack(ItemStack.EMPTY);
+                if(command.has("all")&&command.get("all").getAsBoolean())owner.getInventory().clear();
+                snapshot();
+            }}
             case "clearTestFluids" -> {if(creative&&Boolean.getBoolean("hollowcraft.smoke")) {
                 for(int x=centerX-12;x<=centerX+12;x++) for(int y=centerY-10;y<=centerY+10;y++) {BlockPos p=pos(x,y);BlockState state=owner.getServerWorld().getBlockState(p);if(state.isOf(Blocks.WATER)||state.isOf(Blocks.LAVA)||state.isOf(Blocks.FIRE)) owner.getServerWorld().setBlockState(p,Blocks.AIR.getDefaultState(),Block.NOTIFY_ALL);}
             }}

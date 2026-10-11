@@ -13,7 +13,8 @@ public abstract class PearlTeleportMixin {
         var pearl=(EnderPearlEntity)(Object)this;
         if(!pearl.getWorld().isClient&&pearl.getOwner() instanceof ServerPlayerEntity player&&player.isAlive()) {
             org.slf4j.LoggerFactory.getLogger("HollowCraft").info("Pearl collision {} at {} -> owner {} HP {}",hit.getType(),pearl.getPos(),player.getPos(),player.getHealth());
-            dev.hollowcraft.HollowCraftBridge.vanillaTeleport(player);
+            var normal=hit instanceof net.minecraft.util.hit.BlockHitResult block?net.minecraft.util.math.Vec3d.of(block.getSide().getVector()):pearl.getVelocity().negate().normalize();
+            dev.hollowcraft.HollowCraftBridge.vanillaTeleport(player,normal);
         }
     }
 }
