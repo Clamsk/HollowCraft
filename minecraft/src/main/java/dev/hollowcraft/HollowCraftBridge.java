@@ -102,6 +102,7 @@ public final class HollowCraftBridge implements ModInitializer {
     public static volatile boolean remotePaused;
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
     public static boolean audioRequested() {return instance!=null&&instance.peer!=null&&instance.peer.audio;}
+    public static boolean hudRequested() {return instance!=null&&instance.peer!=null&&instance.peer.hud;}
     public static boolean audioReady(String key) {var peer=instance==null?null:instance.peer;return peer!=null&&peer.audio&&peer.audioFiles.contains(key);}
     public static boolean audioEvent(JsonObject event) {
         var peer=instance==null?null:instance.peer;var state=PlayerRenderState.latest;
@@ -240,7 +241,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean());
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\"}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -1006,6 +1007,7 @@ public final class HollowCraftBridge implements ModInitializer {
         result.addProperty("worldTime",owner.getServerWorld().getTime());
         result.addProperty("tick",server.getTicks());result.addProperty("playerSyncId",owner.playerScreenHandler.syncId);
         if(peer!=null&&peer.gui)result.add("gui",NativeGuiBridge.description());
+        if(peer!=null&&peer.hud)result.addProperty("hudSession",NativeHudBridge.SESSION);
         result.addProperty("playerX",owner.getX()-slot*1024);result.addProperty("playerY",owner.getY()-64);
         result.add("enemies",enemies.snapshot());
         JsonArray primed=new JsonArray();
@@ -1096,12 +1098,14 @@ public final class HollowCraftBridge implements ModInitializer {
         final boolean projectileSteps;
         final boolean audio;
         final boolean gui;
+        final boolean hud;
         final Set<String> audioFiles=ConcurrentHashMap.newKeySet();
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud) {
             this.projectileSteps=projectileSteps;
             this.audio=audio;
+            this.hud=hud;
             this.gui=gui;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {

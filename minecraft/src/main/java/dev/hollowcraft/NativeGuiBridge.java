@@ -118,10 +118,10 @@ public final class NativeGuiBridge {
         } catch(Exception error) {warn(error);}finally {buffer.release();}
         return true;
     }
-    public static boolean dimensions() {return scope.get()!=null;}
+    public static boolean dimensions() {return scope.get()!=null||NativeHudBridge.rendering;}
     public static boolean rendering() {var active=scope.get();return active!=null&&active.rendering;}
-    public static int logicalWidth() {return width;}
-    public static int logicalHeight() {return height;}
+    public static int logicalWidth() {return NativeHudBridge.rendering?NativeHudBridge.width():width;}
+    public static int logicalHeight() {return NativeHudBridge.rendering?NativeHudBridge.height():height;}
     public static Boolean keyState(int key) {
         var active=scope.get();if(active==null)return null;
         return switch(key) {case 340,344 -> (active.mods&1)!=0;case 341,345 -> (active.mods&2)!=0;case 342,346 -> (active.mods&4)!=0;case 343,347 -> (active.mods&8)!=0;case 67 -> active.heldC;case 88 -> active.heldX;default -> null;};

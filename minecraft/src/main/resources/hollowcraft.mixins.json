@@ -38,6 +38,7 @@
     ,"NativeGuiSkinMixin"
     ,"NativeGuiMouseMixin"
     ,"NativeGuiScreenMixin"
+    ,"InGameHudAccess"
   ],
   "injectors": {
     "defaultRequire": 1

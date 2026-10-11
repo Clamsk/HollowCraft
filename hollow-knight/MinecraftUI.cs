@@ -168,6 +168,8 @@ namespace HollowCraft
             hovered=null;
             var inventory=snapshot?["inventory"] as JArray;var stats=snapshot?["stats"] as JObject;
             left=(Screen.width-182*scale)/2;top=Screen.height-22*scale;
+            bool nativeHud=runtime.Hud?.Draw()==true;
+            if(!nativeHud) {
             Tile("gui_widgets",0,0,182,22,0,0,182,22);Tile("gui_widgets",selected*20-1,-1,24,24,0,22,24,24);
             if(inventory!=null) for(int i=0;i<9;i++) Item(inventory[i],new Rect(left+(3+i*20)*scale,top+3*scale,16*scale,16*scale));
             Tile("gui_widgets",-29,-1,29,24,24,22,29,24);Item(stats?["offhand"],new Rect(left-23*scale,top+3*scale,16*scale,16*scale));
@@ -191,6 +193,7 @@ namespace HollowCraft
                 int level=(int?)stats["level"] ?? 0;if(level>0) Text(level.ToString(),Screen.width/2-3*scale,top-17*scale,scale,Color.green);
             }
             if(!connected) Text("Connecting to Minecraft...",16,16,2);
+            }
             if(PlayerData.instance!=null) Text("Geo: "+PlayerData.instance.geo,16,connected?16:38,scale*.75f);
             if(!string.IsNullOrEmpty(CampaignBridge.DialogueText) && !dead && !paused) {
                 if(dialogueFont==null) dialogueFont=Font.CreateDynamicFontFromOSFont("Microsoft YaHei",18);
@@ -202,13 +205,13 @@ namespace HollowCraft
                     if(Event.current.type==EventType.MouseDown && box.Contains(pointer)) {CampaignBridge.AdvanceDialogue();Event.current.Use();}}
             }
             var effects=stats?["effects"] as JArray;
-            if(effects!=null) for(int i=0;i<effects.Count;i++) {
+            if(!nativeHud&&effects!=null) for(int i=0;i<effects.Count;i++) {
                 string id=(string)effects[i]["id"],name=id?.Split(':').Last();var icon=Texture("effect_"+name);
                 float x=Screen.width-28*scale,y=8*scale+i*32*scale;
                 if(icon!=null) GUI.DrawTexture(new Rect(x,y,18*scale,18*scale),icon);
                 int seconds=((int?)effects[i]["ticks"] ?? 0)/20;Text((seconds/60)+":"+(seconds%60).ToString("00"),x,y+19*scale,scale*.7f);
             }
-            if((bool?)stats?["water"]==true && ((int?)stats?["air"] ?? 300)<300) {
+            if(!nativeHud&&(bool?)stats?["water"]==true && ((int?)stats?["air"] ?? 300)<300) {
                 int bubbles=Mathf.CeilToInt(((int?)stats["air"] ?? 0)/30f);for(int i=0;i<10;i++) Tile("gui_icons",173-i*8,-27,9,9,i<bubbles ? 16 : 25,18,9,9);
             }
             bool nativeGui=false;

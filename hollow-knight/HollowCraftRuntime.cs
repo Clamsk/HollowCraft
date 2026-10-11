@@ -64,6 +64,7 @@ namespace HollowCraft
         private MinecraftAudio audio;
         private readonly NativeParticleView particles=new NativeParticleView();
         internal NativeGuiView Gui;
+        internal NativeHudView Hud;
         internal int UiRequest;
         private int uiRequests;
         private int lastProjectileTick=-1;
@@ -120,6 +121,7 @@ namespace HollowCraft
         private bool BridgeIntro => (CampaignSession.IntroPending||openingSync)&&cachedManager!=null&&cachedManager.GetSceneNameString()=="Tutorial_01";
         internal bool InGame => cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
         internal bool Creative => creative;
+        internal bool Connected=>bridge?.Connected==true;
         internal string Mode=>(string)Stats?["mode"]??"survival";
         internal bool Spectator=>Mode=="spectator";
         internal JObject LastLanding;
@@ -175,6 +177,7 @@ namespace HollowCraft
             Application.runInBackground=true;
             ui=new MinecraftUI(this);
             Gui=new NativeGuiView(this);
+            Hud=new NativeHudView(this);
         }
         private void OnDestroy()
         {
@@ -182,6 +185,7 @@ namespace HollowCraft
             bridge?.Dispose(); ClearBlocks();
             particles.Dispose();
             Gui?.Dispose();
+            Hud?.Dispose();
             MinecraftControls.Restore(); Instance=null;
 
             foreach (Texture2D texture in textures.Values) Destroy(texture);
@@ -204,6 +208,7 @@ namespace HollowCraft
         private void Update()
         {
             Gui?.Refresh(assets);
+            Hud?.Refresh(assets);
             pointerInput.Context(InGame&&!GameplayBlocked&&!Automated&&Application.isFocused);
             string activeScene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (activeScene!=diagnosticScene)
@@ -642,7 +647,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { audio?.StopAll();particles.Reset();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { audio?.StopAll();particles.Reset();Hud?.Reset();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {
