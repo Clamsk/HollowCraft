@@ -50,6 +50,16 @@ namespace HollowCraft
         {
             var runtime=HollowCraftRuntime.Instance;if(runtime==null) return false;
             if(amount<=0 || runtime.Dead || runtime.Creative || runtime.Spectator) return true;
+            var nativeHero=HeroController.instance;
+            if(nativeHero!=null)hero=nativeHero;
+            if(hero==null)return true;
+            // Preserve native transition/story immunity before replacing mask damage with MC damage.
+            if(nativeHero!=null) {
+                if(nativeHero.damageMode==DamageMode.NO_DAMAGE||nativeHero.transitionState!=HeroTransitionState.WAITING_TO_TRANSITION
+                    ||nativeHero.cState.dead||nativeHero.cState.hazardDeath||PlayerData.instance?.isInvincible==true||BossSceneController.IsTransitioning)return true;
+                if(hazardType==1&&(nativeHero.damageMode==DamageMode.HAZARD_ONLY||nativeHero.cState.invulnerable||nativeHero.cState.recoiling
+                    ||nativeHero.cState.shadowDashing||nativeHero.parryInvulnTimer>0))return true;
+            }
             // TakeDamage uses 1 for ordinary contact; 2+ are spikes, acid, lava and pits.
             var enemy=source!=null ? source.GetComponentInParent<HealthManager>() : null;
             int sourceId=source!=null?source.GetInstanceID():0;

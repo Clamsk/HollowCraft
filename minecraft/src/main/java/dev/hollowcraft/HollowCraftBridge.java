@@ -101,6 +101,12 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     public static volatile boolean remotePaused;
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
+    public static boolean delegateLegacyTerrain(BlockState state,BlockPos pos,net.minecraft.block.ShapeContext context) {
+        var bridge=instance;
+        return bridge!=null&&state.isOf(Blocks.BARRIER)&&pos.getZ()==0
+            &&Math.abs(pos.getX()-bridge.slot*1024-bridge.centerX)<=32&&Math.abs(pos.getY()-64-bridge.centerY)<=28
+            &&context instanceof net.minecraft.block.EntityShapeContext entity&&entity.getEntity() instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&nativeProjectile(projectile);
+    }
     public static boolean audioRequested() {return instance!=null&&instance.peer!=null&&instance.peer.audio;}
     public static boolean hudRequested() {return instance!=null&&instance.peer!=null&&instance.peer.hud;}
     public static boolean audioReady(String key) {var peer=instance==null?null:instance.peer;return peer!=null&&peer.audio&&peer.audioFiles.contains(key);}
@@ -457,12 +463,14 @@ public final class HollowCraftBridge implements ModInitializer {
                 reachY=exactY+(command.has("gliding")&&command.get("gliding").getAsBoolean()?.4:command.has("crouching")&&command.get("crouching").getAsBoolean()?1.27:1.62);
                 boolean grounded=command.has("grounded") && command.get("grounded").getAsBoolean();
                 boolean gliding=command.has("gliding")&&command.get("gliding").getAsBoolean();
+                boolean scripted=command.has("scripted")&&command.get("scripted").getAsBoolean();
                 if(gliding && !grounded && owner.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA)) owner.startFallFlying();else if(owner.isFallFlying()) owner.stopFallFlying();
-                if(owner.isTouchingWater()||owner.isClimbing()||gliding) fallen=0;
+                if(scripted) {fallen=0;owner.fallDistance=0;footstepDistance=0;}
+                if(scripted||owner.isTouchingWater()||owner.isClimbing()||gliding) fallen=0;
                 else if(hadPose&&!wasGrounded)fallen+=Math.max(0,(float)(lastPoseY-exactY));
                 // A late connection can start after the first landing. The pending opening
                 // must still place water instead of requiring a previously observed air pose.
-                if(grounded&&((hadPose&&!wasGrounded)||introLanding)) {
+                if(!scripted&&grounded&&((hadPose&&!wasGrounded)||introLanding)) {
                     boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(fallen>=11.999f||introLanding)&&placeLandingWater();
                     if(!creative&&!owner.isSpectator()&&!waterSave)owner.handleFallDamage(fallen,1,owner.getDamageSources().fall());
                     if(creative&&fallen>12)landingEvent("hero",fallen);
@@ -472,11 +480,11 @@ public final class HollowCraftBridge implements ModInitializer {
                     }
                     fallen=0;owner.fallDistance=0;
                 }
-                if(hadPose && !creative) {
+                if(hadPose && !creative && !scripted) {
                     if(command.has("sprinting") && command.get("sprinting").getAsBoolean()) owner.addExhaustion((float)Math.min(2,Math.abs(exactX-lastPoseX))*0.1f);
                     if(wasGrounded && !grounded && exactY>lastPoseY+0.02) owner.addExhaustion(0.05f);
                 }
-                if(hadPose&&wasGrounded&&grounded&&!owner.isSpectator()&&!(command.has("crouching")&&command.get("crouching").getAsBoolean())&&!owner.isTouchingWater()) {
+                if(!scripted&&hadPose&&wasGrounded&&grounded&&!owner.isSpectator()&&!(command.has("crouching")&&command.get("crouching").getAsBoolean())&&!owner.isTouchingWater()) {
                     footstepDistance+=Math.min(2,Math.abs(exactX-lastPoseX))*.6;
                     if(footstepDistance>=1) {
                         footstepDistance%=1;var floor=pos((int)Math.floor(exactX),(int)Math.floor(exactY-.05));var state=owner.getServerWorld().getBlockState(floor);

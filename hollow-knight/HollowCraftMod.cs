@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.21 loaded. Vanilla HUD plus guarded inventory and container screens; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.22 loaded. Native campaign control and damage guards, legacy projectile terrain compatibility; localhost:31674.");
         }
         public static string SaveRoot()
         {

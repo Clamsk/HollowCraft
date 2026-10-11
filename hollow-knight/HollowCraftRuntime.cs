@@ -128,7 +128,9 @@ namespace HollowCraft
         internal int LandingEvents;
         internal readonly GameModeMenu Modes=new GameModeMenu();
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
-        internal bool GameplayBlocked=>cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
+        internal bool InterfaceBlocked=>cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
+        internal bool NativeControlLocked=>cachedHero?.controlReqlinquished==true&&!BridgeIntro;
+        internal bool GameplayBlocked=>InterfaceBlocked||NativeControlLocked;
         internal bool SimulationPaused=>paused||connectionFrozen||Dead;
         internal bool AudioPaused=>paused||connectionFrozen;
         internal bool CatalogOpen;
@@ -316,7 +318,7 @@ namespace HollowCraft
             if (!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
                 bridge.Send(new { type = "mode", scene, mode = creative ? "survival" : "creative" });
             if(!Automated&&Application.isFocused&&connected) Modes.Tick(this,Input.GetKey(KeyCode.F3),Input.GetKeyDown(KeyCode.F4),Input.GetKeyDown(KeyCode.Escape));
-            if (!Automated && Application.isFocused && building && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused&&Gui?.Active!=true)) {
+            if (!Automated && Application.isFocused && building && !NativeControlLocked && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused&&Gui?.Active!=true)) {
                 if(inventoryOpen||CatalogOpen)CloseInterface();
                 else if(creative)OpenCatalog();
                 else {inventoryOpen=true;UiRequest=++uiRequests;bridge.Send(new {type="inventoryOpen",scene,uiRequest=UiRequest});}
@@ -331,7 +333,8 @@ namespace HollowCraft
             NativeChoice.Tick();
             if(!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F9) && creative) bridge.Send(new {type="kit",scene});
             if(!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F10) && creative) bridge.Send(new {type="adventureKit",scene});
-            MinecraftControls.Tick(hero,building,GameplayBlocked||Automated);
+            // Native story FSMs still need key-release events while they own the hero.
+            MinecraftControls.Tick(hero,building,InterfaceBlocked||Automated);
             GameCursor.WorldTarget(hero,out _,out crosshair);
             if(connected&&Time.unscaledTime>=nextVisual) {
                 nextVisual=Time.unscaledTime+.033f;
@@ -449,12 +452,12 @@ namespace HollowCraft
             var pose=new JObject { ["type"]="pose",["scene"]=scene,["x"]=x,["y"]=y,
                 ["exactX"]=hero.transform.position.x,["exactY"]=hero.GetComponent<Collider2D>().bounds.min.y,
                 ["grounded"]=MinecraftControls.Grounded(hero),["gliding"]=MinecraftEnvironment.Gliding,
-                ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching };
+                ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked };
             if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));}
             bridge.Send(pose);
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;}
-        private void LateUpdate() {FlushNativeSteps();GameCursor.ApplyCursor();particles.Draw(assets,this,cachedHero,InGame&&bridge?.Connected==true&&building&&!Dead);if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
+        private void LateUpdate() {FlushNativeSteps();GameCursor.ApplyCursor();particles.Draw(assets,this,cachedHero,InGame&&bridge?.Connected==true&&building&&!Dead);if(placementGhost!=null && (GameplayBlocked||!building)) placementGhost.SetActive(false);if(GameplayBlocked||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
         internal void CloseInterface() {ui.CancelDrag();UiRequest=0;Gui?.Reset();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
         private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;UiRequest=++uiRequests;Send(new {type="creativeCatalog",scene,uiRequest=UiRequest});}
         private bool HandleHotbarShortcut() {

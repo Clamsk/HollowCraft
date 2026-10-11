@@ -15,6 +15,7 @@
     ,"StepSoundAccess"
     ,"RemoteSoundAudienceMixin"
     ,"RemotePlacementMixin"
+    ,"NativeTerrainRaycastMixin"
   ],
   "client": [
     "ItemRendererAccess",
