@@ -1,8 +1,8 @@
-# HollowCraft 0.27 试玩版本
+# HollowCraft 0.28 试玩版本
 
 Minecraft-style survival and combat in Hollow Knight
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见《试玩说明-0.27.md》，初始装备延续 0.6。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见《试玩说明-0.28.md》，初始装备延续 0.6。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
@@ -16,7 +16,7 @@ Minecraft 1.20.1 的生存玩家、物品栏、方块、合成与容器接入 St
 
 ## 启动
 
-保持 Steam 登录，双击 Start HollowCraft.cmd。等待 Minecraft 自动进入独立世界，保持它运行，然后在空洞测试副本里新建或读取试玩存档。进入地图默认生存模式，角色是 Steve。在长椅保存空洞进度后，双击 Stop HollowCraft.cmd 可保存 MC 世界和物品并退出两端；只关闭空洞后再次启动会复用本项目的 MC 后端。
+保持 Steam 登录，双击 Start HollowCraft.cmd。等待 Minecraft 自动进入独立世界，保持它运行，然后在空洞测试副本里新建或读取试玩存档。进入地图默认生存模式，角色是 Steve。在长椅保存空洞进度后，双击 Stop HollowCraft.cmd 可保存 MC 世界和物品并退出两端；只关闭空洞后再次启动会复用同一构建的 MC 后端。升级后请先运行 Stop HollowCraft.cmd 再启动；旧后端没有保存确认协议时须正常关闭 MC 窗口，脚本不会强制结束它。
 
 试玩使用 runtime/minecraft 与 runtime/hk-test-saves。自动测试使用 minecraft-smoke 与 hk-smoke-saves。Steam 原程序集、PCL 配置及个人存档不改动。测试副本通过硬链接或目录联接复用部分只读资源，请勿编辑这些资源目录。Java 参数文件采用本机 GBK 编码并验证往返，避免中文路径乱码。
 

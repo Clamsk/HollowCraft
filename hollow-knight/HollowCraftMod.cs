@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.27 loaded. Vanilla movement acceleration, surface friction, jump multiplier and fluid drag; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.28 loaded. Version-matched backend reuse and current-campaign save acknowledgement; localhost:31674.");
         }
         public static string SaveRoot()
         {

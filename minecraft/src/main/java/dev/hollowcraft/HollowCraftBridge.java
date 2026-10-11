@@ -250,7 +250,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
                 Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean(),hello.has("nativeEntityRender")&&hello.get("nativeEntityRender").getAsBoolean(),hello.has("nativeBlockRender")&&hello.get("nativeBlockRender").getAsBoolean());
-                current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\"}");
+                current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\",\"saveSession\":true}");
                 socket.setSoTimeout(0);
                 peer = current;
                 while (running && !socket.isClosed()) {
@@ -416,6 +416,13 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private void executeCommand(JsonObject command) throws IOException {
         String type = string(command, "type", "");
+        if(type.equals("saveSession")) {
+            collectLandingWater();closeGui();owner.clearActiveItem();owner.closeHandledScreen();
+            pendingHit=null;pendingSwing=null;miningPos=null;miningProgress=0;
+            campaigns.save(owner);server.getPlayerManager().saveAllPlayerData();server.save(false,true,true);remotePaused=true;
+            var reply=new JsonObject();reply.addProperty("type","sessionSaved");reply.addProperty("request",string(command,"request",""));reply.addProperty("campaign",campaigns.id());
+            if(peer!=null)peer.send(reply.toString());return;
+        }
         if (type.equals("scene")) {
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;

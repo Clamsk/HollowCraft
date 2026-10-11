@@ -2,6 +2,7 @@ $ErrorActionPreference='Stop'
 $projectTaskRoot=Split-Path $PSScriptRoot -Parent
 $profileTask=Join-Path $projectTaskRoot 'runtime\minecraft'
 $gameTestTask=Join-Path $projectTaskRoot 'runtime\Hollow Knight'
+$bridgeHashTask=(Get-FileHash -LiteralPath (Join-Path $projectTaskRoot 'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar') -Algorithm SHA256).Hash
 # Prevent duplicate worlds and bridge-port conflicts without touching unrelated game processes.
 $reuseMinecraftTask=$false
 foreach($componentTask in @('minecraft','hollow-knight')) {
@@ -12,7 +13,10 @@ foreach($componentTask in @('minecraft','hollow-knight')) {
         if($existingTask -and $existingTask.StartTime.ToUniversalTime().Ticks -eq $recordTask.startedTicks) {
             $expectedPathTask=if($componentTask -eq 'minecraft') {'C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe'}else{Join-Path $gameTestTask 'hollow_knight.exe'}
             if($existingTask.Path -ne $expectedPathTask) {throw 'HollowCraft process ownership mismatch.'}
-            if($componentTask -eq 'minecraft') {$reuseMinecraftTask=$true}else{throw 'HollowCraft is already running. Close the previous game window before launching again.'}
+            if($componentTask -eq 'minecraft') {
+                if($recordTask.bridgeSha256 -ne $bridgeHashTask) {throw 'Minecraft backend uses an older or unrecorded build. Run Stop HollowCraft.cmd, then Start HollowCraft.cmd to load the updated mod.'}
+                $reuseMinecraftTask=$true
+            }else{throw 'HollowCraft is already running. Close the previous game window before launching again.'}
         }
     }
 }
@@ -23,7 +27,7 @@ if(-not $reuseMinecraftTask -and (Test-NetConnection -ComputerName 127.0.0.1 -Po
 if(-not $reuseMinecraftTask) {
     & (Join-Path $PSScriptRoot 'prepare-mc-test.ps1')
     $mcTask=Start-Process -FilePath 'C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe' -WorkingDirectory $profileTask -ArgumentList ('@"'+(Join-Path $profileTask 'launch.args')+'"') -WindowStyle Hidden -RedirectStandardOutput (Join-Path $profileTask 'launcher.stdout.log') -RedirectStandardError (Join-Path $profileTask 'launcher.stderr.log') -PassThru
-    @{id=$mcTask.Id;path='C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe';startedTicks=$mcTask.StartTime.ToUniversalTime().Ticks} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $projectTaskRoot 'runtime\minecraft-process.json')
+    @{id=$mcTask.Id;path='C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe';startedTicks=$mcTask.StartTime.ToUniversalTime().Ticks;bridgeSha256=$bridgeHashTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $projectTaskRoot 'runtime\minecraft-process.json')
 }
 $env:HOLLOWCRAFT_SAVE_ROOT=Join-Path $projectTaskRoot 'runtime\hk-test-saves'
 $env:HOLLOWCRAFT_AUTOSTART='0'; $env:HOLLOWCRAFT_SMOKE='0';$env:HOLLOWCRAFT_CAPTURE='0'
