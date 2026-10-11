@@ -1,0 +1,59 @@
+package dev.hollowcraft;
+
+import com.google.gson.*;
+import net.minecraft.entity.projectile.*;
+import net.minecraft.entity.FlyingItemEntity;
+import net.minecraft.item.*;
+import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.*;
+
+/** Use vanilla item actions and entities; damage, enchantments and potion effects remain server-owned. */
+final class ItemUseBridge {
+    static void use(ServerPlayerEntity player,JsonObject command,BlockPos target) {
+        if(command.has("cancel")&&command.get("cancel").getAsBoolean()) {player.clearActiveItem();return;}
+        double dx=command.has("aimX")?command.get("aimX").getAsDouble():1;
+        double dy=command.has("aimY")?command.get("aimY").getAsDouble():0;
+        if(!Double.isFinite(dx)||!Double.isFinite(dy)) return;
+        player.setYaw(dx>=0?-90:90);player.setPitch((float)-Math.toDegrees(Math.atan2(dy,Math.abs(dx))));player.setHeadYaw(player.getYaw());
+        if(command.has("release")&&command.get("release").getAsBoolean()) {player.stopUsingItem();return;}
+        if(!command.has("start")||!command.get("start").getAsBoolean()||player.isUsingItem()||!player.isAlive()) return;
+        for(var hand:new Hand[]{Hand.MAIN_HAND,Hand.OFF_HAND}) {
+            var stack=player.getStackInHand(hand);
+            if(stack.isEmpty()||stack.getItem() instanceof BlockItem)continue;
+            if(stack.getItem() instanceof BucketItem) {FluidBridge.bucket(player,stack,hand,target);return;}
+            var result=player.interactionManager.interactItem(player,player.getServerWorld(),stack,hand);
+            org.slf4j.LoggerFactory.getLogger("HollowCraft").info("Remote use {} hand={} result={} using={} ammo={}",Registries.ITEM.getId(stack.getItem()),hand,result,player.isUsingItem(),player.getProjectileType(stack));
+            if(result.isAccepted())return;
+        }
+    }
+    private static Box region(int offset,int x,int y) {return new Box(offset+x-28,64+y-24,-4,offset+x+28,64+y+24,4);}
+    static void tick(ServerPlayerEntity player,int offset,int x,int y) {
+        for(var projectile:player.getServerWorld().getEntitiesByClass(ProjectileEntity.class,region(offset,x,y),e->true)) {
+            projectile.setPosition(projectile.getX(),projectile.getY(),.5);
+            projectile.setVelocity(projectile.getVelocity().multiply(1,1,0));
+            // Keep arrows pickable, including ammunition fired by the native scene's player.
+            if(projectile instanceof PersistentProjectileEntity arrow&&arrow.squaredDistanceTo(player)<2.25) arrow.onPlayerCollision(player);
+        }
+        for(var block:player.getServerWorld().getEntitiesByClass(net.minecraft.entity.FallingBlockEntity.class,region(offset,x,y),e->true)) {block.setPosition(block.getX(),block.getY(),.5);block.setVelocity(block.getVelocity().multiply(1,1,0));}
+    }
+    static JsonArray snapshot(ServerPlayerEntity player,int offset,int x,int y) {
+        JsonArray result=new JsonArray();
+        for(var projectile:player.getServerWorld().getEntitiesByClass(ProjectileEntity.class,region(offset,x,y),e->true)) {
+            result.add(projectile(projectile,offset));
+        }
+        for(var block:player.getServerWorld().getEntitiesByClass(net.minecraft.entity.FallingBlockEntity.class,region(offset,x,y),e->true)) {
+            JsonObject value=new JsonObject();value.addProperty("entity",block.getId());value.addProperty("kind","minecraft:falling_block");value.addProperty("item",Registries.ITEM.getId(block.getBlockState().getBlock().asItem()).toString());value.addProperty("x",block.getX()-offset);value.addProperty("y",block.getY()-64+.5);value.addProperty("vx",block.getVelocity().x);value.addProperty("vy",block.getVelocity().y);result.add(value);
+        }
+        return result;
+    }
+    static JsonObject projectile(ProjectileEntity projectile,int offset) {
+        JsonObject value=new JsonObject();value.addProperty("entity",projectile.getId());value.addProperty("kind",Registries.ENTITY_TYPE.getId(projectile.getType()).toString());
+        value.addProperty("x",projectile.getX()-offset);value.addProperty("y",projectile.getY()-64);value.addProperty("vx",projectile.getVelocity().x);value.addProperty("vy",projectile.getVelocity().y);
+        boolean grounded=projectile instanceof PersistentProjectileEntity arrow&&((dev.hollowcraft.mixin.ArrowAccess)arrow).hollowcraft$inGround();
+        value.addProperty("grounded",grounded);
+        String item=projectile instanceof FlyingItemEntity flying?PlayerBridge.renderKey(flying.getStack()):projectile instanceof TridentEntity?"minecraft:trident":"minecraft:arrow";
+        value.addProperty("item",item);return value;
+    }
+}

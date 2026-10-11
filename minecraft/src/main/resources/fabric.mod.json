@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "hollowcraft_bridge",
+  "version": "0.8.0",
+  "name": "HollowCraft Minecraft Bridge",
+  "description": "Real Minecraft inventory and block rules for Hollow Knight's 2D scenes. Use only a separate world named HollowCraft.",
+  "authors": ["HollowCraft project"],
+  "environment": "*",
+  "mixins": ["hollowcraft.mixins.json"],
+  "entrypoints": { "main": ["dev.hollowcraft.HollowCraftBridge"], "client": ["dev.hollowcraft.HollowCraftClient"] },
+  "depends": { "fabricloader": ">=0.16.14", "minecraft": "1.20.1", "java": ">=17", "fabric-api": "*" }
+}

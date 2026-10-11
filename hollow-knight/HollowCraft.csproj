@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>HollowCraft</AssemblyName>
+    <Version>0.8.0</Version>
+    <GameManaged>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed</GameManaged>
+    <FrameworkPathOverride>$(GameManaged)</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="UnityEngine"><HintPath>$(GameManaged)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TeamCherry.Localization"><HintPath>$(GameManaged)/TeamCherry.Localization.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="PlayMaker"><HintPath>$(GameManaged)/PlayMaker.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(GameManaged)/Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Newtonsoft.Json"><HintPath>$(GameManaged)/Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityModules">
+      <HintPath>$(GameManaged)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private>
+    </Reference>
+    <Reference Include="UnityPhysics"><HintPath>$(GameManaged)/UnityEngine.Physics2DModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityInput"><HintPath>$(GameManaged)/UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityIMGUI"><HintPath>$(GameManaged)/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityImage"><HintPath>$(GameManaged)/UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityText"><HintPath>$(GameManaged)/UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityScreenCapture"><HintPath>$(GameManaged)/UnityEngine.ScreenCaptureModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="netstandard"><HintPath>$(GameManaged)/netstandard.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,27 @@
+plugins { id 'fabric-loom' version '1.8.13' }
+version = '0.1.0'
+group = 'dev.hollowcraft'
+base { archivesName = 'hollowcraft-minecraft' }
+repositories {
+    // Reuse the user's PCL installation for two large vanilla dependencies.
+    // Artifact-only metadata avoids changing or writing to that installation.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'InstalledMinecraftLibraries'
+                url = uri('C:/Program Files (x86)/MC/.minecraft/libraries')
+                metadataSources { artifact() }
+            }
+        }
+        filter { includeGroup 'com.ibm.icu'; includeGroup 'it.unimi.dsi' }
+    }
+    mavenCentral()
+}
+dependencies {
+    minecraft 'com.mojang:minecraft:1.20.1'
+    mappings 'net.fabricmc:yarn:1.20.1+build.10:v2'
+    modImplementation 'net.fabricmc:fabric-loader:0.16.14'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.92.6+1.20.1'
+}
+java { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+tasks.withType(JavaCompile).configureEach { options.release = 17; options.encoding = 'UTF-8' }

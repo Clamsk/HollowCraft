@@ -1,0 +1,26 @@
+dependencies/
+artifacts/
+runtime/
+**/bin/
+**/obj/
+**/build/
+**/.gradle/
+local.json
+*.log
+
+# Local investigation, personal state and disassembled game code.
+development-session*.json
+validation-*.json
+*-bytecode.txt
+*.jfr
+*.dmp
+*.tmp
+*.bak
+.env
+.env.*
+*.pem
+*.key
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

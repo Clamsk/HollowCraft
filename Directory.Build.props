@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <RestoreIgnoreFailedSources>true</RestoreIgnoreFailedSources>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
+</Project>
