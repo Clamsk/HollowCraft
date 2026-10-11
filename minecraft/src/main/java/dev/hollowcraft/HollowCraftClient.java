@@ -36,6 +36,7 @@ public final class HollowCraftClient implements ClientModInitializer {
             CreativeHotbars.tick(client);
             ItemModelIcons.tick(client);
             PlayerVisualBridge.tick(client);
+            NativeParticleBridge.render(client,1);
             if(client.getServer()!=null&&HollowCraftBridge.remoteActive()) {
                 if(previousMusic==null)previousMusic=(double)client.options.getSoundVolume(net.minecraft.sound.SoundCategory.MUSIC);
                 if(client.options.getSoundVolume(net.minecraft.sound.SoundCategory.MUSIC)!=0) {
@@ -74,7 +75,10 @@ public final class HollowCraftClient implements ClientModInitializer {
                     .with(registries,new FlatChunkGenerator(config));
             });
         });
-        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.END.register(context ->
-            PlayerVisualBridge.render(net.minecraft.client.MinecraftClient.getInstance(),context.tickDelta()));
+        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.END.register(context -> {
+            var client=net.minecraft.client.MinecraftClient.getInstance();
+            PlayerVisualBridge.render(client,context.tickDelta());NativeParticleBridge.render(client,context.tickDelta());
+        });
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(client->NativeParticleBridge.close());
     }
 }

@@ -27,6 +27,9 @@
     ,"LimbAnimatorAccess"
     ,"LoomPreviewAccess"
     ,"NativeSoundMixin"
+    ,"ParticleManagerAccess"
+    ,"MatrixStackAccess"
+    ,"ParticleAlphaMixin"
   ],
   "injectors": {
     "defaultRequire": 1

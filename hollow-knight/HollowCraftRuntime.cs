@@ -62,6 +62,7 @@ namespace HollowCraft
         private int waterLandingSerial;
         private int waterLandingPhase,waterLandingHand;
         private MinecraftAudio audio;
+        private readonly NativeParticleView particles=new NativeParticleView();
         private int lastProjectileTick=-1;
         private float nextVisual;
         private Vector2Int mineCell = new Vector2Int(int.MinValue, int.MinValue);
@@ -175,6 +176,7 @@ namespace HollowCraft
         {
             pointerInput.Dispose();
             bridge?.Dispose(); ClearBlocks();
+            particles.Dispose();
             MinecraftControls.Restore(); Instance=null;
 
             foreach (Texture2D texture in textures.Values) Destroy(texture);
@@ -322,9 +324,12 @@ namespace HollowCraft
             if(connected&&Time.unscaledTime>=nextVisual) {
                 nextVisual=Time.unscaledTime+.033f;
                 var body=hero.GetComponent<Rigidbody2D>();
+                var camera=GameCursor.GameCamera();
                 float viewYaw=MinecraftControls.FrontView?0:-MinecraftControls.Facing*75;
                 if(Combat.Swinging)viewYaw=-Mathf.Sign(Combat.Aim.x)*75;
                 bridge.Send(new {type="visual",scene,viewYaw,speed=body.linearVelocity.x,vy=body.linearVelocity.y,
+                    viewX=camera!=null?camera.transform.position.x:hero.transform.position.x,viewY=camera!=null?camera.transform.position.y:hero.transform.position.y,
+                    viewWidth=camera!=null?camera.orthographicSize*2*camera.aspect:36,viewHeight=camera!=null?camera.orthographicSize*2:24,
                     crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,
                     pitch=usingItem&&GameCursor.WorldTarget(hero,out Vector2 aimPoint,out _)?-Mathf.Atan2(aimPoint.y-GameCursor.Eye(hero).y,Mathf.Abs(aimPoint.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0,
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
@@ -434,7 +439,7 @@ namespace HollowCraft
             bridge.Send(pose);
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;}
-        private void LateUpdate() {FlushNativeSteps();GameCursor.ApplyCursor();if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
+        private void LateUpdate() {FlushNativeSteps();GameCursor.ApplyCursor();particles.Draw(assets,this,cachedHero,InGame&&bridge?.Connected==true&&building&&!Dead);if(placementGhost!=null && (inventoryOpen||CatalogOpen||paused||Dead||!building)) placementGhost.SetActive(false);if(inventoryOpen||CatalogOpen||paused||Dead||(!Automated&&!Application.isFocused)) {StopMining();if(usingItem) {Send(new {type="itemUse",scene,cancel=true});usingItem=false;}}}
         internal void CloseInterface() {ui.CancelDrag();inventoryOpen=false;CatalogOpen=false;container=null;bridge.Send(new {type="close",scene});}
         private void OpenCatalog() {StopMining();Combat.Cancel();CloseInterface();CatalogOpen=true;Send(new {type="creativeCatalog",scene});}
         private bool HandleHotbarShortcut() {
@@ -626,7 +631,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { audio?.StopAll();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { audio?.StopAll();particles.Reset();nativeProjectileSteps.Clear();retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

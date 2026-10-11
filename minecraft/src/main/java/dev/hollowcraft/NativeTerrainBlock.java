@@ -11,7 +11,7 @@ import net.minecraft.world.BlockView;
 /** Transient native collision, with the actual platform height instead of a full barrier cube. */
 final class NativeTerrainBlock extends Block {
     static final NativeTerrainBlock INSTANCE = new NativeTerrainBlock();
-    static final Map<BlockPos,VoxelShape> shapes = new HashMap<>();
+    static final Map<BlockPos,VoxelShape> shapes = new java.util.concurrent.ConcurrentHashMap<>();
     private NativeTerrainBlock() {super(AbstractBlock.Settings.create().strength(-1,3600000).nonOpaque().dropsNothing().dynamicBounds());}
     static void register() {Registry.register(Registries.BLOCK,new Identifier("hollowcraft_bridge","native_terrain"),INSTANCE);}
     static boolean proxy(BlockState state) {return state.isOf(INSTANCE)||state.isOf(Blocks.BARRIER);}
