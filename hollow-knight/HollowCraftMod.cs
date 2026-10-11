@@ -16,7 +16,7 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] 0.15 loaded. Native projectile step confirmation, impact deduplication and piercing lifecycle; localhost:31674.");
+            Debug.Log("[HollowCraft] 0.16 loaded. Real landing bucket exchange, equipment restoration and own-window thread click queue; localhost:31674.");
         }
         public static string SaveRoot()
         {

@@ -52,6 +52,7 @@ namespace HollowCraft
         private bool openingSync;
         private float waterLandingAt=-1000;
         private int waterLandingSerial;
+        private int waterLandingPhase,waterLandingHand;
         private int lastProjectileTick=-1;
         private float nextVisual;
         private Vector2Int mineCell = new Vector2Int(int.MinValue, int.MinValue);
@@ -235,9 +236,12 @@ namespace HollowCraft
                 if((string)message["type"]=="hurt"&&(string)message["scene"]==scene) PlayerSystem.HurtFeedback((int?)message["ticks"]??10);
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
                     LastLanding=message;LandingEvents++;
-                    if((string)message["kind"]=="water") {waterLandingAt=Time.unscaledTime;waterLandingSerial++;}
+                    if((string)message["kind"]=="water") {waterLandingAt=Time.unscaledTime;waterLandingSerial++;waterLandingPhase=0;waterLandingHand=(int?)message["hand"]??0;}
                     if((bool?)message["intro"]==true)CampaignSession.Landed();
                     if((string)message["kind"]=="hero")SteveAvatar.BeginLanding();
+                }
+                if((string)message["type"]=="waterCollected"&&(string)message["scene"]==scene&&(bool?)message["recovered"]==true) {
+                    waterLandingAt=Time.unscaledTime;waterLandingPhase=1;waterLandingHand=(int?)message["hand"]??0;
                 }
                 if ((string)message["type"] == "snapshot" && (string)message["scene"] == scene && (message["campaign"]==null||(string)message["campaign"]==campaign)) ApplySnapshot(message);
                 if ((string)message["type"] == "attack" && (string)message["scene"] == scene && building && !inventoryOpen) Combat.Begin(message,scene);
@@ -307,7 +311,7 @@ namespace HollowCraft
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
                     duration=(float?)Combat.Current?["duration"]??.5f,upswing=(float?)Combat.Current?["upswing"]??.3f,
                     twoHanded=(bool?)Combat.Profile?["weapon"]?["two_handed"]??false,landing=SteveAvatar.LandingElapsed,
-                    waterLanding=Time.unscaledTime-waterLandingAt<.6f?Time.unscaledTime-waterLandingAt:-1,waterLandingSerial});
+                    waterLanding=Time.unscaledTime-waterLandingAt<.6f?Time.unscaledTime-waterLandingAt:-1,waterLandingSerial,waterLandingPhase,waterLandingHand});
             }
             if (connected && Time.unscaledTime >= nextPose)
             {

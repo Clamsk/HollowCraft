@@ -61,9 +61,8 @@ public final class PlayerVisualBridge {
             }
             float water=number(input,"waterLanding",-1);
             if(water>=0&&water<.6f&&!state.using&&!flag(input,"swinging")) {
-                avatar.equipStack(EquipmentSlot.MAINHAND,new ItemStack(water<.05f||water>=.4f?net.minecraft.item.Items.WATER_BUCKET:net.minecraft.item.Items.BUCKET));
-                int serial=(int)number(input,"waterLandingSerial",0),phase=water>=.4f?1:0;
-                if(serial!=waterSerial||phase!=waterPhase) {avatar.swingHand(net.minecraft.util.Hand.MAIN_HAND);waterSerial=serial;waterPhase=phase;}
+                int serial=(int)number(input,"waterLandingSerial",0),phase=(int)number(input,"waterLandingPhase",0);
+                if(serial!=waterSerial||phase!=waterPhase) {avatar.swingHand(number(input,"waterLandingHand",0)==1?net.minecraft.util.Hand.OFF_HAND:net.minecraft.util.Hand.MAIN_HAND);waterSerial=serial;waterPhase=phase;}
             } else {waterSerial=waterPhase=-1;}
             avatar.creative=state.creative;
             avatar.setSneaking(flag(input,"crouching"));avatar.setSprinting(flag(input,"sprinting"));

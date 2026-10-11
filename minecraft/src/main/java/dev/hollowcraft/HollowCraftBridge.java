@@ -62,6 +62,7 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     public static void vanillaTeleport(ServerPlayerEntity player,Vec3d normal) {
         if(instance==null||instance.owner!=player||instance.peer==null||instance.scene.isEmpty()) return;
+        instance.collectLandingWater();
         instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;instance.fallen=0;
         instance.hadPose=false;instance.wasGrounded=false;
         instance.teleportWaiting=instance.server.getTicks()+40;
@@ -107,6 +108,8 @@ public final class HollowCraftBridge implements ModInitializer {
     private float fallen;
     private BlockPos landingWater;
     private BlockState landingWaterBefore;
+    private LandingBucket landingBucket;
+    private Hand landingHand=Hand.MAIN_HAND;
     private int collectWaterTick;
     private int teleportWaiting,teleportSerial;
     private int nextSwingTick, combo, attackSerial, activeAttack, hitReadyTick;
@@ -206,7 +209,7 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private void stop() {
         NativeProjectileSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
-        saveCampaign();
+        collectLandingWater();saveCampaign();
         PlayerRenderState.clear();
         collectLandingWater();
         for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}trackedDrops.clear();dropObserved.clear();
@@ -239,7 +242,7 @@ public final class HollowCraftBridge implements ModInitializer {
         }
         if (peer == null) {
             NativeProjectileSteps.clear();projectileImpacts.clear();
-            if (owner != null) {saveCampaign();collectLandingWater();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
+            if (owner != null) {collectLandingWater();saveCampaign();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
             return;
         }
         if (owner == null && !current.getPlayerManager().getPlayerList().isEmpty()) {
@@ -338,6 +341,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if (type.equals("scene")) {
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;
+            collectLandingWater();
             NativeProjectileSteps.clear();projectileImpacts.clear();
             String campaign=string(command,"campaign","legacy");
             if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");}
@@ -362,12 +366,17 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             slot = scenes.get(sceneKey);
             centerX = integer(command, "x", 0); centerY = integer(command, "y", 0);
-            collectLandingWater();exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;
+            exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;
             status = "Minecraft connected: " + name;
             return;
         }
         if (scene.isEmpty() || !scene.equals(string(command, "scene", ""))) return;
         if(command.has("campaign")&&!campaigns.id().equals(string(command,"campaign","")))return;
+        // Finish the short clutch before player actions mutate hand items or containers.
+        if(landingWater!=null&&switch(type) {
+            case "select","mode","place","mine","mining","use","itemUse","offhand","drop","slotClick","inventoryOpen","creativeCatalog","creativeItem","creativeHotbar","creativeDiscard","craft","swap","kit","adventureKit","swing","hit","damage","respawn","checkpoint","rest","containerMove","containerButton","anvilName","close","eat","nativeProjectileHit" -> true;
+            default -> false;
+        })collectLandingWater();
         switch (type) {
             case "pose" -> {
                 if(server.getTicks()<teleportWaiting) break;
@@ -388,7 +397,7 @@ public final class HollowCraftBridge implements ModInitializer {
                     if(creative&&fallen>12)landingEvent("hero",fallen);
                     if(introLanding&&(waterSave||creative||owner.isSpectator())) {
                         if(!waterSave&&!(creative&&fallen>12))landingEvent("plain",fallen);
-                        introLanding=false;campaigns.introDone=true;campaigns.save(owner);
+                        introLanding=false;campaigns.introDone=true;if(!waterSave)saveCampaign();
                     }
                     fallen=0;owner.fallDistance=0;
                 }
@@ -578,20 +587,53 @@ public final class HollowCraftBridge implements ModInitializer {
         BlockPos cell=pos((int)Math.floor(exactX),(int)Math.floor(exactY+.08));
         var world=owner.getServerWorld();var before=world.getBlockState(cell);
         if(!before.isReplaceable()&&!NativeTerrainBlock.proxy(before))return false;
-        // Native terrain remains physically present in Unity. Replacing its MC proxy
-        // for eight ticks lets water wet feet at fractional floor heights, then restores it.
-        if(!world.setBlockState(cell,Blocks.WATER.getDefaultState(),Block.NOTIFY_LISTENERS))return false;
+        // Keep the requested automatic rescue when no bucket is carried. The normal
+        // starter kit uses a real bucket; the fallback adds no item to the inventory.
+        var bucket=LandingBucket.begin(owner);
+        if(bucket!=null)owner.clearActiveItem();boolean placed=false;
+        try {
+            // Unity keeps the fractional native floor while vanilla water occupies its proxy.
+            if(NativeTerrainBlock.proxy(before))world.setBlockState(cell,Blocks.AIR.getDefaultState(),Block.NOTIFY_LISTENERS);
+            FluidBridge.seal(world,cell);
+            var item=(BucketItem)Items.WATER_BUCKET;
+            placed=item.placeFluid(owner,world,cell,new BlockHitResult(Vec3d.ofCenter(cell),Direction.UP,cell,false));
+            if(!placed)return false;
+            if(bucket!=null) {
+                item.onEmptied(owner,world,owner.getStackInHand(bucket.hand),cell);
+                net.minecraft.advancement.criterion.Criteria.PLACED_BLOCK.trigger(owner,cell,owner.getStackInHand(bucket.hand));
+                bucket.empty();owner.incrementStat(net.minecraft.stat.Stats.USED.getOrCreateStat(Items.WATER_BUCKET));owner.swingHand(bucket.hand);
+            }
+        } finally {
+            if(!placed) {if(bucket!=null)bucket.abort();if(NativeTerrainBlock.proxy(before)&&world.getBlockState(cell).isAir())world.setBlockState(cell,before,Block.NOTIFY_LISTENERS);}
+        }
+        landingBucket=bucket;landingHand=bucket==null?Hand.MAIN_HAND:bucket.hand;
         landingWater=cell;landingWaterBefore=before;collectWaterTick=server.getTicks()+8;
         landingEvent("water",fallen);snapshot();LOG.info("Automatic landing water distance={} cell={}",fallen,cell);return true;
     }
     private void collectLandingWater() {
         if(landingWater==null||owner==null)return;
-        var world=owner.getServerWorld();
-        if(world.getBlockState(landingWater).isOf(Blocks.WATER))world.setBlockState(landingWater,landingWaterBefore,Block.NOTIFY_LISTENERS);
-        landingWater=null;landingWaterBefore=null;
+        var cell=landingWater;var before=landingWaterBefore;var bucket=landingBucket;
+        var world=bucket==null?owner.getServerWorld():bucket.player.getServerWorld();var state=world.getBlockState(cell);
+        ItemStack filled=ItemStack.EMPTY;
+        if(state.isOf(Blocks.WATER)&&state.getBlock() instanceof FluidDrainable drainable) {
+            filled=drainable.tryDrainFluid(world,cell,state);
+            if(!filled.isEmpty()&&world.getBlockState(cell).isAir())world.setBlockState(cell,before,Block.NOTIFY_ALL);
+        }
+        landingWater=null;landingWaterBefore=null;landingBucket=null;
+        boolean recovered=bucket==null?!filled.isEmpty():bucket.finish(filled,cell);
+        if(recovered) {
+            if(bucket!=null) {
+                bucket.player.swingHand(bucket.hand);bucket.player.incrementStat(net.minecraft.stat.Stats.USED.getOrCreateStat(Items.BUCKET));
+                net.minecraft.advancement.criterion.Criteria.FILLED_BUCKET.trigger(bucket.player,filled);
+            }
+            world.playSound(null,cell,net.minecraft.sound.SoundEvents.ITEM_BUCKET_FILL,net.minecraft.sound.SoundCategory.PLAYERS,1,1);
+            world.emitGameEvent(owner,net.minecraft.world.event.GameEvent.FLUID_PICKUP,cell);
+        }
+        if(peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","waterCollected");event.addProperty("scene",scene);event.addProperty("hand",landingHand==Hand.OFF_HAND?1:0);event.addProperty("recovered",recovered);peer.event(event);}
+        saveCampaign();
     }
     private void landingEvent(String kind,float distance) {
-        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","landing");event.addProperty("scene",scene);event.addProperty("kind",kind);event.addProperty("intro",introLanding);event.addProperty("distance",distance);event.addProperty("x",exactX);event.addProperty("y",exactY);peer.event(event);
+        if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","landing");event.addProperty("scene",scene);event.addProperty("kind",kind);event.addProperty("intro",introLanding);event.addProperty("distance",distance);event.addProperty("x",exactX);event.addProperty("y",exactY);event.addProperty("hand",landingHand==Hand.OFF_HAND?1:0);peer.event(event);
     }
     private BlockPos target(JsonObject command) {
         int x = integer(command, "x", 0), y = integer(command, "y", 0);
@@ -921,7 +963,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private static String string(JsonObject object, String key, String fallback) { return object.has(key) ? object.get(key).getAsString() : fallback; }
     private static int integer(JsonObject object, String key, int fallback) { return object.has(key) ? object.get(key).getAsInt() : fallback; }
     private static int clamp(int value,int min,int max) { return Math.max(min, Math.min(max,value)); }
-    private void saveCampaign() {try {if(campaigns!=null)campaigns.save(owner);}catch(IOException error){LOG.error("Cannot save campaign inventory",error);}}
+    private void saveCampaign() {if(landingWater!=null)return;try {if(campaigns!=null)campaigns.save(owner);}catch(IOException error){LOG.error("Cannot save campaign inventory",error);}}
 
     private static final class Peer {
         final Socket socket;
