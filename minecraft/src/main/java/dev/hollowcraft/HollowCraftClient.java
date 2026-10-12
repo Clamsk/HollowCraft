@@ -35,6 +35,7 @@ public final class HollowCraftClient implements ClientModInitializer {
             if (!isolated) return;
             CreativeHotbars.tick(client);
             ItemModelIcons.tick(client);
+            NativePlayerEffects.sync(client);
             PlayerVisualBridge.tick(client);
             NativeParticleBridge.render(client,1);
             NativeGuiBridge.render(client,1);

@@ -280,7 +280,9 @@ namespace HollowCraft
             if(scene=="Tutorial_01"&&(openingSync||CampaignSession.IntroPending)&&scene==cachedManager?.GetSceneNameString()) {openingSync=false;return;}
             sceneReentry=true;
             MinecraftEnvironment.SceneChanged();
-            Debug.Log("[HollowCraft] Native entrance complete "+cachedManager?.GetSceneNameString()+" gate="+hero.sceneEntryGate?.name+" position="+hero.transform.position);
+            // Unity's destroyed-object check differs from C# null-conditional access.
+            var gate=hero.sceneEntryGate;
+            Debug.Log("[HollowCraft] Native entrance complete "+cachedManager?.GetSceneNameString()+" gate="+(gate!=null?gate.name:"respawn")+" position="+hero.transform.position);
         }
         private void Update()
         {
@@ -342,6 +344,8 @@ namespace HollowCraft
                 if((string)message["type"]=="notice"&&(string)message["scene"]==scene)ui.ShowNotice((string)message["text"]);
                 if((string)message["type"]=="impulse"&&(string)message["scene"]==scene&&cachedHero!=null) PlayerSystem.ApplyImpulse(cachedHero,new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="hurt"&&(string)message["scene"]==scene) PlayerSystem.HurtFeedback((int?)message["ticks"]??10);
+                if((string)message["type"]=="shieldRecoil"&&(string)message["scene"]==scene)
+                    EnemySystem.ShieldRecoil((int)message["id"],new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
                     LastLanding=message;LandingEvents++;
                     if((string)message["kind"]=="water") {waterLandingAt=Time.unscaledTime;waterLandingSerial++;waterLandingPhase=0;waterLandingHand=(int?)message["hand"]??0;}

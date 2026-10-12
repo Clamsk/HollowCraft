@@ -1,4 +1,4 @@
-# HollowCraft 0.30.6 — Playtest Build
+# HollowCraft 0.30.7 — Playtest Build
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,15 +6,15 @@ Minecraft-style survival and combat in Hollow Knight.
 
 Use Minecraft's player, survival, equipment, building and combat systems in Hollow Knight's 2D world. **Both games must run at the same time.** This is a playable bridge prototype; a complete survival playthrough has not been verified.
 
-**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.6) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
+**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.7) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
 
 ## Current release
 
-Version 0.30.6 fixes a mismatch between the item held by Steve and the selected vanilla hotbar slot. Campaign selection, scene entry and respawn now synchronize the inventory and selected slot. Player and HUD frames carry a scene-entry identifier, and the HUD waits for the client and server equipment to agree before exporting a frame.
+Version 0.30.7 adds actual player-collider coverage to melee swings and fixes a float-residue death mismatch confirmed in flying enemy logs. It restores vanilla item-use/offhand flags on the rendering avatar, supplies fresh attacker data for native shield checks, and forwards actual shield recoil.
 
-Native attack descriptors now register an idle `damages_enemy` FSM shared by melee attacks, projectiles and breakables. This fixes errors when pillars try to locate the attack FSM. Damage already accepted by Minecraft clears Hollow Knight's additional hit-evasion timer. Ordinary lethal hits finish the native death process; special death FSMs and actual boss phase health increases remain under Hollow Knight's control. Both ends now log target names and health before and after a hit.
+Totems use vanilla lethal-damage handling and effects. The original activation animation is exported into the Hollow Knight HUD, with sounds and particles anchored to the bridge player. New campaigns receive two totems; old campaigns receive two once. A destroyed entrance-object reference during respawn logging is also fixed.
 
-This release was compiled and its package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.6 playtest notes](PLAYTEST-0.30.6.en.md). Older test records below apply only to their stated versions.
+This release was compiled and its package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.7 playtest notes](PLAYTEST-0.30.7.en.md). Older test records below apply only to their stated versions.
 
 ## Download and start
 
@@ -25,7 +25,7 @@ Requirements:
 - Your own **Minecraft Java 1.20.1** installation. Launch vanilla 1.20.1 once through PCL or another launcher to download its assets and libraries.
 - **64-bit Java 17 or 21**.
 
-Download **HollowCraft-v0.30.6-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.6), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd**. Wait for Minecraft to enter its separate world and keep it running. Create or load a playtest save in the Hollow Knight copy. Each connection starts in survival mode with Steve.
+Download **HollowCraft-v0.30.7-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.7), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd**. Wait for Minecraft to enter its separate world and keep it running. Create or load a playtest save in the Hollow Knight copy. Each connection starts in survival mode with Steve.
 
 Save Hollow Knight's progress at a bench, then run **Stop HollowCraft.cmd** to save the Minecraft world and inventory and close both recorded processes. If only Hollow Knight was closed, restarting reuses the Minecraft backend of the same build. Stop before upgrading. Older backends without save acknowledgement must be closed normally through their Minecraft window; the script does not forcibly terminate them.
 
@@ -88,11 +88,13 @@ A new campaign starts with full iron armor and an offhand shield, plus:
 
 - Iron sword, bow, 64 arrows, 64 steaks and 64 ender pearls (four stacks of 16).
 - 192 cobblestone, 64 oak logs, flint and steel, 64 TNT, water bucket and lava bucket.
-- Iron axe, iron pickaxe, 64 torches, 64 iron ingots and 64 regular golden apples.
+- Iron axe, iron pickaxe, 64 torches, 64 iron ingots, 64 regular golden apples and two separate totems of undying.
 
-Existing campaigns keep their items. Version 0.30 grants a missing iron pickaxe once; 0.30.3 grants iron ingots once; 0.30.4 grants two extra cobblestone stacks and golden apples once. Grant flags are saved per campaign and survive death. Excess items drop when the inventory is full, and reconnecting does not grant them again. Each connection returns to survival mode.
+Existing campaigns keep their items. Version 0.30 grants a missing iron pickaxe once; 0.30.3 grants iron ingots once; 0.30.4 grants two extra cobblestone stacks and golden apples once. Version 0.30.7 grants two totems once. Grant flags are saved per campaign and survive death. Excess items drop when the inventory is full, and reconnecting does not grant them again. Each connection returns to survival mode.
 
 Regular `minecraft:golden_apple` items use vanilla eating, including at full hunger. They grant Regeneration II for 5 seconds and Absorption I for 2 minutes (4 absorption health points), plus vanilla hunger and saturation. The vanilla HUD shows yellow absorption hearts and status icons; the fallback HUD also reads real absorption health.
+
+Hold right-click to raise a shield toward the crosshair side. Vanilla controls the shield warmup, directional blocking, durability and damage-type rules. Totems must be held in the main hand or offhand to activate; lethal damage consumes one and applies vanilla healing, absorption and fire resistance, with the original activation animation in the native HUD.
 
 ## Combat, building and rendering
 
@@ -130,6 +132,7 @@ These are implementation notes, not confirmation that each version passed gamepl
 
 | Version | Changes |
 | --- | --- |
+| 0.30.7 | Player-collider melee coverage, float-residue lethal hit fix, vanilla shield/item-use poses and blocking, native shield recoil, totem activation animation/effects and two starter totems |
 | 0.30.6 | Inventory / held-item synchronization, per-entry player and HUD frame isolation, registered attack FSM, native hit/death routing and diagnostic health logs |
 | 0.30.5 | Restore native gravity, collider size and controls before leaving a scene; wait for native entrance actions before resuming Minecraft movement; reject old scene messages; initialize at actual entrance feet coordinates; protect low entrances and search locally when blocks overlap the entrance |
 | 0.30.4 | Ender pearl base teleport damage changed from 5 to 3 points (1.5 hearts) by request; reset the previous fall distance and reject old poses; add 128 cobblestone and 64 regular golden apples to existing campaigns once |

@@ -22,6 +22,11 @@ final class NativeProxy extends ZombieEntity {
         if(dimensions==null||Math.abs(dimensions.width-width)>.01||Math.abs(dimensions.height-height)>.01) {dimensions=EntityDimensions.changing(width,height);calculateDimensions();}
     }
     String bridgeName() {return name;}
+    @Override public void setHealth(float health) {
+        // Cleave multipliers can leave sub-millipoint float residue. Normalize only
+        // native proxies; LivingEntity.damage still runs its original death/loot path.
+        super.setHealth(health>0&&health<.0001f?0:health);
+    }
     @Override public EntityDimensions getDimensions(EntityPose pose) {return dimensions==null?super.getDimensions(pose):dimensions;}
     @Override protected boolean burnsInDaylight() {return false;}
     @Override protected boolean canConvertInWater() {return false;}

@@ -29,6 +29,12 @@ namespace HollowCraft
         internal static int Register(Breakable value) {
             int id=value.GetInstanceID();if(!enemies.ContainsKey(id)) enemies[id]=new Adapter {Breakable=value,Resource=true,NativeMax=1,LastNative=1,Max=1,Health=1};return id;
         }
+        internal static void ShieldRecoil(int id,Vector2 velocity) {
+            if(!enemies.TryGetValue(id,out Adapter adapter)||adapter.Enemy==null||adapter.Enemy.isDead)return;
+            var body=adapter.Enemy.GetComponent<Rigidbody2D>();
+            if(body!=null&&body.bodyType==RigidbodyType2D.Dynamic&&body.constraints!=RigidbodyConstraints2D.FreezeAll)
+                body.linearVelocity+=velocity*20;
+        }
         internal static object[] Observe(HeroController hero,int required=0) {
             foreach(var pair in enemies) {var entry=pair.Value;if(entry.Health<=0&&!entry.Rewarded&&(entry.Resource ? entry.Breakable==null||!entry.Breakable.gameObject.activeInHierarchy||(bool)(brokenField?.GetValue(entry.Breakable)??false) : entry.Enemy==null||entry.Enemy.isDead)) {entry.Rewarded=true;HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id=pair.Key,generation=entry.Generation});}}
             var observed=new HashSet<int>();var result=new List<object>();
@@ -67,7 +73,9 @@ namespace HollowCraft
                 if(adapter.Enemy!=null&&!adapter.Enemy.isDead) {var effect=adapter.Enemy.GetComponent<NativeMobEffects>()??adapter.Enemy.gameObject.AddComponent<NativeMobEffects>();effect.Factor=Mathf.Clamp((float?)value["moveFactor"] ?? 1,.01f,4);effect.Burning=(bool?)value["onFire"] ?? false;}
                 float health=(float)value["health"];
                 if(health>adapter.Health+.001f && adapter.Enemy!=null&&!adapter.Enemy.isDead) {adapter.Enemy.hp=Mathf.CeilToInt(health/adapter.Max*adapter.NativeMax);adapter.LastNative=adapter.Enemy.hp;adapter.Health=health;continue;}
-                if(health>=adapter.Health-.001f) continue;
+                // A last hit can change a tiny positive float to exactly zero. Always
+                // forward that death even when the change is below the normal tolerance.
+                if(health>=adapter.Health-.001f && !(health<=0 && adapter.Health>0)) continue;
                 if(Math.Abs((float)value["maxHealth"]-adapter.Max)>.001f) continue;
                 if(adapter.Breakable!=null) {
                     if(health<=0) {string source=(string)value["damageKind"];bool blast=source=="explosion"||source=="explosion.player"||source=="fireworks";var type=blast?AttackTypes.Spell:AttackTypes.Nail;var descriptor=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,999,0,type);HitTaker.Hit(adapter.Breakable.gameObject,new HitInstance {Source=descriptor,AttackType=type,DamageDealt=999,Multiplier=1,IgnoreInvulnerable=false},3);adapter.Health=health;}
@@ -81,6 +89,7 @@ namespace HollowCraft
                 Vector2 direction=((Vector2)enemy.transform.position-(Vector2)hero.transform.position).normalized;
                 string kind=(string)value["damageKind"];
                 bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion"||kind=="fireworks";
+                if(!ranged&&direction.sqrMagnitude<.000001f)direction=HollowCraftRuntime.Instance.Combat.Aim;
                 var attackType=ranged?AttackTypes.Spell:AttackTypes.Nail;float angle=Mathf.Atan2(direction.y,direction.x)*Mathf.Rad2Deg;
                 var sourceObject=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,damage,angle,attackType);
                 // MC already accepted this hit using its cooldown and hurt immunity.

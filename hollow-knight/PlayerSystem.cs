@@ -70,7 +70,11 @@ namespace HollowCraft
             }
             var point=source!=null ? source.transform.position : hero.transform.position+Vector3.left;
             var velocity=hero!=null?hero.GetComponent<Rigidbody2D>().linearVelocity/20:Vector2.zero;
-            runtime.Send(new {type="damage",scene=runtime.Room,amount=Math.Max(1,amount)*3,kind=hazardType>=2 ? "hazard" : enemy==null ? "projectile":"mob",enemy=enemy!=null ? EnemySystem.Register(enemy) : 0,attackerX=point.x,attackerY=point.y,velocityX=velocity.x,velocityY=velocity.y});
+            int enemyId=enemy!=null?EnemySystem.Register(enemy):0;
+            // Contact can arrive before the next pose update discovers a spawned enemy.
+            // Include its geometry now so vanilla shields have an actual attacker source.
+            runtime.Send(new {type="damage",scene=runtime.Room,amount=Math.Max(1,amount)*3,kind=hazardType>=2 ? "hazard" : enemy==null ? "projectile":"mob",enemy=enemyId,
+                enemies=EnemySystem.Observe(hero,enemyId),attackerX=point.x,attackerY=point.y,velocityX=velocity.x,velocityY=velocity.y});
             if(hero!=null)
             {
                 var body=hero.GetComponent<Rigidbody2D>();

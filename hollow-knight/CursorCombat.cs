@@ -123,6 +123,7 @@ namespace HollowCraft
             struck=true;
             float range=(float)Current["range"];
             Vector2 origin=GameCursor.Eye(hero);
+            var playerCollider=hero.GetComponent<Collider2D>();
             var hit=new HashSet<GameObject>();
             var enemies=new HashSet<int>();bool terrainHit=false;
             foreach(var collider in Physics2D.OverlapCircleAll(origin,range))
@@ -133,10 +134,22 @@ namespace HollowCraft
                 GameObject target=enemy!=null ? enemy.gameObject : breakable!=null ? breakable.gameObject : collider.gameObject;
                 if((enemy!=null && enemy.isDead) || hit.Contains(target)) continue;
                 Vector2 point=collider.ClosestPoint(origin), delta=point-origin;
-                // The pointer chooses a side; the whole in-reach half-space can be struck.
-                if(delta.x*Aim.x<-.02f) continue;
-                var wall=Physics2D.Raycast(origin,delta.normalized,delta.magnitude,LayerMask.GetMask("Terrain"));
-                if(wall && wall.collider!=collider && !wall.transform.IsChildOf(target.transform)) continue;
+                // The swing covers the player's actual shape as well as the chosen side.
+                // A flyer sharing that space must remain hittable from either direction.
+                bool overlapping=false;
+                if(enemy!=null && playerCollider!=null && playerCollider.enabled) {
+                    var contact=playerCollider.Distance(collider);
+                    overlapping=contact.isValid && (contact.isOverlapped || contact.distance<=0);
+                }
+                if(!overlapping) {
+                    if(delta.x*Aim.x<-.02f) continue;
+                    // ClosestPoint returns the origin when inside a target. A zero-length
+                    // ray must not manufacture an obstruction at its starting point.
+                    if(delta.sqrMagnitude>.000001f) {
+                        var wall=Physics2D.Raycast(origin,delta.normalized,delta.magnitude,LayerMask.GetMask("Terrain"));
+                        if(wall && wall.collider!=collider && !wall.transform.IsChildOf(target.transform)) continue;
+                    }
+                }
                 hit.Add(target);
                 if(enemy!=null) {enemies.Add(EnemySystem.Register(enemy));continue;}
                 if(breakable!=null) {enemies.Add(EnemySystem.Register(breakable));terrainHit=true;continue;}

@@ -52,6 +52,9 @@ public final class NativeHudBridge {
             if(mount!=null)hud.renderMountJumpBar(mount,draw,barX);else if(client.interactionManager.hasExperienceBar())hud.renderExperienceBar(draw,barX);
             if(!client.player.isSpectator())hud.renderHeldItemTooltip(draw);
             access.hollowcraft$effects(draw);draw.draw();
+            // Entity status 35 already starts vanilla's totem animation on this client.
+            // It lives in GameRenderer, outside InGameHud, and previously stayed in MC.
+            ((dev.hollowcraft.mixin.GameRendererAccess)client.gameRenderer).hollowcraft$floatingItem(width,height,delta);
             pixels.clear();GL11.glReadPixels(0,0,px,py,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,pixels);pixels.get(transfer,48,px*py*4);
             for(int at=48;at<48+px*py*4;at+=4) {int alpha=transfer[at+3]&255;if(alpha==0)transfer[at]=transfer[at+1]=transfer[at+2]=0;else if(alpha<255)for(int c=0;c<3;c++)transfer[at+c]=(byte)Math.min(255,((transfer[at+c]&255)*255+alpha/2)/alpha);}
             var header=ByteBuffer.wrap(transfer).order(ByteOrder.LITTLE_ENDIAN);

@@ -18,4 +18,8 @@ public abstract class RemoteDamageMixin {
     private void hollowcraft$hurtFeedback(DamageSource source,float amount,CallbackInfoReturnable<Boolean> callback) {
         if(callback.getReturnValue()) dev.hollowcraft.HollowCraftBridge.playerHurt((LivingEntity)(Object)this,source);
     }
+    @Inject(method="tryUseTotem",at=@At("RETURN"))
+    private void hollowcraft$totemFeedback(DamageSource source,CallbackInfoReturnable<Boolean> callback) {
+        if(callback.getReturnValue())dev.hollowcraft.HollowCraftBridge.playerTotem((LivingEntity)(Object)this);
+    }
 }

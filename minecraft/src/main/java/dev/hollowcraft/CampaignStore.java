@@ -45,6 +45,7 @@ final class CampaignStore {
             if(data.getBoolean("IronPickaxeGranted"))player.addCommandTag("hollowcraft_starter_iron_pickaxe_v1");else player.removeScoreboardTag("hollowcraft_starter_iron_pickaxe_v1");
             if(data.getBoolean("IronIngotsGranted"))player.addCommandTag("hollowcraft_starter_iron_ingots_v1");else player.removeScoreboardTag("hollowcraft_starter_iron_ingots_v1");
             if(data.getBoolean("BuildFoodGranted"))player.addCommandTag("hollowcraft_starter_build_food_v1");else player.removeScoreboardTag("hollowcraft_starter_build_food_v1");
+            if(data.getBoolean("TotemsGranted"))player.addCommandTag("hollowcraft_starter_totems_v1");else player.removeScoreboardTag("hollowcraft_starter_totems_v1");
             player.currentScreenHandler.sendContentUpdates();
             return false;
         }
@@ -58,6 +59,7 @@ final class CampaignStore {
         player.removeScoreboardTag("hollowcraft_starter_iron_pickaxe_v1");
         player.removeScoreboardTag("hollowcraft_starter_iron_ingots_v1");
         player.removeScoreboardTag("hollowcraft_starter_build_food_v1");
+        player.removeScoreboardTag("hollowcraft_starter_totems_v1");
         NbtCompound food=new NbtCompound();food.putInt("foodLevel",20);food.putInt("foodTickTimer",0);food.putFloat("foodSaturationLevel",5);food.putFloat("foodExhaustionLevel",0);player.getHungerManager().readNbt(food);
         player.setHealth(player.getMaxHealth());player.setAbsorptionAmount(0);player.fallDistance=0;player.experienceLevel=0;player.experienceProgress=0;player.totalExperience=0;
         player.getInventory().selectedSlot=0;player.extinguish();player.setFrozenTicks(0);player.setAir(300);player.hurtTime=0;player.timeUntilRegen=0;
@@ -70,6 +72,7 @@ final class CampaignStore {
         data.putBoolean("IronPickaxeGranted",player.getCommandTags().contains("hollowcraft_starter_iron_pickaxe_v1"));
         data.putBoolean("IronIngotsGranted",player.getCommandTags().contains("hollowcraft_starter_iron_ingots_v1"));
         data.putBoolean("BuildFoodGranted",player.getCommandTags().contains("hollowcraft_starter_build_food_v1"));
+        data.putBoolean("TotemsGranted",player.getCommandTags().contains("hollowcraft_starter_totems_v1"));
         Path file=root.resolve(id+".dat"),temp=root.resolve(id+".tmp");NbtIo.writeCompressed(data,temp.toFile());
         Files.move(temp,file,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
     }

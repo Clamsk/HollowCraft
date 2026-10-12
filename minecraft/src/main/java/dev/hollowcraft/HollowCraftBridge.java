@@ -101,6 +101,9 @@ public final class HollowCraftBridge implements ModInitializer {
         LOG.info("Bridge player hurt kind={} HP={} hurtTicks={}",kind,entity.getHealth(),entity.hurtTime);
     }
     public static volatile boolean remotePaused;
+    public static void playerTotem(net.minecraft.entity.LivingEntity entity) {
+        if(isRemotePlayer(entity))LOG.info("Bridge vanilla totem activated HP={} absorption={}",entity.getHealth(),entity.getAbsorptionAmount());
+    }
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
     public static boolean delegateLegacyTerrain(BlockState state,BlockPos pos,net.minecraft.block.ShapeContext context) {
         var bridge=instance;
@@ -418,6 +421,7 @@ public final class HollowCraftBridge implements ModInitializer {
         String pickTag="hollowcraft_starter_iron_pickaxe_v1";
         String ingotTag="hollowcraft_starter_iron_ingots_v1";
         String suppliesTag="hollowcraft_starter_build_food_v1";
+        String totemTag="hollowcraft_starter_totems_v1";
         if(owner.getCommandTags().contains(tag)) {
             if(!owner.getCommandTags().contains(pickTag)) {
                 boolean present=false;for(int i=0;i<36;i++)if(owner.getInventory().getStack(i).isOf(Items.IRON_PICKAXE))present=true;
@@ -428,13 +432,16 @@ public final class HollowCraftBridge implements ModInitializer {
                 give(new ItemStack(Items.COBBLESTONE,64));give(new ItemStack(Items.COBBLESTONE,64));give(new ItemStack(Items.GOLDEN_APPLE,64));
                 owner.addCommandTag(suppliesTag);
             }
+            if(!owner.getCommandTags().contains(totemTag)) {
+                give(new ItemStack(Items.TOTEM_OF_UNDYING));give(new ItemStack(Items.TOTEM_OF_UNDYING));owner.addCommandTag(totemTag);
+            }
             return;
         }
         boolean fresh=owner.getInventory().isEmpty();
         Item[] items={Items.IRON_SWORD,Items.BOW,Items.COOKED_BEEF,Items.COBBLESTONE,Items.OAK_LOG,
             Items.IRON_AXE,Items.WATER_BUCKET,Items.LAVA_BUCKET,Items.FLINT_AND_STEEL,
-            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE,Items.IRON_INGOT,Items.GOLDEN_APPLE};
-        int[] amounts={1,1,64,192,64,1,1,1,1,64,64,64,64,1,64,64};
+            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE,Items.IRON_INGOT,Items.GOLDEN_APPLE,Items.TOTEM_OF_UNDYING};
+        int[] amounts={1,1,64,192,64,1,1,1,1,64,64,64,64,1,64,64,2};
         int nextSlot=0;
         for(int i=0;i<items.length;i++) {
             int missing=amounts[i];
@@ -462,6 +469,7 @@ public final class HollowCraftBridge implements ModInitializer {
         owner.addCommandTag(pickTag);
         owner.addCommandTag(ingotTag);
         owner.addCommandTag(suppliesTag);
+        owner.addCommandTag(totemTag);
         owner.addCommandTag("hollowcraft_starter");
         LOG.info("Iron starter loadout granted; fresh={}",fresh);
     }
@@ -638,6 +646,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 if(pendingSwing!=null&&integer(pendingSwing,"request",0)<=request)pendingSwing=null;
             }
             case "damage" -> {if(!creative && !owner.isSpectator() && !owner.isDead()) {
+                if(command.has("enemies"))enemies.observe(owner,command.getAsJsonArray("enemies"),slot*1024);
                 if(command.has("velocityX")&&command.has("velocityY")) {double vx=command.get("velocityX").getAsDouble(),vy=command.get("velocityY").getAsDouble();if(Double.isFinite(vx)&&Double.isFinite(vy))owner.setVelocity(Math.max(-4,Math.min(4,vx)),Math.max(-4,Math.min(4,vy)),0);}
                 var source=enemies.source(integer(command,"enemy",0));String kind=string(command,"kind","mob");var damage=owner.getDamageSources().generic();
                 if(kind.equals("projectile")&&command.has("attackerX")&&command.has("attackerY")) {
@@ -645,7 +654,17 @@ public final class HollowCraftBridge implements ModInitializer {
                     if(Double.isFinite(x)&&Double.isFinite(y)) {var arrow=new net.minecraft.entity.projectile.ArrowEntity(owner.getServerWorld(),slot*1024+x,64+y,.5);damage=owner.getDamageSources().arrow(arrow,source!=null?source:arrow);}
                 }
                 else if(source!=null&&!kind.equals("hazard")) damage=owner.getDamageSources().mobAttack(source);
+                var oldMotion=source!=null?source.getVelocity():Vec3d.ZERO;
+                boolean shield=owner.blockedByShield(damage);
                 owner.damage(damage,(float)Math.max(0,Math.min(10000,command.get("amount").getAsDouble())));
+                if(shield&&source!=null) {
+                    var recoil=source.getVelocity().subtract(oldMotion);
+                    if(recoil.lengthSquared()>.000001&&peer!=null) {
+                        var event=new JsonObject();event.addProperty("type","shieldRecoil");event.addProperty("scene",scene);
+                        event.addProperty("id",integer(command,"enemy",0));event.addProperty("x",recoil.x);event.addProperty("y",recoil.y);peer.event(event);
+                        LOG.info("Bridge native shield recoil target={} velocity={}",integer(command,"enemy",0),recoil);
+                    }
+                }
             }}
             case "eat" -> PlayerBridge.eat(owner);
             case "itemUse" -> ItemUseBridge.use(owner,command,target(command));

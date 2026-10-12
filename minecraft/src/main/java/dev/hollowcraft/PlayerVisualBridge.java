@@ -86,12 +86,12 @@ public final class PlayerVisualBridge {
             avatar.setVelocity(speed/20,number(input,"vy",0)/20,0);
             avatar.prevX=avatar.getX()-speed/20;avatar.prevZ=avatar.getZ();
             if(state.using) {
-                if(!avatar.isUsingItem()||avatar.getActiveHand()!=state.activeHand)avatar.setCurrentHand(state.activeHand);
                 var active=avatar.getStackInHand(state.activeHand);
-                avatar.applyUse(active,state.useTicks);
-            } else avatar.clearActiveItem();
+                avatar.applyUse(active,state.activeHand,state.useTicks);
+                if(attackSerial!=-1) {stopAttack.invoke(avatar,1f);attackSerial=-1;}
+            } else avatar.endUse();
             int serial=(int)number(input,"attackSerial",0);
-            if(flag(input,"swinging")&&serial!=attackSerial) {
+            if(!state.using&&flag(input,"swinging")&&serial!=attackSerial) {
                 attackSerial=serial;String animation=text(input,"animation","");
                 if(!animation.isEmpty())playAttack.invoke(avatar,animation,flag(input,"twoHanded")?twoHands:mainHand,
                     number(input,"duration",.5f)*20,number(input,"upswing",.3f));
@@ -158,6 +158,12 @@ public final class PlayerVisualBridge {
         @Override public boolean isSpectator() {return false;}
         @Override public void playSound(net.minecraft.sound.SoundEvent sound,float volume,float pitch) { }
         void flight(boolean value) {setFlag(7,value);}
-        void applyUse(ItemStack stack,int ticks) {activeItemStack=stack;itemUseTimeLeft=Math.max(1,stack.getMaxUseTime()-ticks);}
+        void applyUse(ItemStack stack,net.minecraft.util.Hand hand,int ticks) {
+            // Vanilla setCurrentHand sets these flags only on a server world. This
+            // isolated client avatar has no entity tracker, so copy both flags explicitly.
+            setLivingFlag(1,true);setLivingFlag(2,hand==net.minecraft.util.Hand.OFF_HAND);
+            activeItemStack=stack;itemUseTimeLeft=Math.max(1,stack.getMaxUseTime()-ticks);
+        }
+        void endUse() {setLivingFlag(1,false);setLivingFlag(2,false);activeItemStack=ItemStack.EMPTY;itemUseTimeLeft=0;}
     }
 }
