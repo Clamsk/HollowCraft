@@ -384,21 +384,29 @@ public final class HollowCraftBridge implements ModInitializer {
             }
         } catch (Exception e) { status = e.getClass().getSimpleName() + ": " + e.getMessage(); LOG.error("Bridge tick", e); }
     }
+    private void respawnOwner() {
+        var grants=owner.getCommandTags().stream().filter(tag->tag.startsWith("hollowcraft_starter")).toList();
+        owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;
+        owner.setNoGravity(true);owner.noClip=true;for(var tag:grants)owner.addCommandTag(tag);
+        owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");
+    }
     private void grantIronStarter() {
         String tag="hollowcraft_starter_iron_v1";
         String pickTag="hollowcraft_starter_iron_pickaxe_v1";
+        String ingotTag="hollowcraft_starter_iron_ingots_v1";
         if(owner.getCommandTags().contains(tag)) {
             if(!owner.getCommandTags().contains(pickTag)) {
                 boolean present=false;for(int i=0;i<36;i++)if(owner.getInventory().getStack(i).isOf(Items.IRON_PICKAXE))present=true;
                 if(!present)give(new ItemStack(Items.IRON_PICKAXE));owner.addCommandTag(pickTag);
             }
+            if(!owner.getCommandTags().contains(ingotTag)) {give(new ItemStack(Items.IRON_INGOT,64));owner.addCommandTag(ingotTag);}
             return;
         }
         boolean fresh=owner.getInventory().isEmpty();
         Item[] items={Items.IRON_SWORD,Items.BOW,Items.COOKED_BEEF,Items.COBBLESTONE,Items.OAK_LOG,
             Items.IRON_AXE,Items.WATER_BUCKET,Items.LAVA_BUCKET,Items.FLINT_AND_STEEL,
-            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE};
-        int[] amounts={1,1,64,64,64,1,1,1,1,64,64,64,64,1};
+            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE,Items.IRON_INGOT};
+        int[] amounts={1,1,64,64,64,1,1,1,1,64,64,64,64,1,64};
         int nextSlot=0;
         for(int i=0;i<items.length;i++) {
             int missing=amounts[i];
@@ -424,6 +432,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if(fresh)owner.getInventory().selectedSlot=0;
         owner.addCommandTag(tag);
         owner.addCommandTag(pickTag);
+        owner.addCommandTag(ingotTag);
         owner.addCommandTag("hollowcraft_starter");
         LOG.info("Iron starter loadout granted; fresh={}",fresh);
     }
@@ -447,7 +456,7 @@ public final class HollowCraftBridge implements ModInitializer {
             collectLandingWater();
             NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();
             String campaign=string(command,"campaign","legacy");
-            if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");}
+            if(owner.isDead())respawnOwner();
             boolean fresh=campaigns.select(owner,campaign,command.has("legacy")&&command.get("legacy").getAsBoolean());
             grantIronStarter();creative=owner.isCreative();campaigns.save(owner);
             introLanding=command.has("intro")&&command.get("intro").getAsBoolean()&&!campaigns.introDone&&name.equals("Tutorial_01");
@@ -554,9 +563,11 @@ public final class HollowCraftBridge implements ModInitializer {
             case "select" -> {owner.getInventory().selectedSlot = clamp(integer(command, "slot", 0), 0, 8);owner.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket(owner.getInventory().selectedSlot));}
             case "mode" -> {
                 GameMode mode=GameMode.byName(string(command,"mode","survival"),GameMode.SURVIVAL);
+                boolean enteringCreative=mode==GameMode.CREATIVE&&!owner.isCreative();
                 owner.changeGameMode(mode);creative=mode==GameMode.CREATIVE;
                 miningPos=null;miningProgress=0;owner.stopUsingItem();pendingSwing=null;pendingHit=null;
                 status = "Game mode: "+mode.getName();
+                if(enteringCreative) {var reward=CreativeTrident.grant(owner);if(!reward.isEmpty()) {give(reward);saveCampaign();}}
             }
             case "flight" -> {
                 owner.getAbilities().flying=owner.getAbilities().allowFlying&&(owner.isSpectator()||command.has("flying")&&command.get("flying").getAsBoolean());
@@ -622,7 +633,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "slotClick" -> PlayerBridge.click(owner,command);
             case "inventoryOpen" -> {owner.clearActiveItem();pendingSwing=null;owner.closeHandledScreen();openContainer=null;openGui(true,integer(command,"uiRequest",0));snapshot();}
             case "respawn" -> {
-                if(owner.isDead()) {owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;owner.setNoGravity(true);owner.noClip=true;owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");hadPose=false;}
+                if(owner.isDead()) {respawnOwner();hadPose=false;}
             }
             case "hit" -> {
                 if(activeAttack!=0 && integer(command,"attack",0)==activeAttack && server.getTicks()<hitReadyTick) {pendingHit=command;break;}
@@ -745,7 +756,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(!placed) {if(bucket!=null)bucket.abort();if(NativeTerrainBlock.proxy(before)&&world.getBlockState(cell).isAir())world.setBlockState(cell,before,Block.NOTIFY_LISTENERS);}
         }
         landingBucket=bucket;landingHand=bucket==null?Hand.MAIN_HAND:bucket.hand;
-        landingWater=cell;landingWaterBefore=before;collectWaterTick=server.getTicks()+8;
+        landingWater=cell;landingWaterBefore=before;collectWaterTick=server.getTicks()+30;
         landingEvent("water",fallen);snapshot();LOG.info("Automatic landing water distance={} cell={}",fallen,cell);return true;
     }
     private void collectLandingWater() {

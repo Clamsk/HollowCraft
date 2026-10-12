@@ -31,11 +31,12 @@ namespace HollowCraft
         private GameObject portrait;
         private float nextPortrait;
         private string portraitSignature;
-        private GameObject whiteEyes,landingLegsLeft,landingLegsRight;
+        private GameObject whiteEyes;
         private static float landingStarted=-10;
         private bool landingCaptured;
         internal static bool LandingActive=>HollowCraftRuntime.Instance?.Creative==true&&Time.time-landingStarted<1.25f;
         internal static void BeginLanding(){landingStarted=Time.time;}
+        internal static void ResetLanding(){landingStarted=-10;}
         private readonly MaterialPropertyBlock tint=new MaterialPropertyBlock();
         private void LateUpdate()
         {
@@ -188,7 +189,6 @@ namespace HollowCraft
                 var eye=new GameObject("Herobrine eye");eye.transform.SetParent(whiteEyes.transform,false);eye.transform.localPosition=new Vector3(x,.21875f,-.252f);
                 MinecraftMeshes.Renderer(eye,MinecraftMeshes.Cuboid(2,1,.08f,0,0,false,Texture2D.whiteTexture),Texture2D.whiteTexture,layer,order+3);
             }
-            landingLegsLeft=LandingLeg(leftLeg,16,48);landingLegsRight=LandingLeg(rightLeg,0,16);
             held=new GameObject("HollowCraft.HeldItem3D").transform;held.SetParent(rightArm,false);
             offhand=new GameObject("HollowCraft.Offhand3D").transform;offhand.SetParent(leftArm,false);
             string wingFile=Path.Combine(assets,"elytra_model.png");
@@ -209,33 +209,26 @@ namespace HollowCraft
             geometry.transform.localPosition=name=="Head"?new Vector3(0,.25f,0):name=="Torso"?new Vector3(0,-.375f,0):name=="Right arm"?new Vector3(.0625f,.125f,0):name=="Left arm"?new Vector3(-.0625f,.125f,0):Vector3.zero;
             MinecraftMeshes.Renderer(geometry,MinecraftMeshes.Cuboid(w,h,d,u,v,pivot,skin),skin,layer,order+2);return part.transform;
         }
-        private GameObject LandingLeg(Transform parent,int u,int v) {
-            var group=new GameObject("Landing jointed leg");group.transform.SetParent(parent,false);
-            var thigh=new GameObject("Landing thigh");thigh.transform.SetParent(group.transform,false);
-            MinecraftMeshes.Renderer(thigh,MinecraftMeshes.Cuboid(4,6,4,u,v,true,skin),skin,layer,order+2);
-            var shin=new GameObject("Landing shin");shin.transform.SetParent(group.transform,false);shin.transform.localPosition=new Vector3(0,-.375f,0);
-            MinecraftMeshes.Renderer(shin,MinecraftMeshes.Cuboid(4,6,4,u,v+6,true,skin),skin,layer,order+2);group.SetActive(false);return group;
-        }
         private void ApplyLandingPose() {
-            bool active=LandingActive;landingLegsLeft.SetActive(active);landingLegsRight.SetActive(active);
-            leftLeg.Find("Model geometry").gameObject.SetActive(!active);rightLeg.Find("Model geometry").gameObject.SetActive(!active);
-            if(!active){landingCaptured=false;return;}
-            float elapsed=Time.time-landingStarted,weight=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.08f))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.8f,1.25f,elapsed)));
+            if(!LandingActive){landingCaptured=false;return;}
+            float elapsed=Time.time-landingStarted,weight=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.12f))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.65f,1.25f,elapsed)));
             avatar.transform.localRotation=Quaternion.Slerp(avatar.transform.localRotation,Quaternion.Euler(0,-MinecraftControls.Facing*55,0),weight);
-            LandingPart(torso,new Vector3(0,1.05f,0),Quaternion.Euler(-55,0,0),weight);
-            LandingPart(head,new Vector3(0,1.06f,-.3f),Quaternion.Euler(-10,0,0),weight);
-            LandingPart(rightArm,new Vector3(.3f,.64f,-.30f),Quaternion.identity,weight);
-            LandingPart(leftArm,new Vector3(-.3f,.93f,.02f),Quaternion.Euler(-80,0,-20),weight);
-            LandingPart(leftLeg,new Vector3(-.15f,.5f,.1f),Quaternion.identity,weight);
-            LandingPart(rightLeg,new Vector3(.15f,.5f,0),Quaternion.Euler(70,0,0),weight);
-            landingLegsLeft.transform.Find("Landing shin").localRotation=Quaternion.Euler(-90*weight,0,0);
-            landingLegsRight.transform.Find("Landing shin").localRotation=Quaternion.Euler(-70*weight,0,0);
+            float pitch=1.22f*weight,rightPitch=1.15f*weight,leftPitch=1.35f*weight;
+            float foot=Mathf.Max(12*Mathf.Cos(rightPitch)+2*Mathf.Abs(Mathf.Sin(rightPitch)),12*Mathf.Cos(leftPitch)+2*Mathf.Abs(Mathf.Sin(leftPitch)));
+            float drop=(24-12*Mathf.Cos(pitch)-foot)/16;
+            float rootY=1.5f-drop;
+            torso.localPosition=new Vector3(0,rootY,0);torso.localRotation=Quaternion.Euler(-pitch*Mathf.Rad2Deg,0,0);
+            head.localPosition=new Vector3(0,rootY,0);head.localRotation=Quaternion.Euler(-.12f*weight*Mathf.Rad2Deg,0,0);
+            var shoulder=new Vector3(5f/16,rootY-2f/16*Mathf.Cos(pitch),2f/16*Mathf.Sin(pitch));
+            rightArm.localPosition=shoulder;leftArm.localPosition=new Vector3(-shoulder.x,shoulder.y,shoulder.z);
+            rightArm.localRotation=Quaternion.Slerp(rightArm.localRotation,Quaternion.Euler(-.2f*Mathf.Rad2Deg,0,0),weight);
+            leftArm.localRotation=Quaternion.Slerp(leftArm.localRotation,Quaternion.Euler(1.25f*Mathf.Rad2Deg,0,-.15f*Mathf.Rad2Deg),weight);
+            var hip=new Vector3(1.9f/16,rootY-.75f*Mathf.Cos(pitch),.75f*Mathf.Sin(pitch));
+            rightLeg.localPosition=hip;leftLeg.localPosition=new Vector3(-hip.x,hip.y,hip.z);
+            rightLeg.localRotation=Quaternion.Euler(rightPitch*Mathf.Rad2Deg,0,0);leftLeg.localRotation=Quaternion.Euler(-leftPitch*Mathf.Rad2Deg,0,0);
             if(!landingCaptured&&elapsed>.15f&&Environment.GetEnvironmentVariable("HOLLOWCRAFT_CAPTURE")=="1") {
                 landingCaptured=true;ScreenCapture.CaptureScreenshot(Path.Combine(HollowCraftBootstrap.SaveRoot(),"hollowcraft-hero-landing.png"));
             }
-        }
-        private static void LandingPart(Transform part,Vector3 position,Quaternion rotation,float weight) {
-            part.localPosition=Vector3.Lerp(part.localPosition,position,weight);part.localRotation=Quaternion.Slerp(part.localRotation,rotation,weight);
         }
         private Vector3 ModelOffset(Transform part) => part==head?new Vector3(0,.25f,0):part==torso?new Vector3(0,-.375f,0):part==rightArm?new Vector3(.0625f,.125f,0):part==leftArm?new Vector3(-.0625f,.125f,0):Vector3.zero;
         private void OnDestroy() {nativeView.Dispose();NativeTexture=null;if(knightRenderer!=null) knightRenderer.enabled=true;if(avatar!=null) Destroy(avatar);if(skin!=null) Destroy(skin);if(portrait!=null) Destroy(portrait);if(portraitCamera!=null) Destroy(portraitCamera.gameObject);if(PortraitTexture!=null) {PortraitTexture.Release();Destroy(PortraitTexture);PortraitTexture=null;}}

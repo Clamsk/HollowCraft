@@ -16,7 +16,8 @@ namespace HollowCraft
             root.AddComponent<HollowCraftRuntime>();
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
-            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Fixed jump targets, native foundations and B tower assist; localhost:31674.");
+            root.AddComponent<IntroPresentation>();
+            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Opening camera/water, connected landing pose, creative trident and native damage FSM; localhost:31674.");
         }
         public static string SaveRoot()
         {

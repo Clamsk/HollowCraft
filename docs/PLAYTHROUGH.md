@@ -4,12 +4,13 @@
 
 | 必要环节 | 当前源码连接 | 仍需证据与工作 |
 | --- | --- | --- |
-| 新档、教程落地与存档身份 | CampaignSession.NewGame、CampaignStore.select、首次地面姿态自动放水 | 新建不同槽位、重建同槽位、晚连接和退出重进的试玩 |
+| 新档、教程落地与存档身份 | CampaignSession.NewGame、CampaignStore.select、首次地面姿态自动放水；0.30.3 开场镜头跟随与 30 tick 收水等待 | 新建不同槽位、重建同槽位、晚连接和退出重进的试玩 |
 | 房间切换、建造与移动 | 原生 GameManager 过场，MC 场景平面，空洞原生碰撞和 MC 重力 | 跳搭、窄通道、升降平台、跨房间落差与场景入口是否有卡住情况 |
 | NPC、座椅、交通和对话 | W 原生 up 输入；CampaignBridge、NativeChoice、NativeShop；离座 W/Space | 各种原生 FSM 的事件名、商店确认、存档座椅、车站和剧情交互需要逐类试玩 |
 | 梦之钉与剧情标记 | R 保留原生 dreamNail 输入；原生 PlayerData 获得标记保留；0.22 在原生接管角色时暂停 MC 操作，保留原生按键释放事件及脚本位移 | 获取梦之钉、梦境入口、梦境 Boss、梦境离开和精华进度尚未验收 |
 | 普通敌人、Boss 与可破坏物 | MC 生物代理计算伤害，EnemySystem 调用原生 HitTaker，保留原生阶段 FSM | 多阶段、护盾、召唤物、无敌窗口、特殊伤害触发和击败奖励不能只用普通小怪替代验证 |
 | 草与触发型物件 | CursorCombat 使用原生要求的 Nail Attack 标签及 OnTriggerEnter2D | 本机 GrassCut.ShouldCut 明确读取该标签；实际草种类、柱子与机关仍需试玩 |
+| 教程大门 | 0.30.3 攻击来源增加 damages_enemy FSM，提供 damageDealt、attackType、direction，交给原生 ReceivedDamage 与 Great Door FSM | 本机教程场景确认其读取该 FSM 并最终切入 Town；实际受击阶段与过场仍需试玩 |
 | 陷阱、死亡、复活与掉落 | MC 伤害和物品掉落；原生 ReadyForRespawn 与座椅检查点；0.22 伤害转接保留原生过场／剧情豁免，脚本位移不产生 MC 摔落伤害 | 酸液、荆棘、场景坠落、死亡过场和掉落回收仍需验证原生与 MC 状态一致 |
 | 生存后期能力 | 已有装备、附魔、药水、弓箭、珍珠、水桶、建造与鞘翅接口 | 原生能力通行检查与 MC 替代方式没有完成逐关适配；不能因为能建造就假定所有剧情门已兼容 |
 | 三位守梦者、黑卵与结局 | 原生剧情及标记没有被删除 | 各守梦者、黑卵开放、最终战与结局动画目前没有足够证据证明兼容 |

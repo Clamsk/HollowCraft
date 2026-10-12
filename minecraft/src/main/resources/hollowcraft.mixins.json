@@ -19,6 +19,8 @@
     ,"NativeTerrainRaycastMixin"
     ,"FireworkTerrainMixin"
     ,"NativeTntMovementMixin"
+    ,"CreativeTridentMixin"
+    ,"CreativeTridentDamageMixin"
   ],
   "client": [
     "ItemRendererAccess",

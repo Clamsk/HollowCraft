@@ -317,7 +317,7 @@ namespace HollowCraft
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
                     LastLanding=message;LandingEvents++;
                     if((string)message["kind"]=="water") {waterLandingAt=Time.unscaledTime;waterLandingSerial++;waterLandingPhase=0;waterLandingHand=(int?)message["hand"]??0;}
-                    if((bool?)message["intro"]==true)CampaignSession.Landed();
+                    if((bool?)message["intro"]==true) {IntroPresentation.Landed();CampaignSession.Landed();}
                     if((string)message["kind"]=="hero")SteveAvatar.BeginLanding();
                 }
                 if((string)message["type"]=="waterCollected"&&(string)message["scene"]==scene&&(bool?)message["recovered"]==true) {
@@ -768,7 +768,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { JumpBuild?.Cancel();audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) if(block!=null) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { SteveAvatar.ResetLanding();JumpBuild?.Cancel();audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) if(block!=null) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

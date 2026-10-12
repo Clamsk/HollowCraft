@@ -1,4 +1,4 @@
-# HollowCraft 0.30.2 安装与配置
+# HollowCraft 0.30.3 安装与配置
 
 这是 Windows 64 位试玩包。它把本机 Minecraft 的物品、数值与三维人物接入空洞骑士；游玩时两端都需要运行。完整生存通关仍在适配，本版编译后交给玩家试玩，未进行实机验收。
 
@@ -11,7 +11,7 @@
 
 ## 安装
 
-1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.2-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
+1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.3-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
 2. 完整解压到自己的可写目录，例如 `D:\Games\HollowCraft`。不要直接从 ZIP 内运行，也不要放进 Steam 或 `.minecraft` 原目录。Windows 内置 PowerShell 即可，无需 Codex、Git 或开发工具。
 3. 双击 **Install HollowCraft.cmd**。它寻找 Steam 游戏目录和 `.minecraft`；未找到时按提示输入目录。Minecraft 目录必须包含 `versions\1.20.1\1.20.1.jar`，不是启动器 EXE 所在目录。
 4. 等待下载、校验和准备结束，看到 `installed`。安装器只准备文件，不启动游戏。
@@ -52,3 +52,5 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-hollow
 反馈时附上版本、复现步骤和 `runtime\hollowcraft-hk.log`、`runtime\minecraft\logs\latest.log`。不要上传原游戏、完整存档或账号数据。
 
 完整操作表见 README.md。本版建议先手持圆石，按住 **B** 尝试辅助垫高，再尝试空格加脚下右键的普通跳搭。首次从空洞地面起步的方块下部可能嵌入地面，以适配小数高度；不会删除原生地面。具体效果请以本版试玩反馈为准。
+
+0.30.3 的开场镜头与落地水建议新建试玩存档观看；铁锭会在旧档补发一次，专用忠诚 III 三叉戟在切入创造模式时领取。教程大门需要挥击破坏，随后使用原生转场流程。

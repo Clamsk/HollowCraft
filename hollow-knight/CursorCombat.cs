@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using HutongGames.PlayMaker;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
@@ -26,6 +28,25 @@ namespace HollowCraft
         private string predictedWeapon;
         private float lastRequest;
         private BoxCollider2D nativeSlash;
+        private static readonly FieldInfo damageFsmField=typeof(PlayMakerFSM).GetField("fsm",BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public);
+        private void DamageDescriptor(int damage,float direction) {
+            var fsm=FSMUtility.LocateFSM(nativeSlash.gameObject,"damages_enemy");
+            if(fsm==null) {
+                // ReceivedDamage gates read this FSM, rather than HitInstance or
+                // the nail tag alone. Keep it inert: it only describes this MC hit.
+                nativeSlash.gameObject.SetActive(false);
+                fsm=nativeSlash.gameObject.AddComponent<PlayMakerFSM>();
+                damageFsmField.SetValue(fsm,new Fsm());fsm.Fsm.Reset(fsm);fsm.FsmName="damages_enemy";
+                fsm.Fsm.Variables=new FsmVariables {
+                    IntVariables=new[]{new FsmInt {Name="attackType",Value=(int)AttackTypes.Nail},new FsmInt {Name="damageDealt",Value=damage}},
+                    FloatVariables=new[]{new FsmFloat {Name="direction",Value=direction}}
+                };
+                fsm.enabled=false;nativeSlash.gameObject.SetActive(true);
+            }
+            fsm.FsmVariables.GetFsmInt("attackType").Value=(int)AttackTypes.Nail;
+            fsm.FsmVariables.GetFsmInt("damageDealt").Value=damage;
+            fsm.FsmVariables.GetFsmFloat("direction").Value=direction;
+        }
         internal CursorCombat(Action<object> sender) {send=sender;}
         internal void Begin(JObject message,string scene)
         {
@@ -111,6 +132,7 @@ namespace HollowCraft
                     var source=new GameObject("HollowCraft.NativeAttackDescriptor");source.tag="Nail Attack";source.layer=2;
                     nativeSlash=source.AddComponent<BoxCollider2D>();nativeSlash.isTrigger=true;nativeSlash.size=Vector2.one*.05f;nativeSlash.enabled=false;
                 }
+                DamageDescriptor(Math.Max(1,Mathf.RoundToInt((float)Current["damage"])),Mathf.Atan2(Aim.y,Aim.x)*Mathf.Rad2Deg);
                 nativeSlash.transform.position=new Vector3(point.x,point.y,hero.transform.position.z);nativeSlash.enabled=true;
                 var instance=new HitInstance {Source=nativeSlash.gameObject,AttackType=AttackTypes.Nail,
                     DamageDealt=Math.Max(1,Mathf.RoundToInt((float)Current["damage"])),
