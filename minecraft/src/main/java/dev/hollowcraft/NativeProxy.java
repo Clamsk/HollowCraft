@@ -21,6 +21,7 @@ final class NativeProxy extends ZombieEntity {
         float height=data.has("height")?Math.max(.2f,Math.min(16,data.get("height").getAsFloat())):1.95f;
         if(dimensions==null||Math.abs(dimensions.width-width)>.01||Math.abs(dimensions.height-height)>.01) {dimensions=EntityDimensions.changing(width,height);calculateDimensions();}
     }
+    String bridgeName() {return name;}
     @Override public EntityDimensions getDimensions(EntityPose pose) {return dimensions==null?super.getDimensions(pose):dimensions;}
     @Override protected boolean burnsInDaylight() {return false;}
     @Override protected boolean canConvertInWater() {return false;}

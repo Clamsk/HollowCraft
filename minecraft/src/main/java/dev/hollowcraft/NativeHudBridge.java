@@ -24,7 +24,11 @@ public final class NativeHudBridge {
     public static void render(MinecraftClient client,float delta) {
         var state=PlayerRenderState.latest;var input=PlayerRenderState.controls;
         if(!RenderSystem.isOnRenderThread()||!HollowCraftBridge.hudRequested()||client.player==null||client.world==null||client.interactionManager==null
-            ||state==null||input==null||!state.scene.equals(text(input,"scene"))||!state.campaign.equals(text(input,"campaign")))return;
+            ||state==null||input==null||!state.scene.equals(text(input,"scene"))||!state.campaign.equals(text(input,"campaign"))||state.visit!=integer(input,"visit",-1))return;
+        // Character equipment comes from the authoritative server snapshot. Wait for
+        // the same selected hand in the real client before exporting its vanilla HUD.
+        if(client.player.getInventory().selectedSlot!=state.selected
+            ||!net.minecraft.item.ItemStack.areEqual(client.player.getMainHandStack(),state.equipment[net.minecraft.entity.EquipmentSlot.MAINHAND.ordinal()]))return;
         String root=System.getProperty("hollowcraft.icons","");if(root.isEmpty())return;
         long now=System.nanoTime();if(now<retryAt||now-lastRender<50_000_000L)return;lastRender=now;
         width=Math.max(320,Math.min(1024,integer(input,"guiWidth",480)));height=Math.max(240,Math.min(576,integer(input,"guiHeight",270)));
@@ -51,7 +55,7 @@ public final class NativeHudBridge {
             pixels.clear();GL11.glReadPixels(0,0,px,py,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,pixels);pixels.get(transfer,48,px*py*4);
             for(int at=48;at<48+px*py*4;at+=4) {int alpha=transfer[at+3]&255;if(alpha==0)transfer[at]=transfer[at+1]=transfer[at+2]=0;else if(alpha<255)for(int c=0;c<3;c++)transfer[at+c]=(byte)Math.min(255,((transfer[at+c]&255)*255+alpha/2)/alpha);}
             var header=ByteBuffer.wrap(transfer).order(ByteOrder.LITTLE_ENDIAN);
-            header.putInt(0x48434855).putInt(++sequence).putInt(px).putInt(py).putLong(SESSION).putInt(0).putInt((state.scene+"|"+state.campaign).hashCode());
+            header.putInt(0x48434855).putInt(++sequence).putInt(px).putInt(py).putLong(SESSION).putInt(0).putInt((state.scene+"|"+state.campaign+"|"+state.visit).hashCode());
             header.putInt(width).putInt(height).putInt(0).putInt(1);header.putInt(48+px*py*4,sequence);
             Path directory=Path.of(root).getParent().resolve("hud_frames");Files.createDirectories(directory);Files.write(directory.resolve("frame-"+(sequence%3)+".bin"),transfer);
         } catch(Exception error) {

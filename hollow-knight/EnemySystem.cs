@@ -12,6 +12,8 @@ namespace HollowCraft
         private sealed class Adapter {internal HealthManager Enemy;internal Breakable Breakable;internal bool Resource,Rewarded;internal int NativeMax,LastNative,Generation;internal float Max,Health;}
         private static readonly Dictionary<int,Adapter> enemies=new Dictionary<int,Adapter>();
         private static readonly FieldInfo brokenField=typeof(Breakable).GetField("isBroken",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
+        private static readonly FieldInfo evasionField=typeof(HealthManager).GetField("evasionByHitRemaining",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
+        private static readonly FieldInfo specialDeathField=typeof(HealthManager).GetField("hasSpecialDeath",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
         // Six points per iron-sword hit: three normal hits for ordinary enemies.
         // Tough enemies and bosses retain extra health above the common 60 native HP band.
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
@@ -68,7 +70,7 @@ namespace HollowCraft
                 if(health>=adapter.Health-.001f) continue;
                 if(Math.Abs((float)value["maxHealth"]-adapter.Max)>.001f) continue;
                 if(adapter.Breakable!=null) {
-                    if(health<=0) {string source=(string)value["damageKind"];bool blast=source=="explosion"||source=="explosion.player"||source=="fireworks";HitTaker.Hit(adapter.Breakable.gameObject,new HitInstance {Source=hero.gameObject,AttackType=blast?AttackTypes.Spell:AttackTypes.Nail,DamageDealt=999,Multiplier=1,IgnoreInvulnerable=false},3);adapter.Health=health;}
+                    if(health<=0) {string source=(string)value["damageKind"];bool blast=source=="explosion"||source=="explosion.player"||source=="fireworks";var type=blast?AttackTypes.Spell:AttackTypes.Nail;var descriptor=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,999,0,type);HitTaker.Hit(adapter.Breakable.gameObject,new HitInstance {Source=descriptor,AttackType=type,DamageDealt=999,Multiplier=1,IgnoreInvulnerable=false},3);adapter.Health=health;}
                     if(health<=0&&!adapter.Breakable.gameObject.activeInHierarchy) HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id,generation=adapter.Generation});
                     continue;
                 }
@@ -79,12 +81,23 @@ namespace HollowCraft
                 Vector2 direction=((Vector2)enemy.transform.position-(Vector2)hero.transform.position).normalized;
                 string kind=(string)value["damageKind"];
                 bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion"||kind=="fireworks";
-                HitTaker.Hit(enemy.gameObject,new HitInstance {Source=hero.gameObject,AttackType=ranged?AttackTypes.Spell:AttackTypes.Nail,DamageDealt=damage,Multiplier=1,
-                    Direction=Mathf.Atan2(direction.y,direction.x)*Mathf.Rad2Deg,MagnitudeMultiplier=1.2f,IgnoreInvulnerable=true},3);
-                FSMUtility.SendEventToGameObject(enemy.gameObject,"TAKE DAMAGE",false);
+                var attackType=ranged?AttackTypes.Spell:AttackTypes.Nail;float angle=Mathf.Atan2(direction.y,direction.x)*Mathf.Rad2Deg;
+                var sourceObject=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,damage,angle,attackType);
+                // MC already accepted this hit using its cooldown and hurt immunity.
+                // Clear only HK's extra evasion timer; scripted shields/phases still go through Hit.
+                evasionField?.SetValue(enemy,0f);
+                enemy.Hit(new HitInstance {Source=sourceObject,AttackType=attackType,DamageDealt=damage,Multiplier=1,
+                    Direction=angle,MagnitudeMultiplier=1.2f,IgnoreInvulnerable=true});
                 // Native recoil timers must not heal an already accepted MC hit. A genuine
                 // boss phase refill increases HP above the pre-hit value and stays native-owned.
-                if(!enemy.isDead&&enemy.hp>desired&&enemy.hp<=before&&desired>0)enemy.hp=desired;
+                bool specialDeath=(bool)(specialDeathField?.GetValue(enemy)??true);
+                if(!enemy.isDead&&!enemy.IsInvincible&&enemy.hp>desired&&enemy.hp<=before&&(desired>0||!specialDeath)) {
+                    enemy.hp=desired;
+                    // A rejected/one-point native lethal hit used to refill the MC proxy
+                    // as if every ordinary enemy had a new boss phase, making it immortal.
+                    if(desired==0)enemy.Die(angle,attackType,true);
+                }
+                Debug.Log("[HollowCraft] Native combat id="+id+" name="+enemy.name+" MC="+health+" native="+before+"->"+enemy.hp+" dead="+enemy.isDead+" blocked="+enemy.IsInvincible);
                 adapter.LastNative=enemy.hp;
                 if(health<=0&&enemy.isDead) HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id,generation=adapter.Generation});
                 if(!enemy.isDead&&(enemy.hp>before||health<=0&&enemy.hp>0)) {adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;}

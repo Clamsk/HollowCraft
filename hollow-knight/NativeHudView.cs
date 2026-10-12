@@ -20,7 +20,7 @@ namespace HollowCraft
         internal void Reset() {ready=false;sequence=-1;session=0;readAfter=DateTime.UtcNow;}
         internal void Refresh(string assets) {
             long expected=(long?)runtime.LatestSnapshot?["hudSession"]??0;
-            string key=runtime.Room+"|"+runtime.CampaignId;
+            string key=runtime.Room+"|"+runtime.CampaignId+"|"+runtime.SceneVisit;
             if(expected==0) {ready=false;session=0;return;}
             if(session!=expected||sceneKey!=key) {Reset();session=expected;sceneKey=key;}
             if(Time.unscaledTime<nextRead)return;nextRead=Time.unscaledTime+.025f;

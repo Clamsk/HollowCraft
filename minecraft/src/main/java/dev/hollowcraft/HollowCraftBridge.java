@@ -363,7 +363,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.teleport(owner.getServerWorld(), slot * 1024 + exactX, 64 + exactY, 0.5, owner.getYaw(), owner.getPitch());
                 owner.setVelocity(Vec3d.ZERO);
                 owner.setOnGround(wasGrounded);
-                PlayerRenderState.publish(owner,scene,campaigns.id(),slot*1024);
+                PlayerRenderState.publish(owner,scene,campaigns.id(),slot*1024,sceneVisit);
                 enemies.tick();
                 ItemUseBridge.tick(owner,slot*1024,centerX,centerY);
                 if(peer!=null) {
@@ -407,6 +407,11 @@ public final class HollowCraftBridge implements ModInitializer {
         owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;
         owner.setNoGravity(true);owner.noClip=true;for(var tag:grants)owner.addCommandTag(tag);
         owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");
+        syncSelectedInventory();
+    }
+    private void syncSelectedInventory() {
+        owner.getInventory().markDirty();owner.playerScreenHandler.syncState();
+        owner.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket(owner.getInventory().selectedSlot));
     }
     private void grantIronStarter() {
         String tag="hollowcraft_starter_iron_v1";
@@ -507,6 +512,7 @@ public final class HollowCraftBridge implements ModInitializer {
             hadPose=false;fallen=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
             owner.fallDistance=0;owner.clearActiveItem();owner.setVelocity(Vec3d.ZERO);owner.stopFallFlying();
             owner.setPosition(slot*1024+exactX,64+exactY,.5);
+            syncSelectedInventory();
             status = "Minecraft connected: " + name;
             return;
         }

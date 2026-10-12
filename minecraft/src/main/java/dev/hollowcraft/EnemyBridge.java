@@ -80,7 +80,9 @@ final class EnemyBridge {
                 var closest=new Vec3d(Math.max(bounds.minX,Math.min(bounds.maxX,eye.x)),Math.max(bounds.minY,Math.min(bounds.maxY,eye.y)),Math.max(bounds.minZ,Math.min(bounds.maxZ,eye.z)));
                 if(eye.squaredDistanceTo(closest)>reach*reach+.001)continue;
                 clock.hollowcraft$setAttackTicks(chargedTicks);
+                float before=enemy.getHealth();
                 player.attack(enemy);
+                org.slf4j.LoggerFactory.getLogger("HollowCraft").info("Combat target={} name={} hand={} damage={} HP={}->{} invulnerable={}",target,((NativeProxy)enemy).bridgeName(),player.getMainHandStack().getItem(),player.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE),before,enemy.getHealth(),enemy.isInvulnerable());
             }
         } finally {attack.setBaseValue(base);player.setOnGround(ground);player.fallDistance=fall;}
     }

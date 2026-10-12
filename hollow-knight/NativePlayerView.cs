@@ -19,7 +19,7 @@ namespace HollowCraft
         private readonly DateTime started=DateTime.UtcNow;
         internal bool Draw(string assets,Vector3 feet,int layer,int order)
         {
-            string expected=(HollowCraftRuntime.Instance?.Room??"")+"|"+(HollowCraftRuntime.Instance?.CampaignId??"");
+            string expected=(HollowCraftRuntime.Instance?.Room??"")+"|"+(HollowCraftRuntime.Instance?.CampaignId??"")+"|"+(HollowCraftRuntime.Instance?.SceneVisit??0);
             if(sceneKey!=expected) {sceneKey=expected;sequence=-1;ready=false;Hide();}
             if(Time.unscaledTime>=nextRead) {
                 nextRead=Time.unscaledTime+.016f;

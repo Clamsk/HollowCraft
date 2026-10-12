@@ -66,6 +66,7 @@ namespace HollowCraft
         private bool openingSync;
         private bool nativeTransition,sceneReentry,entryRecovery;
         private int sceneVisit;
+        internal int SceneVisit=>sceneVisit;
         private float waterLandingAt=-1000;
         private int waterLandingSerial;
         private int waterLandingPhase,waterLandingHand;

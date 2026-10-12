@@ -29,7 +29,7 @@ namespace HollowCraft
         private float lastRequest;
         private BoxCollider2D nativeSlash;
         private static readonly FieldInfo damageFsmField=typeof(PlayMakerFSM).GetField("fsm",BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public);
-        private void DamageDescriptor(int damage,float direction) {
+        private void DamageDescriptor(int damage,float direction,AttackTypes attack=AttackTypes.Nail) {
             var fsm=FSMUtility.LocateFSM(nativeSlash.gameObject,"damages_enemy");
             if(fsm==null) {
                 // ReceivedDamage gates read this FSM, rather than HitInstance or
@@ -41,11 +41,23 @@ namespace HollowCraft
                     IntVariables=new[]{new FsmInt {Name="attackType",Value=(int)AttackTypes.Nail},new FsmInt {Name="damageDealt",Value=damage}},
                     FloatVariables=new[]{new FsmFloat {Name="direction",Value=direction}}
                 };
-                fsm.enabled=false;nativeSlash.gameObject.SetActive(true);
+                fsm.Fsm.States=new[]{new FsmState(fsm.Fsm) {Name="Idle"}};fsm.Fsm.StartState="Idle";
+                // FindFsmOnGameObject searches PlayMaker's enabled FSM registry.
+                // Disabling this inert descriptor made native grass/poles miss it.
+                fsm.enabled=true;nativeSlash.gameObject.SetActive(true);
             }
-            fsm.FsmVariables.GetFsmInt("attackType").Value=(int)AttackTypes.Nail;
+            fsm.FsmVariables.GetFsmInt("attackType").Value=(int)attack;
             fsm.FsmVariables.GetFsmInt("damageDealt").Value=damage;
             fsm.FsmVariables.GetFsmFloat("direction").Value=direction;
+        }
+        internal GameObject NativeDamageSource(HeroController hero,int damage,float direction,AttackTypes attack) {
+            if(nativeSlash==null) {
+                var source=new GameObject("HollowCraft.NativeAttackDescriptor");source.tag="Nail Attack";source.layer=2;
+                UnityEngine.Object.DontDestroyOnLoad(source);
+                nativeSlash=source.AddComponent<BoxCollider2D>();nativeSlash.isTrigger=true;nativeSlash.size=Vector2.one*.05f;nativeSlash.enabled=false;
+            }
+            DamageDescriptor(damage,direction,attack);nativeSlash.transform.position=hero.transform.position;
+            return nativeSlash.gameObject;
         }
         internal CursorCombat(Action<object> sender) {send=sender;}
         internal void Begin(JObject message,string scene)
@@ -128,11 +140,7 @@ namespace HollowCraft
                 hit.Add(target);
                 if(enemy!=null) {enemies.Add(EnemySystem.Register(enemy));continue;}
                 if(breakable!=null) {enemies.Add(EnemySystem.Register(breakable));terrainHit=true;continue;}
-                if(nativeSlash==null) {
-                    var source=new GameObject("HollowCraft.NativeAttackDescriptor");source.tag="Nail Attack";source.layer=2;
-                    nativeSlash=source.AddComponent<BoxCollider2D>();nativeSlash.isTrigger=true;nativeSlash.size=Vector2.one*.05f;nativeSlash.enabled=false;
-                }
-                DamageDescriptor(Math.Max(1,Mathf.RoundToInt((float)Current["damage"])),Mathf.Atan2(Aim.y,Aim.x)*Mathf.Rad2Deg);
+                NativeDamageSource(hero,Math.Max(1,Mathf.RoundToInt((float)Current["damage"])),Mathf.Atan2(Aim.y,Aim.x)*Mathf.Rad2Deg,AttackTypes.Nail);
                 nativeSlash.transform.position=new Vector3(point.x,point.y,hero.transform.position.z);nativeSlash.enabled=true;
                 var instance=new HitInstance {Source=nativeSlash.gameObject,AttackType=AttackTypes.Nail,
                     DamageDealt=Math.Max(1,Mathf.RoundToInt((float)Current["damage"])),
