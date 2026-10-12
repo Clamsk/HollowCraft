@@ -64,6 +64,8 @@ namespace HollowCraft
         private float nextTerrain;
         private string campaign="";
         private bool openingSync;
+        private bool nativeTransition,sceneReentry,entryRecovery;
+        private int sceneVisit;
         private float waterLandingAt=-1000;
         private int waterLandingSerial;
         private int waterLandingPhase,waterLandingHand;
@@ -160,7 +162,9 @@ namespace HollowCraft
         private float itemSwingAt=-100;
         private MinecraftUI ui;
         private bool BridgeIntro => (CampaignSession.IntroPending||openingSync)&&cachedManager!=null&&cachedManager.GetSceneNameString()=="Tutorial_01";
-        internal bool InGame => !frontendSuspended && cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && cachedManager.IsGameplayScene() && (!cachedManager.IsInSceneTransition||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
+        internal bool OpeningTransition=>CampaignSession.IntroPending&&GameManager.instance?.GetSceneNameString()=="Tutorial_01";
+        private bool NativeEntranceReady=>cachedHero!=null&&cachedHero.transitionState==GlobalEnums.HeroTransitionState.WAITING_TO_TRANSITION&&!nativeTransition;
+        internal bool InGame => !frontendSuspended && cachedHero!=null && cachedHero.gameObject.activeInHierarchy && cachedManager!=null && cachedManager.IsGameplayScene() && ((!cachedManager.IsInSceneTransition&&NativeEntranceReady)||BridgeIntro) && cachedManager.GetSceneNameString()!="Opening_Sequence";
         internal bool Creative => creative;
         internal bool Connected=>bridge?.Connected==true;
         internal string Mode=>(string)Stats?["mode"]??"survival";
@@ -170,7 +174,7 @@ namespace HollowCraft
         internal readonly GameModeMenu Modes=new GameModeMenu();
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
         internal bool InterfaceBlocked=>frontendSuspended||cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
-        internal bool NativeControlLocked=>cachedHero?.controlReqlinquished==true&&!BridgeIntro;
+        internal bool NativeControlLocked=>!BridgeIntro&&(cachedHero?.controlReqlinquished==true||!NativeEntranceReady||cachedManager?.IsInSceneTransition==true);
         internal bool GameplayBlocked=>InterfaceBlocked||NativeControlLocked;
         internal bool SimulationPaused=>frontendSuspended||paused||connectionFrozen||Dead;
         internal bool AudioPaused=>frontendSuspended||paused||connectionFrozen;
@@ -246,7 +250,7 @@ namespace HollowCraft
             if (cachedManager == null) cachedManager = FindFirstObjectByType<GameManager>();
             hero = cachedHero;
             return hero != null && hero.gameObject.activeInHierarchy && cachedManager != null
-                && cachedManager.IsGameplayScene() && !cachedManager.isPaused && (!cachedManager.IsInSceneTransition||BridgeIntro)
+                && cachedManager.IsGameplayScene() && !cachedManager.isPaused && ((!cachedManager.IsInSceneTransition&&NativeEntranceReady)||BridgeIntro)
                 && cachedManager.GetSceneNameString() != "Opening_Sequence"
                 && hero.GetComponent<Rigidbody2D>() != null;
         }
@@ -255,6 +259,27 @@ namespace HollowCraft
             bool value=frontendSuspended||paused||connectionFrozen;
             if(backendPauseSent==value)return;
             bridge.Send(new {type="pause",paused=value});backendPauseSent=value;
+        }
+        internal void BeginNativeTransition() {
+            if(nativeTransition)return;
+            nativeTransition=true;sceneReentry=true;entryRecovery=false;
+            // Invalidate this visit before draining any messages, including return to the same room.
+            bridge.SceneVisit=++sceneVisit;
+            StopMining();Combat.Cancel();JumpBuild.Cancel();queuedTower=null;
+            if(usingItem)Send(new {type="itemUse",scene,cancel=true});usingItem=false;
+            CloseInterface();ClearBlocks();frontendSuspended=true;SyncBackendPause();
+            MinecraftEnvironment.SuspendNativeMotion();MinecraftControls.Restore();
+            Debug.Log("[HollowCraft] Native scene transition begins; visit="+sceneVisit);
+        }
+        internal void NativeSceneArrived(HeroController hero) {
+            nativeTransition=false;entryRecovery=true;
+            cachedHero=hero;cachedManager=GameManager.instance;
+            // The tutorial bridge is already observing the opening fall. Keep its
+            // visit and pending landing-water reply when HK finishes that entrance.
+            if(scene=="Tutorial_01"&&(openingSync||CampaignSession.IntroPending)&&scene==cachedManager?.GetSceneNameString()) {openingSync=false;return;}
+            sceneReentry=true;
+            MinecraftEnvironment.SceneChanged();
+            Debug.Log("[HollowCraft] Native entrance complete "+cachedManager?.GetSceneNameString()+" gate="+hero.sceneEntryGate?.name+" position="+hero.transform.position);
         }
         private void Update()
         {
@@ -300,6 +325,7 @@ namespace HollowCraft
             while (bridge.TryRead(out JObject message))
             {
                 if(message["campaign"]!=null&&(string)message["campaign"]!=campaign)continue;
+                if(message["scene"]!=null&&((!BridgeIntro&&(nativeTransition||!NativeEntranceReady||cachedManager?.IsInSceneTransition==true))||(int?)message["visit"]!=sceneVisit))continue;
                 if((string)message["type"]=="mcSound"&&(string)message["scene"]==scene)audio.Receive(message);
                 if((string)message["type"]=="mcSoundStop"&&(string)message["scene"]==scene)audio.StopAll();
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
@@ -357,9 +383,9 @@ namespace HollowCraft
             frontendSuspended=false;
             string name = cachedManager.GetSceneNameString();
             CampaignSession.Select(cachedManager);
-            if(!cachedManager.IsInSceneTransition)openingSync=false;
-            if (name != scene || newlyConnected || campaign!=CampaignSession.Id)
+            if (name != scene || newlyConnected || campaign!=CampaignSession.Id || sceneReentry)
             {
+                sceneReentry=false;entryRecovery=true;bridge.SceneVisit=++sceneVisit;
                 ClearBlocks(); appliedTeleport=0;scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
                 container=null; inventoryOpen=false;UiRequest=0;Gui.Reset();waterLandingAt=-1000; Combat.Cancel(); PlayerSystem.EnterScene(hero);
                 CatalogOpen=false;usingItem=false;MinecraftEnvironment.SceneChanged();
@@ -370,7 +396,7 @@ namespace HollowCraft
                 openingSync=CampaignSession.IntroPending&&scene=="Tutorial_01"&&cachedManager.IsInSceneTransition;
                 Debug.Log("[HollowCraft] Room " + scene + " hero " + hero.transform.position);
                 Array.Fill(crafting, -1);
-                if (connected) bridge.Send(new { type = "scene", scene, campaign,legacy=CampaignSession.Legacy,intro=CampaignSession.IntroPending,x = Cell(hero.transform.position.x), y = Cell(hero.transform.position.y) });
+                if (connected) bridge.Send(new { type = "scene", scene, campaign,legacy=CampaignSession.Legacy,intro=CampaignSession.IntroPending,x = Cell(hero.transform.position.x), y = Cell(hero.transform.position.y),exactX=hero.transform.position.x,exactY=hero.GetComponent<Collider2D>().bounds.min.y });
             }
             if (!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
                 bridge.Send(new { type = "mode", scene, mode = creative ? "survival" : "creative" });
@@ -393,6 +419,7 @@ namespace HollowCraft
             if(!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F10) && creative) bridge.Send(new {type="adventureKit",scene});
             // Native story FSMs still need key-release events while they own the hero.
             MinecraftControls.Tick(hero,building,InterfaceBlocked||Automated);
+            if(entryRecovery&&LatestSnapshot!=null&&!NativeControlLocked) {entryRecovery=false;NativeLanding.SettleSceneEntry(hero);}
             GameCursor.WorldTarget(hero,out _,out crosshair);
             if(connected&&Time.unscaledTime>=nextVisual) {
                 nextVisual=Time.unscaledTime+.033f;

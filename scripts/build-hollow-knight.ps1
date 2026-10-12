@@ -47,6 +47,34 @@ try {
     $moveHookTask=[Mono.Cecil.MethodReference]::new('AdjustMove',$moduleTask.TypeSystem.Single,$controlsTypeTask)
     $moveHookTask.Parameters.Add([Mono.Cecil.ParameterDefinition]::new($moduleTask.TypeSystem.Single))
     $heroTypeTask=$moduleTask.Types | Where-Object Name -eq 'HeroController'
+    $transitionTypeTask=[Mono.Cecil.TypeReference]::new('HollowCraft','SceneTransitionBridge',$moduleTask,$assemblyRefTask)
+    $beginTransitionHookTask=[Mono.Cecil.MethodReference]::new('Begin',$moduleTask.TypeSystem.Void,$transitionTypeTask)
+    $enterTransitionHookTask=[Mono.Cecil.MethodReference]::new('Enter',$moduleTask.TypeSystem.Void,$transitionTypeTask)
+    $enterTransitionHookTask.Parameters.Add([Mono.Cecil.ParameterDefinition]::new($heroTypeTask))
+    $arrivedHookTask=[Mono.Cecil.MethodReference]::new('Arrived',$moduleTask.TypeSystem.Void,$transitionTypeTask)
+    $arrivedHookTask.Parameters.Add([Mono.Cecil.ParameterDefinition]::new($heroTypeTask))
+    # Restore native physics before HK captures gravity and starts gate movement.
+    $beginSceneTask=($moduleTask.Types | Where-Object Name -eq 'GameManager').Methods | Where-Object Name -eq 'BeginSceneTransition' | Select-Object -First 1
+    if(-not $beginSceneTask.HasBody) {throw 'GameManager.BeginSceneTransition missing; abort patch'}
+    $beginSceneIlTask=$beginSceneTask.Body.GetILProcessor()
+    $beginSceneIlTask.InsertBefore($beginSceneTask.Body.Instructions[0],$beginSceneIlTask.Create([Mono.Cecil.Cil.OpCodes]::Call,$beginTransitionHookTask))
+    foreach($entryNameTask in @('LeaveScene','EnterScene','EnterSceneDreamGate')) {
+        $entryMethodTask=$heroTypeTask.Methods | Where-Object Name -eq $entryNameTask | Select-Object -First 1
+        if(-not $entryMethodTask.HasBody) {throw "HeroController.$entryNameTask missing; abort patch"}
+        $entryIlTask=$entryMethodTask.Body.GetILProcessor();$entryFirstTask=$entryMethodTask.Body.Instructions[0]
+        $entryIlTask.InsertBefore($entryFirstTask,$entryIlTask.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+        $entryIlTask.InsertBefore($entryFirstTask,$entryIlTask.Create([Mono.Cecil.Cil.OpCodes]::Call,$enterTransitionHookTask))
+    }
+    $arrivedTask=$heroTypeTask.Methods | Where-Object Name -eq 'FinishedEnteringScene' | Select-Object -First 1
+    if(-not $arrivedTask.HasBody) {throw 'HeroController.FinishedEnteringScene missing; abort patch'}
+    $arrivedIlTask=$arrivedTask.Body.GetILProcessor()
+    # Modify ret in place so branches to the old return also execute the hook.
+    foreach($returnTask in @($arrivedTask.Body.Instructions | Where-Object OpCode -eq ([Mono.Cecil.Cil.OpCodes]::Ret))) {
+        $returnTask.OpCode=[Mono.Cecil.Cil.OpCodes]::Ldarg_0;$returnTask.Operand=$null
+        $callArrivalTask=$arrivedIlTask.Create([Mono.Cecil.Cil.OpCodes]::Call,$arrivedHookTask)
+        $arrivedIlTask.InsertAfter($returnTask,$callArrivalTask)
+        $arrivedIlTask.InsertAfter($callArrivalTask,$arrivedIlTask.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+    }
     $moveTask=$heroTypeTask.Methods | Where-Object { $_.Name -eq 'Move' -and $_.Parameters.Count -eq 1 }
     if(-not $moveTask.HasBody) { throw 'HeroController.Move missing; abort patch' }
     $moveIlTask=$moveTask.Body.GetILProcessor()

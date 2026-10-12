@@ -191,6 +191,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private String status = "Open Hollow Knight and press F6";
     private boolean creative;
     private double exactX,exactY,lastPoseX,lastPoseY;
+    private int sceneVisit;
     private boolean hadPose,wasGrounded;
     private float fallen;
     private boolean pearlDamageActive;
@@ -488,7 +489,7 @@ public final class HollowCraftBridge implements ModInitializer {
             pendingHit=null;pendingSwing=null;
             nextSwingTick=0;lastAttackEvent=null;lastAttackRequest=cancelledAttackRequest=0;
             for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}
-            cleanupTerrain(); scene = name;
+            cleanupTerrain(); scene = name;sceneVisit=integer(command,"visit",0);
             String sceneKey=campaign+":"+name;
             // The first migrated legacy campaign keeps its previously placed blocks.
             if(!scenes.containsKey(sceneKey)&&campaigns.legacyOwner()&&scenes.containsKey(name))scenes.put(sceneKey,scenes.get(name));
@@ -501,11 +502,16 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             slot = scenes.get(sceneKey);
             centerX = integer(command, "x", 0); centerY = integer(command, "y", 0);
-            exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
+            exactX=command.has("exactX")?command.get("exactX").getAsDouble():centerX+0.5;
+            exactY=command.has("exactY")?command.get("exactY").getAsDouble():centerY;
+            hadPose=false;fallen=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
+            owner.fallDistance=0;owner.clearActiveItem();owner.setVelocity(Vec3d.ZERO);owner.stopFallFlying();
+            owner.setPosition(slot*1024+exactX,64+exactY,.5);
             status = "Minecraft connected: " + name;
             return;
         }
         if (scene.isEmpty() || !scene.equals(string(command, "scene", ""))) return;
+        if(command.has("visit")&&integer(command,"visit",-1)!=sceneVisit)return;
         if(command.has("campaign")&&!campaigns.id().equals(string(command,"campaign","")))return;
         // Finish the short clutch before player actions mutate hand items or containers.
         if(landingWater!=null&&switch(type) {
@@ -1161,7 +1167,7 @@ public final class HollowCraftBridge implements ModInitializer {
             else if(gui!=null&&gui.syncId()!=owner.currentScreenHandler.syncId)closeGui();
         }
         JsonObject result = new JsonObject();
-        result.addProperty("type", "snapshot"); result.addProperty("scene", scene);result.addProperty("campaign",campaigns.id());
+        result.addProperty("type", "snapshot"); result.addProperty("scene", scene);result.addProperty("campaign",campaigns.id());result.addProperty("visit",sceneVisit);
         result.addProperty("worldTime",owner.getServerWorld().getTime());
         result.addProperty("tick",server.getTicks());result.addProperty("playerSyncId",owner.playerScreenHandler.syncId);
         if(peer!=null&&peer.gui)result.add("gui",NativeGuiBridge.description());
@@ -1280,6 +1286,7 @@ public final class HollowCraftBridge implements ModInitializer {
         void enqueue(String value) { if (!output.offer(value)) { output.poll(); output.offer(value); } }
         void event(JsonObject message) {
             if(message.has("scene")&&!message.has("campaign")&&instance!=null&&instance.campaigns!=null)message.addProperty("campaign",instance.campaigns.id());
+            if(message.has("scene")&&!message.has("visit")&&instance!=null)message.addProperty("visit",instance.sceneVisit);
             if(!events.offer(message.toString())) {try {socket.close();}catch(IOException ignored){}}
         }
         synchronized void send(String value) throws IOException { writer.write(value); writer.newLine(); writer.flush(); }

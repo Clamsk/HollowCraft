@@ -1,4 +1,4 @@
-# HollowCraft 0.30.4 安装与配置
+# HollowCraft 0.30.5 安装与配置
 
 这是 Windows 64 位试玩包。它把本机 Minecraft 的物品、数值与三维人物接入空洞骑士；游玩时两端都需要运行。完整生存通关仍在适配，本版编译后交给玩家试玩，未进行实机验收。
 
@@ -11,7 +11,7 @@
 
 ## 安装
 
-1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.4-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
+1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.5-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
 2. 完整解压到自己的可写目录，例如 `D:\Games\HollowCraft`。不要直接从 ZIP 内运行，也不要放进 Steam 或 `.minecraft` 原目录。Windows 内置 PowerShell 即可，无需 Codex、Git 或开发工具。
 3. 双击 **Install HollowCraft.cmd**。它寻找 Steam 游戏目录和 `.minecraft`；未找到时按提示输入目录。Minecraft 目录必须包含 `versions\1.20.1\1.20.1.jar`，不是启动器 EXE 所在目录。
 4. 等待下载、校验和准备结束，看到 `installed`。安装器只准备文件，不启动游戏。
@@ -55,4 +55,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-hollow
 
 0.30.3 的开场镜头与落地水建议新建试玩存档观看；铁锭会在旧档补发一次，专用忠诚 III 三叉戟在切入创造模式时领取。教程大门需要挥击破坏，随后使用原生转场流程。
 
-0.30.4 将珍珠传送基础伤害调为 3 点，并加强传送前后姿态同步；旧档追加两组圆石和一组普通金苹果，每个存档补发一次。新档圆石共三组。请先 Stop 再升级，确保两端版本一致。
+0.30.4 将珍珠传送基础伤害调为 3 点，并加强传送前后姿态同步；旧档追加两组圆石和一组普通金苹果，每个存档补发一次。新档圆石共三组。
+
+0.30.5 修复切场景时原生重力未恢复、入口动作尚未完成就启用 MC 控制、以及旧场景传送消息覆盖新入口的问题。窄入口暂时保持可通过的高度，离开低矮处后自动站起；入口被已放置的 MC 方块覆盖时尝试附近空位。请先 Stop 再升级，确保两端版本一致。旧存档可以继续使用。

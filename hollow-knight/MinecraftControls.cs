@@ -83,15 +83,16 @@ namespace HollowCraft
         private static void SetCrouch(bool requested)
         {
             if(body==null) {Crouching=requested;return;}
-            if(!requested && !MinecraftEnvironment.Gliding && (Crouching || body.size.y<standingSize.y-.01f))
-            {
-                float extra=standingSize.y-body.size.y;
-                Vector2 head=body.transform.TransformPoint(standingOffset+new Vector2(0,standingSize.y/2-extra/2));
-                var hits=Physics2D.OverlapBoxAll(head,new Vector2(standingSize.x*0.85f,extra*0.9f),0,LayerMask.GetMask("Terrain","Default"));
-                if(hits.Any(c=>!c.isTrigger && c!=body)) return;
+            float height=standingSize.y*(MinecraftEnvironment.Gliding ? .6f/1.8f : requested ? 1.5f/1.8f : 1);
+            var scale=body.transform.lossyScale;
+            Vector2 feet=NativeLanding.CurrentFeet(hero);
+            if(height>body.size.y+.001f&&!NativeLanding.Clear(feet,new Vector2(standingSize.x*Mathf.Abs(scale.x),height*Mathf.Abs(scale.y)))) {
+                // An HK entrance can have less headroom than a standing MC player.
+                // Keep its safe native height until there is room, instead of expanding into the roof.
+                height=Math.Min(body.size.y,standingSize.y*1.5f/1.8f);
             }
-            Crouching=requested;
-            body.size=new Vector2(standingSize.x,standingSize.y*(MinecraftEnvironment.Gliding ? .6f/1.8f : requested ? 1.5f/1.8f : 1));
+            Crouching=requested||(!MinecraftEnvironment.Gliding&&height<standingSize.y-.01f);
+            body.size=new Vector2(standingSize.x,height);
             body.offset=standingOffset-new Vector2(0,(standingSize.y-body.size.y)/2);
         }
         // Injected at HeroController.Move's entry, preserving the game's collision and jump controller.
@@ -99,7 +100,7 @@ namespace HollowCraft
         {
             if(!Active) return movement;
             var runtime=HollowCraftRuntime.Instance;
-            if(runtime?.NativeControlLocked==true)return movement;
+            if(runtime==null||!runtime.InGame||runtime.NativeControlLocked)return movement;
             if(PlayerSystem.KnockbackActive) return PlayerSystem.KnockbackX/Math.Max(1,hero.RUN_SPEED);
             if(TestMovement.HasValue)movement=TestMovement.Value;
             if((InterfaceOpen || !Application.isFocused)&&!TestMovement.HasValue) return 0;

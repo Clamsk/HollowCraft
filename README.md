@@ -1,8 +1,8 @@
-# HollowCraft 0.30.4 试玩版本
+# HollowCraft 0.30.5 试玩版本
 
 Minecraft-style survival and combat in Hollow Knight
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.4.md](试玩说明-0.30.4.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.5.md](试玩说明-0.30.5.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 0.30 接入点燃 TNT 的空洞原生地形碰撞，按玩家要求将普通跳跃上调到约 1.5 格，初始装备增加铁镐，并提供 Windows 安装配置包。保留 0.29 的 HIM 白眼、创造双击空格飞行与脚下放置目标锁定。实际操作效果待玩家试玩。
 
@@ -14,9 +14,11 @@ Minecraft-style survival and combat in Hollow Knight
 
 0.30.4 按玩家要求将桥接玩家的珍珠传送基础伤害从 5 改为 3 点（1.5 颗心），保留原版伤害类型、附魔与吸收计算。普通护甲值不会减免该摔落类伤害；保护、摔落保护附魔和吸收血量仍有效。实际传送时清除旧落差，姿态附带传送编号，阻止传送前的旧坐标重新累计落差。初始圆石共 192 个，并加入 64 普通金苹果，食用及效果直接由 MC 原版处理；旧档一次性补发新增的两组圆石和金苹果。
 
+0.30.5 修复场景出口的物理接管时序：离场前恢复空洞原生重力、碰撞尺寸和输入，等待原生入口动作结束后再启用 MC 移动；场景名切换不再提前启用桥接。每次进场使用独立编号，丢弃旧传送、旧击退和旧姿态，MC 以入口的实际脚底坐标初始化并清除旧落差。窄入口保持安全碰撞高度，有空间后再站起；已有 MC 方块覆盖入口时，仅在入口附近寻找空位。开场落地水继续使用原来的连续下落会话。具体效果待玩家试玩。
+
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
-直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.4)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd**。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)。
+直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.5)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd**。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)。
 
 仓库提交只包含源码与脚本；发布包另带自编译 Mod，不包含游戏文件、提取素材、第三方依赖二进制、运行副本、日志或存档。GitHub 的 Source code 压缩包需自行构建，说明见 [SOURCE_SETUP.md](SOURCE_SETUP.md)。
 

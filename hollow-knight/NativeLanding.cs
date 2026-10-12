@@ -27,7 +27,31 @@ namespace HollowCraft
             var feet=point+new Vector2(normal.x*(size.x*.5f+.03f),normal.y>0?.03f:normal.y<0?-size.y-.03f:0);
             return Resolve(hero,feet,normal);
         }
-        private static bool Clear(Vector2 feet,Vector2 size)
+        internal static void SettleSceneEntry(HeroController hero) {
+            var collider=hero.GetComponent<Collider2D>();
+            if(collider==null||HollowCraftRuntime.Instance?.Spectator==true)return;
+            Physics2D.SyncTransforms();
+            var feet=CurrentFeet(hero);var size=(Vector2)collider.bounds.size;
+            if(Clear(feet,size))return;
+            float offset=hero.transform.position.y-feet.y;
+            // Persisted MC blocks may cover the native gate spawn. Search only nearby
+            // clear positions; an ordinary airborne top entrance is left untouched.
+            var gate=hero.sceneEntryGate;
+            Vector2 inward=gate==null?Vector2.up:gate.GetGatePosition()==GlobalEnums.GatePosition.left?Vector2.right:gate.GetGatePosition()==GlobalEnums.GatePosition.right?Vector2.left:Vector2.up;
+            for(int step=1;step<=20;step++) {
+                float distance=step*.1f;
+                foreach(var direction in new[]{inward,Vector2.up,(inward+Vector2.up).normalized}) {
+                    Vector2 candidate=feet+direction*distance;
+                    if(!Clear(candidate,size))continue;
+                    hero.transform.position=new Vector3(candidate.x,candidate.y+offset,hero.transform.position.z);
+                    hero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;MinecraftEnvironment.SceneChanged();Physics2D.SyncTransforms();
+                    PlayerSystem.EntryPositionChanged(hero);
+                    Debug.Log("[HollowCraft] Cleared obstructed scene entrance "+feet+" -> "+candidate);return;
+                }
+            }
+            Debug.LogWarning("[HollowCraft] Scene entrance remains obstructed at "+feet+" gate="+(gate!=null?gate.name:"none"));
+        }
+        internal static bool Clear(Vector2 feet,Vector2 size)
         {
             if(float.IsNaN(feet.x)||float.IsNaN(feet.y)||float.IsInfinity(feet.x)||float.IsInfinity(feet.y)||Math.Abs(feet.x)>400||feet.y<-60||feet.y>240)return false;
             var filter=new ContactFilter2D();filter.SetLayerMask(LayerMask.GetMask("Terrain","Default"));filter.useTriggers=false;

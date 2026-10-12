@@ -21,6 +21,7 @@ namespace HollowCraft
         internal static bool KnockbackActive => Time.time<knockUntil;
         internal static float KnockbackX => knockX;
         internal static void EnterScene(HeroController value) {hero=value;spawn=value.transform.position;hasSpawn=false;wasDead=false;lastHealth=-1;hurtUntil=knockUntil=0;}
+        internal static void EntryPositionChanged(HeroController value) {hero=value;spawn=value.transform.position;hasSpawn=MinecraftControls.Grounded(value);}
         internal static void Tick(HeroController value)
         {
             hero=value;var runtime=HollowCraftRuntime.Instance;if(runtime==null) return;

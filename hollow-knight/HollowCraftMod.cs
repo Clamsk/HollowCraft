@@ -17,7 +17,7 @@ namespace HollowCraft
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
             root.AddComponent<IntroPresentation>();
-            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Opening camera/water, connected landing pose, creative trident and native damage FSM; localhost:31674.");
+            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Native scene entrance/physics handoff and scene-visit isolation; localhost:31674.");
         }
         public static string SaveRoot()
         {

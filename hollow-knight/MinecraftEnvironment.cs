@@ -28,7 +28,13 @@ namespace HollowCraft
         internal static void SetVerticalImpulse(float velocity) {if(instance!=null) {instance.motionY=velocity;instance.lastAppliedY=velocity*20;instance.normalPhase=0;instance.ownGravity=true;instance.fluidActive=false;}}
         internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;Flying=false;JumpOriginFeet=null;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;instance.lastSpacePress=-1000;instance.flightY=instance.flightPhase=0;instance.motionX=instance.walkPhase=instance.walkVelocity=instance.lastAppliedX=0;instance.fluidActive=false;}}
         internal static float? HorizontalSpeed=>instance!=null&&instance.ownHorizontal?instance.lastAppliedX:(float?)null;
-        internal static void SceneChanged() {StopMotion();if(instance!=null)instance.ownGravity=false;}
+        internal static void SceneChanged() {StopMotion();if(instance!=null) {instance.ownGravity=false;instance.ownHorizontal=false;}}
+        internal static void SuspendNativeMotion() {
+            if(instance==null)return;
+            // Restore before AffectedByGravity(false) records prevGravityScale.
+            // Otherwise HK records zero and cannot restore gravity on arrival.
+            instance.Restore();SceneChanged();instance.hero=null;instance.body=null;instance.movementCollider=null;
+        }
         internal static bool TakeJump(HeroController player)
         {
             var runtime=HollowCraftRuntime.Instance;
@@ -64,7 +70,7 @@ namespace HollowCraft
         {
             var runtime=HollowCraftRuntime.Instance;if(runtime==null||!runtime.InGame) return;
             var current=HeroController.instance;if(current==null) return;
-            if(hero!=current) {Restore();hero=current;body=hero.GetComponent<Rigidbody2D>();movementCollider=hero.GetComponent<Collider2D>();gravity=body.gravityScale;jump=hero.JUMP_SPEED;Gliding=Flying=false;JumpOriginFeet=null;lastSpacePress=-1000;ownHorizontal=false;fluidActive=false;walkPhase=0;}
+            if(hero!=current) {Restore();hero=current;body=hero.GetComponent<Rigidbody2D>();movementCollider=hero.GetComponent<Collider2D>();gravity=hero.DEFAULT_GRAVITY;jump=hero.JUMP_SPEED;Gliding=Flying=false;JumpOriginFeet=null;lastSpacePress=-1000;ownHorizontal=false;fluidActive=false;walkPhase=0;}
             if(!runtime.Creative&&Flying)SetFlying(false);
             if(runtime.SimulationPaused) {lastSpacePress=-1000;if(runtime.Dead)Gliding=Flying=false;return;}
             bool test=Environment.GetEnvironmentVariable("HOLLOWCRAFT_SMOKE")=="1";
@@ -87,7 +93,7 @@ namespace HollowCraft
         private void FixedUpdate()
         {
             var runtime=HollowCraftRuntime.Instance;if(hero==null||body==null||runtime==null||!runtime.InGame||runtime.SimulationPaused) return;
-            if(hero.controlReqlinquished) {ownHorizontal=false;return;}
+            if(runtime.NativeControlLocked) {ownHorizontal=false;return;}
             if(runtime.Spectator) {
                 var collider=hero.GetComponent<Collider2D>();
                 if(!spectatorBody) {previousTrigger=collider.isTrigger;previousBodyType=body.bodyType;collider.isTrigger=true;body.bodyType=RigidbodyType2D.Kinematic;spectatorBody=true;Gliding=false;ownHorizontal=false;}

@@ -22,6 +22,7 @@ namespace HollowCraft
         private TcpClient socket;
         public volatile bool Connected;
         internal volatile string Campaign="";
+        internal volatile int SceneVisit;
         public string LastError = "Waiting for Minecraft world HollowCraft";
         public BridgeClient()
         {
@@ -38,6 +39,7 @@ namespace HollowCraft
             if(!Connected)return;
             var command=JObject.FromObject(value);string line=command.ToString(Formatting.None);
             if(command["scene"]!=null&&command["campaign"]==null&&!string.IsNullOrEmpty(Campaign)) {command["campaign"]=Campaign;line=command.ToString(Formatting.None);}
+            if(command["scene"]!=null&&command["visit"]==null) {command["visit"]=SceneVisit;line=command.ToString(Formatting.None);}
             if((string)command["type"]=="visual")Interlocked.Exchange(ref latestVisual,line);
             else outbound.Enqueue(line); // Commands and acknowledgements are never dropped for a render frame.
             writeSignal.Set();
