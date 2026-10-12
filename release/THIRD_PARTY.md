@@ -1,5 +1,7 @@
 # 第三方组件与素材来源
 
+[简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
+
 Windows 发布包仅包含 HollowCraft 自编译的两端 Mod、安装脚本和文档。Minecraft、空洞骑士、修改后的原游戏程序集、提取的纹理/音频/动画、用户存档以及下列依赖二进制不随发布包分发。
 
 安装器按 `dependencies.lock.json` 的固定版本与哈希值，从官方发布源获取依赖。Fabric Maven 的运行库使用其官方 SHA-1；Modrinth 依赖使用官方 SHA-512；Mono.Cecil 使用从官方 NuGet 包计算并锁定的 SHA-512。

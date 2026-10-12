@@ -1,5 +1,7 @@
 # 源码与本机构建
 
+[简体中文](SOURCE_SETUP.md) | [English](SOURCE_SETUP.en.md)
+
 HollowCraft 当前是 Minecraft 与空洞骑士的本地桥接原型，运行时通过 localhost TCP 通信，不依赖 MCP 服务器。MCP 是开发工具，不参与游戏输入和战斗。
 
 ## 依赖

@@ -68,7 +68,7 @@ if(-not $JavaPath) {
     }
     if(-not $JavaPath -and -not $NonInteractive) {$JavaPath=(Read-Host 'Enter full path to 64-bit Java 17 or 21 java.exe').Trim('"')}
 }
-if(-not $JavaPath -or -not(Test-Path -LiteralPath $JavaPath)) {throw '64-bit Java 17 or 21 is required. See INSTALL_zh.md.'}
+if(-not $JavaPath -or -not(Test-Path -LiteralPath $JavaPath)) {throw '64-bit Java 17 or 21 is required. See INSTALL_en.md or INSTALL_zh.md.'}
 $JavaPath=(Resolve-Path -LiteralPath $JavaPath).Path
 # Windows PowerShell treats stderr from native programs as errors; collect Java's
 # normal version diagnostics without allowing them to abort the installation.

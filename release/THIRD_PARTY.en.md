@@ -1,0 +1,19 @@
+# Third-party Components and Asset Sources
+
+[简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
+
+Windows release packages contain only the two compiled HollowCraft mods, installation scripts and documentation. They do not distribute Minecraft, Hollow Knight, modified original game assemblies, extracted textures/audio/animations, user saves or the dependency binaries listed below.
+
+The installer downloads fixed versions from official release sources using checksums in [dependencies.lock.json](dependencies.lock.json). Fabric Maven libraries use their official SHA-1 values; Modrinth dependencies use official SHA-512 values; Mono.Cecil uses a locked SHA-512 calculated from the official NuGet package.
+
+| Component | Pinned version | Official source |
+| --- | --- | --- |
+| Fabric Loader | 0.16.14 for Minecraft 1.20.1 | [Fabric](https://fabricmc.net/), [source](https://github.com/FabricMC/fabric-loader) |
+| Fabric API | 0.92.6+1.20.1 | [Modrinth](https://modrinth.com/mod/fabric-api), [source](https://github.com/FabricMC/fabric) |
+| Better Combat | 1.8.5+1.20.1-fabric | [Modrinth](https://modrinth.com/mod/better-combat), [source](https://github.com/ZsoltMolnarrr/BetterCombat/tree/1.20.1); Daedelus, GPL-3.0 |
+| Player Animator | 1.0.2-rc1+1.20-fabric | [Modrinth](https://modrinth.com/mod/playeranimator), [source](https://github.com/KosmX/minecraftPlayerAnimator) |
+| Cloth Config | 11.1.118+fabric | [Modrinth](https://modrinth.com/mod/cloth-config), [source](https://github.com/shedaniel/cloth-config) |
+| Mono.Cecil | 0.11.6 | [official NuGet](https://www.nuget.org/packages/Mono.Cecil/0.11.6), [source and license](https://github.com/jbevain/cecil) |
+| ASM | 9.8, matching Fabric Loader | [official project](https://asm.ow2.io/); modules and checksums are listed in the lockfile |
+
+Game assets are extracted locally from the player's own Minecraft 1.20.1 installation and downloaded Better Combat resources, and stay in local runtime directories. Minecraft belongs to Mojang/Microsoft; Hollow Knight belongs to Team Cherry. HollowCraft is unofficial and is not affiliated with or endorsed by these developers.

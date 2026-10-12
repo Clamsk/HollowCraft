@@ -1,5 +1,7 @@
 # 通关适配状态
 
+[简体中文](PLAYTHROUGH.md) | [English](PLAYTHROUGH.en.md)
+
 目标是保留空洞原有地图、剧情、敌人阶段和结局，使用 Minecraft 的人物、装备、建造和生存规则完成游戏。编译通过只能证明当前接口可构建，不能证明可以通关。按玩家要求，0.8 起的新版本没有自动启动游戏验收。
 
 | 必要环节 | 当前源码连接 | 仍需证据与工作 |
@@ -8,7 +10,7 @@
 | 房间切换、建造与移动 | 0.30.5 离场前归还原生重力和尺寸，等 HeroController.FinishedEnteringScene 后接管；每次进场编号隔离旧消息；精确脚底坐标、窄入口高度保护与入口附近脱离重叠 | 左右出口、上下出口、门、往返同一场景、窄通道、入口附近已有 MC 方块的实际试玩；复杂升降平台及特殊剧情过场仍需证据 |
 | NPC、座椅、交通和对话 | W 原生 up 输入；CampaignBridge、NativeChoice、NativeShop；离座 W/Space | 各种原生 FSM 的事件名、商店确认、存档座椅、车站和剧情交互需要逐类试玩 |
 | 梦之钉与剧情标记 | R 保留原生 dreamNail 输入；原生 PlayerData 获得标记保留；0.22 在原生接管角色时暂停 MC 操作，保留原生按键释放事件及脚本位移 | 获取梦之钉、梦境入口、梦境 Boss、梦境离开和精华进度尚未验收 |
-| 普通敌人、Boss 与可破坏物 | MC 生物代理计算伤害，EnemySystem 调用原生 HitTaker，保留原生阶段 FSM | 多阶段、护盾、召唤物、无敌窗口、特殊伤害触发和击败奖励不能只用普通小怪替代验证 |
+| 普通敌人、Boss 与可破坏物 | MC 生物代理计算伤害；0.30.6 直接调用敌人 HealthManager，注册攻击 FSM 并修复普通致死伤害；可破坏物使用原生 HitTaker 与触发事件，保留特殊死亡及原生阶段 FSM | 多阶段、护盾、召唤物、无敌窗口、特殊伤害触发和击败奖励不能只用普通小怪替代验证 |
 | 草与触发型物件 | CursorCombat 使用原生要求的 Nail Attack 标签及 OnTriggerEnter2D | 本机 GrassCut.ShouldCut 明确读取该标签；实际草种类、柱子与机关仍需试玩 |
 | 教程大门 | 0.30.3 攻击来源增加 damages_enemy FSM，提供 damageDealt、attackType、direction，交给原生 ReceivedDamage 与 Great Door FSM | 本机教程场景确认其读取该 FSM 并最终切入 Town；实际受击阶段与过场仍需试玩 |
 | 陷阱、死亡、复活与掉落 | MC 伤害和物品掉落；原生 ReadyForRespawn 与座椅检查点；0.22 伤害转接保留原生过场／剧情豁免，脚本位移不产生 MC 摔落伤害 | 酸液、荆棘、场景坠落、死亡过场和掉落回收仍需验证原生与 MC 状态一致 |

@@ -21,8 +21,11 @@ $filesTask=@(
     'scripts\prepare-hk-test.ps1','scripts\prepare-mc-test.ps1',
     'scripts\start-hollowcraft.ps1','scripts\stop-hollowcraft.ps1',
     'release\dependencies.lock.json','release\hollowcraft.example.json',
-    'release\THIRD_PARTY.md','release\INSTALL_zh.md','README.md','SOURCE_SETUP.md',
-    'docs\ARCHITECTURE.md','docs\PLAYTHROUGH.md',
+    'release\THIRD_PARTY.md','release\THIRD_PARTY.en.md',
+    'release\INSTALL_zh.md','release\INSTALL_en.md',
+    'README.md','README.en.md','SOURCE_SETUP.md','SOURCE_SETUP.en.md',
+    'docs\ARCHITECTURE.md','docs\ARCHITECTURE.en.md',
+    'docs\PLAYTHROUGH.md','docs\PLAYTHROUGH.en.md',
     'artifacts\HollowCraft\HollowCraft.dll',
     'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar'
 )
@@ -32,12 +35,18 @@ foreach($relativeTask in $filesTask) {
     Copy-Item -LiteralPath (Join-Path $rootTask $relativeTask) -Destination $targetTask
 }
 Copy-Item -LiteralPath (Join-Path $rootTask 'release\INSTALL_zh.md') -Destination (Join-Path $stageTask 'INSTALL_zh.md')
+Copy-Item -LiteralPath (Join-Path $rootTask 'release\INSTALL_en.md') -Destination (Join-Path $stageTask 'INSTALL_en.md')
 # Find the Unicode playtest note without placing non-ASCII literals in PS5 scripts.
 $noteVersionTask=if($Version.EndsWith('.0')) {$Version.Substring(0,$Version.Length-2)}else{$Version}
 $noteTask=Get-ChildItem -LiteralPath $rootTask -File | Where-Object {$_.Name -like ('*-'+$noteVersionTask+'.md')} | Select-Object -First 1
 if($noteTask) {
     Copy-Item -LiteralPath $noteTask.FullName -Destination (Join-Path $stageTask 'CHANGELOG_zh.md')
     Copy-Item -LiteralPath $noteTask.FullName -Destination (Join-Path $stageTask $noteTask.Name)
+}
+$englishNoteTask=Join-Path $rootTask ('PLAYTEST-'+$noteVersionTask+'.en.md')
+if(Test-Path -LiteralPath $englishNoteTask) {
+    Copy-Item -LiteralPath $englishNoteTask -Destination (Join-Path $stageTask 'CHANGELOG_en.md')
+    Copy-Item -LiteralPath $englishNoteTask -Destination (Join-Path $stageTask ([IO.Path]::GetFileName($englishNoteTask)))
 }
 $manifestFilesTask=@()
 foreach($fileTask in Get-ChildItem -LiteralPath $stageTask -File -Recurse | Sort-Object FullName) {
