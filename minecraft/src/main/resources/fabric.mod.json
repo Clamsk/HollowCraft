@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "hollowcraft_bridge",
-  "version": "0.30.3",
+  "version": "0.30.4",
   "name": "HollowCraft Minecraft Bridge",
   "description": "Real Minecraft inventory and block rules for Hollow Knight's 2D scenes. Use only a separate world named HollowCraft.",
   "authors": ["HollowCraft project"],

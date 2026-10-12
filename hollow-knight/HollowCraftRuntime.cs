@@ -59,6 +59,7 @@ namespace HollowCraft
         private float nextMineSend, nextAttackRequest;
         private float mineProgress;
         private int selected;
+        private int appliedTeleport;
         private float nextPose, miningStarted;
         private float nextTerrain;
         private string campaign="";
@@ -337,14 +338,16 @@ namespace HollowCraft
                 }
                 if((string)message["type"]=="explosion" && (string)message["scene"]==scene) StartCoroutine(Explosion(new Vector2((float)message["x"],(float)message["y"])));
                 if((string)message["type"]=="teleport" && (string)message["scene"]==scene && cachedHero!=null) {
+                    int serial=(int?)message["teleport"]??-1;if(serial<=appliedTeleport)continue;
                     float x=(float)message["x"],y=(float)message["y"];
                     var body=cachedHero.GetComponent<Collider2D>();float feetOffset=cachedHero.transform.position.y-body.bounds.min.y;
                     if(float.IsNaN(x)||float.IsNaN(y)||Math.Abs(x)>400||y<-60||y>240) continue;
                     var landing=NativeLanding.Resolve(cachedHero,new Vector2(x,y),new Vector2((float?)message["normalX"]??0,(float?)message["normalY"]??1));
                     x=landing.x;y=landing.y;
+                    appliedTeleport=serial;JumpBuild.Cancel();queuedTower=null;StopMining();Combat.Cancel();
                     cachedHero.transform.position=new Vector3(x,y+feetOffset,cachedHero.transform.position.z);cachedHero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
                     MinecraftEnvironment.StopMotion();
-                    bridge.Send(new {type="teleportAck",scene,x,y,teleport=(int?)message["teleport"]??-1});
+                    bridge.Send(new {type="teleportAck",scene,x,y,teleport=serial});
                 }
             }
             if (!Playable(out HeroController hero)) {
@@ -357,7 +360,7 @@ namespace HollowCraft
             if(!cachedManager.IsInSceneTransition)openingSync=false;
             if (name != scene || newlyConnected || campaign!=CampaignSession.Id)
             {
-                ClearBlocks(); scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
+                ClearBlocks(); appliedTeleport=0;scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
                 container=null; inventoryOpen=false;UiRequest=0;Gui.Reset();waterLandingAt=-1000; Combat.Cancel(); PlayerSystem.EnterScene(hero);
                 CatalogOpen=false;usingItem=false;MinecraftEnvironment.SceneChanged();
                 snapshotLogged=false; stableSince=Time.unscaledTime;
@@ -533,6 +536,7 @@ namespace HollowCraft
         private void SendPose(HeroController hero,bool sample) {
             int x=Cell(hero.transform.position.x),y=Cell(hero.transform.position.y);
             var pose=new JObject { ["type"]="pose",["scene"]=scene,["x"]=x,["y"]=y,
+                ["teleport"]=appliedTeleport,
                 ["exactX"]=hero.transform.position.x,["exactY"]=hero.GetComponent<Collider2D>().bounds.min.y,
                 ["grounded"]=MinecraftControls.Grounded(hero),["gliding"]=MinecraftEnvironment.Gliding,["flying"]=MinecraftEnvironment.Flying,
                 ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked };

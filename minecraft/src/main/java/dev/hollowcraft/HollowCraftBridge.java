@@ -96,8 +96,9 @@ public final class HollowCraftBridge implements ModInitializer {
     public static void playerHurt(net.minecraft.entity.LivingEntity entity,net.minecraft.entity.damage.DamageSource source) {
         if(!isRemotePlayer(entity)) return;
         JsonObject event=new JsonObject();event.addProperty("type","hurt");event.addProperty("scene",instance.scene);
-        event.addProperty("ticks",entity.hurtTime);event.addProperty("kind",source.getName());instance.peer.event(event);
-        LOG.info("Bridge player hurt kind={} HP={} hurtTicks={}",source.getName(),entity.getHealth(),entity.hurtTime);
+        String kind=instance.pearlDamageActive?"ender_pearl":source.getName();
+        event.addProperty("ticks",entity.hurtTime);event.addProperty("kind",kind);instance.peer.event(event);
+        LOG.info("Bridge player hurt kind={} HP={} hurtTicks={}",kind,entity.getHealth(),entity.hurtTime);
     }
     public static volatile boolean remotePaused;
     public static boolean nativeProjectile(net.minecraft.entity.projectile.ProjectileEntity projectile) {return NativeTerrainBlock.delegated(projectile);}
@@ -131,11 +132,26 @@ public final class HollowCraftBridge implements ModInitializer {
         return bridge!=null&&projectile.getWorld().getServer()==bridge.server
             &&Math.abs(projectile.getX()-bridge.slot*1024-bridge.centerX)<=28&&Math.abs(projectile.getY()-64-bridge.centerY)<=24&&Math.abs(projectile.getZ())<=4;
     }
+    public static boolean pearlDamage(net.minecraft.entity.Entity entity,net.minecraft.entity.damage.DamageSource source,float vanillaAmount) {
+        if(!(entity instanceof ServerPlayerEntity player)||!isRemotePlayer(player))return entity.damage(source,vanillaAmount);
+        var bridge=instance;boolean previous=bridge.pearlDamageActive;bridge.pearlDamageActive=true;
+        float health=player.getHealth(),absorption=player.getAbsorptionAmount();
+        try {return player.damage(source,3f);}
+        finally {
+            LOG.info("Pearl teleport damage base=3 healthLoss={} absorptionUsed={}",health-player.getHealth(),absorption-player.getAbsorptionAmount());
+            bridge.pearlDamageActive=previous;
+        }
+    }
+    public static void pearlLanded(ServerPlayerEntity player) {
+        if(!isRemotePlayer(player))return;
+        instance.fallen=0;instance.hadPose=false;instance.wasGrounded=false;instance.footstepDistance=0;player.fallDistance=0;
+    }
     public static void vanillaTeleport(ServerPlayerEntity player,Vec3d normal) {
         if(instance==null||instance.owner!=player||instance.peer==null||instance.scene.isEmpty()) return;
         instance.collectLandingWater();
-        instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;instance.fallen=0;
-        instance.hadPose=false;instance.wasGrounded=false;
+        instance.exactX=player.getX()-instance.slot*1024;instance.exactY=player.getY()-64;
+        instance.centerX=(int)Math.floor(instance.exactX);instance.centerY=(int)Math.floor(instance.exactY);
+        instance.lastPoseX=instance.exactX;instance.lastPoseY=instance.exactY;pearlLanded(player);
         instance.teleportWaiting=instance.server.getTicks()+40;
         JsonObject event=new JsonObject();event.addProperty("type","teleport");event.addProperty("scene",instance.scene);event.addProperty("x",instance.exactX);event.addProperty("y",instance.exactY);
         event.addProperty("normalX",normal.x);event.addProperty("normalY",normal.y);event.addProperty("teleport",++instance.teleportSerial);instance.peer.event(event);
@@ -177,6 +193,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private double exactX,exactY,lastPoseX,lastPoseY;
     private boolean hadPose,wasGrounded;
     private float fallen;
+    private boolean pearlDamageActive;
     private double footstepDistance;
     private BlockPos landingWater;
     private BlockState landingWaterBefore;
@@ -394,19 +411,24 @@ public final class HollowCraftBridge implements ModInitializer {
         String tag="hollowcraft_starter_iron_v1";
         String pickTag="hollowcraft_starter_iron_pickaxe_v1";
         String ingotTag="hollowcraft_starter_iron_ingots_v1";
+        String suppliesTag="hollowcraft_starter_build_food_v1";
         if(owner.getCommandTags().contains(tag)) {
             if(!owner.getCommandTags().contains(pickTag)) {
                 boolean present=false;for(int i=0;i<36;i++)if(owner.getInventory().getStack(i).isOf(Items.IRON_PICKAXE))present=true;
                 if(!present)give(new ItemStack(Items.IRON_PICKAXE));owner.addCommandTag(pickTag);
             }
             if(!owner.getCommandTags().contains(ingotTag)) {give(new ItemStack(Items.IRON_INGOT,64));owner.addCommandTag(ingotTag);}
+            if(!owner.getCommandTags().contains(suppliesTag)) {
+                give(new ItemStack(Items.COBBLESTONE,64));give(new ItemStack(Items.COBBLESTONE,64));give(new ItemStack(Items.GOLDEN_APPLE,64));
+                owner.addCommandTag(suppliesTag);
+            }
             return;
         }
         boolean fresh=owner.getInventory().isEmpty();
         Item[] items={Items.IRON_SWORD,Items.BOW,Items.COOKED_BEEF,Items.COBBLESTONE,Items.OAK_LOG,
             Items.IRON_AXE,Items.WATER_BUCKET,Items.LAVA_BUCKET,Items.FLINT_AND_STEEL,
-            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE,Items.IRON_INGOT};
-        int[] amounts={1,1,64,64,64,1,1,1,1,64,64,64,64,1,64};
+            Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE,Items.IRON_INGOT,Items.GOLDEN_APPLE};
+        int[] amounts={1,1,64,192,64,1,1,1,1,64,64,64,64,1,64,64};
         int nextSlot=0;
         for(int i=0;i<items.length;i++) {
             int missing=amounts[i];
@@ -433,6 +455,7 @@ public final class HollowCraftBridge implements ModInitializer {
         owner.addCommandTag(tag);
         owner.addCommandTag(pickTag);
         owner.addCommandTag(ingotTag);
+        owner.addCommandTag(suppliesTag);
         owner.addCommandTag("hollowcraft_starter");
         LOG.info("Iron starter loadout granted; fresh={}",fresh);
     }
@@ -478,7 +501,7 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             slot = scenes.get(sceneKey);
             centerX = integer(command, "x", 0); centerY = integer(command, "y", 0);
-            exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;footstepDistance=0;
+            exactX=centerX+0.5;exactY=centerY;hadPose=false;fallen=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
             status = "Minecraft connected: " + name;
             return;
         }
@@ -498,6 +521,9 @@ public final class HollowCraftBridge implements ModInitializer {
             }
             case "pose" -> {
                 if(server.getTicks()<teleportWaiting) break;
+                // Poses queued before the last pearl impact cannot reintroduce
+                // its old coordinates/fall distance, even after the wait expires.
+                if(command.has("teleport")&&integer(command,"teleport",-1)!=teleportSerial)break;
                 centerX = clamp(integer(command, "x", 0), -400, 400); centerY = clamp(integer(command, "y", 0), -60, 240);
                 exactX=command.has("exactX") ? command.get("exactX").getAsDouble() : centerX+0.5;
                 exactY=command.has("exactY") ? command.get("exactY").getAsDouble() : centerY;
@@ -515,7 +541,8 @@ public final class HollowCraftBridge implements ModInitializer {
                 // must still place water instead of requiring a previously observed air pose.
                 if(!scripted&&grounded&&((hadPose&&!wasGrounded)||introLanding)) {
                     boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(fallen>=11.999f||introLanding)&&placeLandingWater();
-                    if(!creative&&!owner.isSpectator()&&!waterSave)owner.handleFallDamage(fallen,1,owner.getDamageSources().fall());
+                    if(!creative&&!owner.isSpectator()&&!waterSave&&owner.handleFallDamage(fallen,1,owner.getDamageSources().fall()))
+                        LOG.info("Native fall damage distance={} HP={} absorption={} teleport={}",fallen,owner.getHealth(),owner.getAbsorptionAmount(),teleportSerial);
                     if(creative&&fallen>12)landingEvent("hero",fallen);
                     if(introLanding&&(waterSave||creative||owner.isSpectator())) {
                         if(!waterSave&&!(creative&&fallen>12))landingEvent("plain",fallen);
@@ -549,11 +576,11 @@ public final class HollowCraftBridge implements ModInitializer {
                 if(openContainer!=null && (Math.abs(openContainer.getX()-slot*1024-centerX)>6 || Math.abs(openContainer.getY()-64-centerY)>6)) {owner.closeHandledScreen();openContainer=null;}
             }
             case "teleportAck" -> {
-                if(integer(command,"teleport",-1)!=teleportSerial)break;
+                if(teleportWaiting==0||integer(command,"teleport",-1)!=teleportSerial)break;
                 double x=command.get("x").getAsDouble(),y=command.get("y").getAsDouble();
                 if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)break;
-                teleportWaiting=0;exactX=x;exactY=y;fallen=0;hadPose=false;wasGrounded=false;
-                owner.setPosition(slot*1024+x,64+y,.5);owner.fallDistance=0;
+                teleportWaiting=0;exactX=x;exactY=y;centerX=(int)Math.floor(x);centerY=(int)Math.floor(y);lastPoseX=x;lastPoseY=y;
+                owner.setPosition(slot*1024+x,64+y,.5);pearlLanded(owner);
             }
             case "checkpoint" -> {campaigns.save(owner);server.save(false,true,true);status="World and player data saved";}
             case "nativeDeath" -> enemies.confirmDeath(integer(command,"id",0),integer(command,"generation",-1));
