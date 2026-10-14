@@ -32,7 +32,7 @@ namespace HollowCraft
             if(wasDead && !runtime.Dead) {
                 hero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
                 MinecraftEnvironment.StopMotion();
-                if(!CampaignBridge.Respawn()) {hero.transform.position=spawn;hero.RegainControl();hero.AcceptInput();}
+                if(!BossRecording.Respawn()&&!CampaignBridge.Respawn()) {hero.transform.position=spawn;hero.RegainControl();hero.AcceptInput();}
             }
             wasDead=runtime.Dead;
             if(runtime.Dead) {hero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;return;}

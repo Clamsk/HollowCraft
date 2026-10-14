@@ -47,6 +47,27 @@ try {
     $moveHookTask=[Mono.Cecil.MethodReference]::new('AdjustMove',$moduleTask.TypeSystem.Single,$controlsTypeTask)
     $moveHookTask.Parameters.Add([Mono.Cecil.ParameterDefinition]::new($moduleTask.TypeSystem.Single))
     $heroTypeTask=$moduleTask.Types | Where-Object Name -eq 'HeroController'
+    $battleTypeTask=[Mono.Cecil.TypeReference]::new('HollowCraft','NativeBattle',$moduleTask,$assemblyRefTask)
+    $healthTypeTask=$moduleTask.Types | Where-Object Name -eq 'HealthManager'
+    foreach($nativeMethodTask in @('Die','SendDeathEvent','SetBattleScene','Awake')) {
+        $nativeTask=$healthTypeTask.Methods | Where-Object Name -eq $nativeMethodTask | Select-Object -First 1
+        if(-not $nativeTask.HasBody) {throw "HealthManager.$nativeMethodTask missing; abort patch"}
+        $hookNameTask=if($nativeMethodTask -eq 'SetBattleScene') {'Bound'}elseif($nativeMethodTask -eq 'Awake') {'Track'}else{'Death'}
+        $hookTask=[Mono.Cecil.MethodReference]::new($hookNameTask,$moduleTask.TypeSystem.Void,$battleTypeTask)
+        $hookTask.Parameters.Add([Mono.Cecil.ParameterDefinition]::new($healthTypeTask))
+        $nativeIlTask=$nativeTask.Body.GetILProcessor()
+        # Replace each ret in place so branches to that ret also execute the hook.
+        foreach($returnTask in @($nativeTask.Body.Instructions | Where-Object {$_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ret})) {
+            $returnTask.OpCode=[Mono.Cecil.Cil.OpCodes]::Ldarg_0;$returnTask.Operand=$null
+            $callTask=$nativeIlTask.Create([Mono.Cecil.Cil.OpCodes]::Call,$hookTask)
+            $nativeIlTask.InsertAfter($returnTask,$callTask)
+            $nativeIlTask.InsertAfter($callTask,$nativeIlTask.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+        }
+        foreach($branchTask in $nativeTask.Body.Instructions | Where-Object {$_.OpCode.OperandType -eq [Mono.Cecil.Cil.OperandType]::ShortInlineBrTarget}) {
+            $longNameTask=$branchTask.OpCode.Code.ToString() -replace '_S$',''
+            $branchTask.OpCode=[Mono.Cecil.Cil.OpCodes].GetField($longNameTask).GetValue($null)
+        }
+    }
     $transitionTypeTask=[Mono.Cecil.TypeReference]::new('HollowCraft','SceneTransitionBridge',$moduleTask,$assemblyRefTask)
     $beginTransitionHookTask=[Mono.Cecil.MethodReference]::new('Begin',$moduleTask.TypeSystem.Void,$transitionTypeTask)
     $enterTransitionHookTask=[Mono.Cecil.MethodReference]::new('Enter',$moduleTask.TypeSystem.Void,$transitionTypeTask)

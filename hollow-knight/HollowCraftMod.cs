@@ -17,6 +17,7 @@ namespace HollowCraft
             root.AddComponent<SteveAvatar>();
             root.AddComponent<MinecraftEnvironment>();
             root.AddComponent<IntroPresentation>();
+            root.AddComponent<BossRecording>();
             Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Native scene entrance/physics handoff and scene-visit isolation; localhost:31674.");
         }
         public static string SaveRoot()

@@ -1,4 +1,4 @@
-param([string]$Version='0.30.8')
+param([string]$Version='0.30.9')
 $ErrorActionPreference='Stop'
 $rootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $rootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -15,18 +15,21 @@ $stageTask=Join-Path $rootTask ('artifacts\release-staging\'+[Guid]::NewGuid().T
 New-Item -ItemType Directory -Path $stageTask -Force | Out-Null
 # Explicit allowlist: never copy game binaries, extracted assets, runtime or saves.
 $filesTask=@(
-    'Install HollowCraft.cmd','Start HollowCraft.cmd','Stop HollowCraft.cmd',
+    'Install HollowCraft.cmd','Start HollowCraft.cmd','Stop HollowCraft.cmd','HollowCraft Launcher.cmd','Boss Recording.cmd',
     'scripts\hollowcraft-common.ps1','scripts\install-hollowcraft.ps1',
     'scripts\build-hollow-knight.ps1','scripts\prepare-assets.ps1',
     'scripts\prepare-hk-test.ps1','scripts\prepare-mc-test.ps1',
     'scripts\start-hollowcraft.ps1','scripts\stop-hollowcraft.ps1',
+    'scripts\launcher.ps1',
     'scripts\audit-hk-enemies.py',
     'release\dependencies.lock.json','release\hollowcraft.example.json',
+    'release\bosses.json',
     'release\THIRD_PARTY.md','release\THIRD_PARTY.en.md',
     'release\INSTALL_zh.md','release\INSTALL_en.md',
     'README.md','README.en.md','SOURCE_SETUP.md','SOURCE_SETUP.en.md',
     'docs\ARCHITECTURE.md','docs\ARCHITECTURE.en.md',
     'docs\PLAYTHROUGH.md','docs\PLAYTHROUGH.en.md',
+    'docs\BOSS_RECORDING.md','docs\BOSS_RECORDING.en.md',
     'docs\ENEMY_AUDIT.md','docs\ENEMY_AUDIT.en.md','docs\enemy-coverage-0.30.8.csv',
     'artifacts\HollowCraft\HollowCraft.dll',
     'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar'
@@ -38,6 +41,11 @@ foreach($relativeTask in $filesTask) {
 }
 Copy-Item -LiteralPath (Join-Path $rootTask 'release\INSTALL_zh.md') -Destination (Join-Path $stageTask 'INSTALL_zh.md')
 Copy-Item -LiteralPath (Join-Path $rootTask 'release\INSTALL_en.md') -Destination (Join-Path $stageTask 'INSTALL_en.md')
+foreach($installNameTask in @('INSTALL_zh.md','INSTALL_en.md')) {
+    $installPathTask=Join-Path $stageTask $installNameTask
+    $installTextTask=[IO.File]::ReadAllText($installPathTask).Replace('(../docs/','(docs/')
+    [IO.File]::WriteAllText($installPathTask,$installTextTask,[Text.UTF8Encoding]::new($false))
+}
 # Find the Unicode playtest note without placing non-ASCII literals in PS5 scripts.
 $noteVersionTask=if($Version.EndsWith('.0')) {$Version.Substring(0,$Version.Length-2)}else{$Version}
 $noteTask=Get-ChildItem -LiteralPath $rootTask -File | Where-Object {$_.Name -like ('*-'+$noteVersionTask+'.md')} | Select-Object -First 1

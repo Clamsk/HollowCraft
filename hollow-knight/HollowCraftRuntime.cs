@@ -174,6 +174,7 @@ namespace HollowCraft
         internal int LandingEvents;
         internal readonly GameModeMenu Modes=new GameModeMenu();
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
+        internal void PrepareRecordingTransition() {paused=false;Time.timeScale=1;CloseInterface();StopMining();Combat.Cancel();}
         internal bool InterfaceBlocked=>frontendSuspended||cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
         internal bool NativeControlLocked=>!BridgeIntro&&(cachedHero?.controlReqlinquished==true||!NativeEntranceReady||cachedManager?.IsInSceneTransition==true);
         internal bool GameplayBlocked=>InterfaceBlocked||NativeControlLocked;
@@ -188,6 +189,10 @@ namespace HollowCraft
         internal string CampaignId=>campaign;
         internal JObject Stats => LatestSnapshot?["stats"] as JObject;
         internal void Send(object command) => bridge.Send(command);
+        internal void SendNativeLanding(int serial,float x,float y,float distance) {
+            if(!InGame||NativeControlLocked)return;
+            Send(new {type="nativeLanding",scene,landing=serial,x,y,distance,teleport=appliedTeleport});
+        }
         private string assets;
         private HeroController cachedHero;
         private GameManager cachedManager;
@@ -378,6 +383,7 @@ namespace HollowCraft
                     appliedTeleport=serial;JumpBuild.Cancel();queuedTower=null;StopMining();Combat.Cancel();
                     cachedHero.transform.position=new Vector3(x,y+feetOffset,cachedHero.transform.position.z);cachedHero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
                     MinecraftEnvironment.StopMotion();
+                    NativeFallTracker.Reset();
                     bridge.Send(new {type="teleportAck",scene,x,y,teleport=serial});
                 }
             }
@@ -417,6 +423,7 @@ namespace HollowCraft
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.F)) SwapHands();
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.Q)) bridge.Send(new {type="drop",scene,all=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)});
             PlayerSystem.Tick(hero);
+            NativeBattle.Tick();
             CampaignBridge.Tick();
             NativeShop.Tick();
             NativeChoice.Tick();

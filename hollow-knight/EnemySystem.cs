@@ -17,7 +17,7 @@ namespace HollowCraft
         // Six points per iron-sword hit: three normal hits for ordinary enemies.
         // Tough enemies and bosses retain extra health above the common 60 native HP band.
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
-        internal static void Clear() {enemies.Clear();}
+        internal static void Clear() {enemies.Clear();NativeBattle.Clear();NativeFallTracker.Reset();}
         // Match HitTaker's nearest responder, but never pick a disabled phase component.
         internal static HealthManager Resolve(Collider2D collider) {
             for(var node=collider.transform;node!=null;node=node.parent)
@@ -36,6 +36,7 @@ namespace HollowCraft
                 nailBlock=enemy!=null?BlockMask(enemy,AttackTypes.Nail):0,spellBlock=enemy!=null?BlockMask(enemy,AttackTypes.Spell):0};
         }
         internal static int Register(HealthManager enemy) {
+            NativeBattle.Track(enemy);
             int id=enemy.GetInstanceID();
             if(!enemies.ContainsKey(id)) {
                 float max=ConvertedHealth(enemy.hp);

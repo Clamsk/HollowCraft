@@ -1,0 +1,664 @@
+{
+  "schema": 1,
+  "gameVersion": "1.5.12620",
+  "items": [
+    {
+      "id": "GG_Radiance",
+      "zh": "无上辐光",
+      "en": "Absolute Radiance",
+      "scenes": [
+        "GG_Radiance",
+        "GG_Radiance",
+        "GG_Radiance"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateRadiance",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Broken_Vessel",
+      "zh": "残破容器",
+      "en": "Broken Vessel",
+      "scenes": [
+        "GG_Broken_Vessel",
+        "GG_Broken_Vessel",
+        "GG_Broken_Vessel"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateBrokenVessel",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Brooding_Mawlek",
+      "zh": "躁郁的毛里克",
+      "en": "Brooding Mawlek",
+      "scenes": [
+        "GG_Brooding_Mawlek",
+        "GG_Brooding_Mawlek_V",
+        "GG_Brooding_Mawlek_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateBroodingMawlek",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Crystal_Guardian",
+      "zh": "水晶守卫",
+      "en": "Crystal Guardian",
+      "scenes": [
+        "GG_Crystal_Guardian",
+        "GG_Crystal_Guardian",
+        "GG_Crystal_Guardian"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateCrystalGuardian1",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Dung_Defender",
+      "zh": "粪虫防御者",
+      "en": "Dung Defender",
+      "scenes": [
+        "GG_Dung_Defender",
+        "GG_Dung_Defender",
+        "GG_Dung_Defender"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateDungDefender",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_Hu",
+      "zh": "胡长老",
+      "en": "Elder Hu",
+      "scenes": [
+        "GG_Ghost_Hu",
+        "GG_Ghost_Hu",
+        "GG_Ghost_Hu"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateElderHu",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Crystal_Guardian_2",
+      "zh": "暴怒守卫",
+      "en": "Enraged Guardian",
+      "scenes": [
+        "GG_Crystal_Guardian_2",
+        "GG_Crystal_Guardian_2",
+        "GG_Crystal_Guardian_2"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateCrystalGuardian2",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Failed_Champion",
+      "zh": "失败冠军",
+      "en": "Failed Champion",
+      "scenes": [
+        "GG_Failed_Champion",
+        "GG_Failed_Champion",
+        "GG_Failed_Champion"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateFailedChampion",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_False_Knight",
+      "zh": "假骑士",
+      "en": "False Knight",
+      "scenes": [
+        "GG_False_Knight",
+        "GG_False_Knight",
+        "GG_False_Knight"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateFalseKnight",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Flukemarm",
+      "zh": "吸虫之母",
+      "en": "Flukemarm",
+      "scenes": [
+        "GG_Flukemarm",
+        "GG_Flukemarm",
+        "GG_Flukemarm"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateFlukemarm",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_Galien",
+      "zh": "加利安",
+      "en": "Galien",
+      "scenes": [
+        "GG_Ghost_Galien",
+        "GG_Ghost_Galien",
+        "GG_Ghost_Galien"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateGalien",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_God_Tamer",
+      "zh": "神之驯服者",
+      "en": "God Tamer",
+      "scenes": [
+        "GG_God_Tamer",
+        "GG_God_Tamer",
+        "GG_God_Tamer"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateGodTamer",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_Gorb",
+      "zh": "戈布",
+      "en": "Gorb",
+      "scenes": [
+        "GG_Ghost_Gorb",
+        "GG_Ghost_Gorb_V",
+        "GG_Ghost_Gorb_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateGorb",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Sly",
+      "zh": "骨钉贤者斯莱",
+      "en": "Great Nailsage Sly",
+      "scenes": [
+        "GG_Sly",
+        "GG_Sly",
+        "GG_Sly"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateSly",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Grey_Prince_Zote",
+      "zh": "灰色王子左特",
+      "en": "Grey Prince Zote",
+      "scenes": [
+        "GG_Grey_Prince_Zote",
+        "GG_Grey_Prince_Zote",
+        "GG_Grey_Prince_Zote"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateGreyPrince",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Grimm",
+      "zh": "格林",
+      "en": "Grimm",
+      "scenes": [
+        "GG_Grimm",
+        "GG_Grimm",
+        "GG_Grimm"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateGrimm",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Gruz_Mother",
+      "zh": "格鲁兹之母",
+      "en": "Gruz Mother",
+      "scenes": [
+        "GG_Gruz_Mother",
+        "GG_Gruz_Mother_V",
+        "GG_Gruz_Mother_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateGruzMother",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Hive_Knight",
+      "zh": "蜂巢骑士",
+      "en": "Hive Knight",
+      "scenes": [
+        "GG_Hive_Knight",
+        "GG_Hive_Knight",
+        "GG_Hive_Knight"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateHiveKnight",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Hornet_1",
+      "zh": "黄蜂女·守护者",
+      "en": "Hornet Protector",
+      "scenes": [
+        "GG_Hornet_1",
+        "GG_Hornet_1",
+        "GG_Hornet_1"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateHornet1",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Hornet_2",
+      "zh": "黄蜂女·哨兵",
+      "en": "Hornet Sentinel",
+      "scenes": [
+        "GG_Hornet_2",
+        "GG_Hornet_2",
+        "GG_Hornet_2"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateHornet2",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Lost_Kin",
+      "zh": "失落近亲",
+      "en": "Lost Kin",
+      "scenes": [
+        "GG_Lost_Kin",
+        "GG_Lost_Kin",
+        "GG_Lost_Kin"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateLostKin",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Mantis_Lords",
+      "zh": "螳螂领主",
+      "en": "Mantis Lords",
+      "scenes": [
+        "GG_Mantis_Lords",
+        "GG_Mantis_Lords",
+        "GG_Mantis_Lords"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateMantisLords",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_Markoth",
+      "zh": "马科斯",
+      "en": "Markoth",
+      "scenes": [
+        "GG_Ghost_Markoth",
+        "GG_Ghost_Markoth_V",
+        "GG_Ghost_Markoth_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateMarkoth",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_Marmu",
+      "zh": "马尔穆",
+      "en": "Marmu",
+      "scenes": [
+        "GG_Ghost_Marmu",
+        "GG_Ghost_Marmu_V",
+        "GG_Ghost_Marmu_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateMarmu",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Mega_Moss_Charger",
+      "zh": "大型苔藓冲锋者",
+      "en": "Massive Moss Charger",
+      "scenes": [
+        "GG_Mega_Moss_Charger",
+        "GG_Mega_Moss_Charger",
+        "GG_Mega_Moss_Charger"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateMegaMossCharger",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Nailmasters",
+      "zh": "骨钉大师奥罗与马托",
+      "en": "Nailmasters Oro & Mato",
+      "scenes": [
+        "GG_Nailmasters",
+        "GG_Nailmasters",
+        "GG_Nailmasters"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateNailmasters",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Grimm_Nightmare",
+      "zh": "梦魇之王格林",
+      "en": "Nightmare King Grimm",
+      "scenes": [
+        "GG_Grimm_Nightmare",
+        "GG_Grimm_Nightmare",
+        "GG_Grimm_Nightmare"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateNightmareGrimm",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_No_Eyes",
+      "zh": "无眼",
+      "en": "No Eyes",
+      "scenes": [
+        "GG_Ghost_No_Eyes",
+        "GG_Ghost_No_Eyes_V",
+        "GG_Ghost_No_Eyes_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateNoEyes",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Nosk",
+      "zh": "诺斯克",
+      "en": "Nosk",
+      "scenes": [
+        "GG_Nosk",
+        "GG_Nosk_V",
+        "GG_Nosk_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateNosk",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Oblobbles",
+      "zh": "奥波路波",
+      "en": "Oblobbles",
+      "scenes": [
+        "GG_Oblobbles",
+        "GG_Oblobbles",
+        "GG_Oblobbles"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateOblobbles",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Painter",
+      "zh": "画师席奥",
+      "en": "Paintmaster Sheo",
+      "scenes": [
+        "GG_Painter",
+        "GG_Painter",
+        "GG_Painter"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStatePaintmaster",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Hollow_Knight",
+      "zh": "纯粹容器",
+      "en": "Pure Vessel",
+      "scenes": [
+        "GG_Hollow_Knight",
+        "GG_Hollow_Knight",
+        "GG_Hollow_Knight"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateHollowKnight",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Mantis_Lords_V",
+      "zh": "战斗姐妹",
+      "en": "Sisters of Battle",
+      "scenes": [
+        "GG_Mantis_Lords_V",
+        "GG_Mantis_Lords_V",
+        "GG_Mantis_Lords_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateMantisLordsExtra",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Soul_Master",
+      "zh": "灵魂大师",
+      "en": "Soul Master",
+      "scenes": [
+        "GG_Soul_Master",
+        "GG_Soul_Master",
+        "GG_Soul_Master"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateSoulMaster",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Soul_Tyrant",
+      "zh": "灵魂暴君",
+      "en": "Soul Tyrant",
+      "scenes": [
+        "GG_Soul_Tyrant",
+        "GG_Soul_Tyrant",
+        "GG_Soul_Tyrant"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateSoulTyrant",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Mage_Knight",
+      "zh": "灵魂战士",
+      "en": "Soul Warrior",
+      "scenes": [
+        "GG_Mage_Knight",
+        "GG_Mage_Knight_V",
+        "GG_Mage_Knight_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateMageKnight",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Collector",
+      "zh": "收藏家",
+      "en": "The Collector",
+      "scenes": [
+        "GG_Collector",
+        "GG_Collector_V",
+        "GG_Collector_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateCollector",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Mighty_Zote",
+      "zh": "永恒的折磨",
+      "en": "The Eternal Ordeal",
+      "scenes": [
+        "GG_Mighty_Zote",
+        "GG_Mighty_Zote",
+        "GG_Mighty_Zote"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateZote",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Traitor_Lord",
+      "zh": "叛徒领主",
+      "en": "Traitor Lord",
+      "scenes": [
+        "GG_Traitor_Lord",
+        "GG_Traitor_Lord",
+        "GG_Traitor_Lord"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateTraitorLord",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Uumuu",
+      "zh": "乌姆",
+      "en": "Uumuu",
+      "scenes": [
+        "GG_Uumuu",
+        "GG_Uumuu_V",
+        "GG_Uumuu_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateUumuu",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Vengefly",
+      "zh": "复仇蝇之王",
+      "en": "Vengefly King",
+      "scenes": [
+        "GG_Vengefly",
+        "GG_Vengefly_V",
+        "GG_Vengefly_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateVengefly",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Watcher_Knights",
+      "zh": "守望者骑士",
+      "en": "Watcher Knights",
+      "scenes": [
+        "GG_Watcher_Knights",
+        "GG_Watcher_Knights",
+        "GG_Watcher_Knights"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateWatcherKnights",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_White_Defender",
+      "zh": "白色防御者",
+      "en": "White Defender",
+      "scenes": [
+        "GG_White_Defender",
+        "GG_White_Defender",
+        "GG_White_Defender"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateWhiteDefender",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Nosk_Hornet",
+      "zh": "有翼诺斯克",
+      "en": "Winged Nosk",
+      "scenes": [
+        "GG_Nosk_Hornet",
+        "GG_Nosk_Hornet",
+        "GG_Nosk_Hornet"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateNoskHornet",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "GG_Ghost_Xero",
+      "zh": "泽若",
+      "en": "Xero",
+      "scenes": [
+        "GG_Ghost_Xero",
+        "GG_Ghost_Xero_V",
+        "GG_Ghost_Xero_V"
+      ],
+      "godhome": true,
+      "entryGate": "door_dreamEnter",
+      "state": "statueStateXero",
+      "returnGate": "door_dreamReturnGG"
+    },
+    {
+      "id": "Room_Final_Boss_Core",
+      "zh": "空洞骑士（剧情场景）",
+      "en": "Hollow Knight (story arena)",
+      "scenes": [
+        "Room_Final_Boss_Core",
+        "Room_Final_Boss_Core",
+        "Room_Final_Boss_Core"
+      ],
+      "godhome": false,
+      "entryGate": "left1",
+      "state": "",
+      "returnGate": "left1"
+    },
+    {
+      "id": "Dream_Final_Boss",
+      "zh": "辐光（剧情场景）",
+      "en": "Radiance (story arena)",
+      "scenes": [
+        "Dream_Final_Boss",
+        "Dream_Final_Boss",
+        "Dream_Final_Boss"
+      ],
+      "godhome": false,
+      "entryGate": "door1",
+      "state": "",
+      "returnGate": "left1"
+    }
+  ]
+}

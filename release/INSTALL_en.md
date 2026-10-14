@@ -1,8 +1,8 @@
-# HollowCraft 0.30.8 — Installation and Configuration
+﻿# HollowCraft 0.30.9 — Installation and Configuration
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-Version 0.30.8 audits original enemy resources, fixes native direction/type guards and removed proxies, adds arrows through breakable decorations, and repairs mining input/progress and missing attack animations. Stop both games before updating and restart both matching mods. Existing saves remain usable; the actor inventory is included, and gameplay awaits player feedback.
+Version 0.30.9 repairs the Gruz Mother brood counter and tracks individual landings on native physics frames to prevent incorrect fall damage during repeated sprint-jumps. It adds a GUI launcher and boss recording sessions with a fresh survival starter kit for each fight. Stop both games before updating both mods. Existing saves remain usable; gameplay awaits player feedback.
 
 This is a **Windows 64-bit playtest package**. It brings items, numerical rules and a 3D player from your local Minecraft installation into Hollow Knight. Both games must run during play. Full survival campaign support is still being adapted; the current build was compiled and handed to players without gameplay acceptance testing.
 
@@ -15,11 +15,13 @@ This is a **Windows 64-bit playtest package**. It brings items, numerical rules 
 
 ## Install and start
 
-1. Download **HollowCraft-v0.30.8-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
+1. Download **HollowCraft-v0.30.9-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
 2. Extract the entire ZIP into a writable directory such as `D:\Games\HollowCraft`. Do not run files inside the ZIP or install into the original Steam or `.minecraft` directory. Built-in Windows PowerShell is sufficient; Codex, Git and development tools are not needed.
 3. Double-click **Install HollowCraft.cmd**. It searches for Steam's game folder and `.minecraft`; enter the paths if discovery fails. The Minecraft root must contain `versions\1.20.1\1.20.1.jar`, rather than merely the launcher executable.
 4. Wait until downloads, checksums and preparation finish and the installer reports `installed`. Installation prepares files without launching games.
-5. Keep Steam signed in and double-click **Start HollowCraft.cmd**. Wait for Minecraft to enter its separate world and keep its window running. Then create or load a playtest save in the Hollow Knight window.
+5. Keep Steam signed in and double-click **HollowCraft Launcher.cmd** (**Start HollowCraft.cmd** opens the same launcher), then press Play on the normal-play tab. Wait for Minecraft to enter its separate world and keep its window running. Then create or load a playtest save in the Hollow Knight window.
+
+For recording, open the **Boss Recording** tab, search and select a boss, tier and resolution, then press Start. The launcher creates a separate recording save and each fight restores the survival starter kit. **F5** retries, **F6** returns to the Hall of Gods and **F8** hides hints. See the [recording guide](../docs/BOSS_RECORDING.en.md).
 
 The bridge uses a separate local world. Online account login is not part of bridge communication. No passwords or access tokens are included, and original launcher configuration is not modified.
 
@@ -41,6 +43,7 @@ Before upgrading, stop both games and back up:
 
 - `runtime\hk-test-saves`: bridged Hollow Knight saves and story progress.
 - `runtime\minecraft\saves`: the separate Minecraft world and item progress for each Hollow Knight campaign.
+- `runtime\hk-boss-saves`: separate recording saves, unused by normal play.
 
 Copy the contents of the new ZIP's `HollowCraft` folder over the existing installation, then run Install and Start again. The installer preserves runtime saves and local path configuration; it does not clear the inventory.
 

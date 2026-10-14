@@ -44,6 +44,7 @@ namespace HollowCraft
             bool water=(bool?)runtime.Stats?["water"]==true,lava=(bool?)runtime.Stats?["lava"]==true;
             if((water||lava)&&((float?)runtime.Stats?[water?"waterHeight":"lavaHeight"]??1)>((float?)runtime.Stats?["swimHeight"]??.4f))return true;
             if(MinecraftControls.Grounded(player)&&Time.time>=instance.nextJump) {
+                NativeFallTracker.BeforeJump(player);
                 int boost=instance.Effect("jump_boost");float velocity=(float?)runtime.Stats?["jumpVelocity"]??.42f+(boost>=0?.1f*(boost+1):0);
                 // Player-requested building assistance: the ordinary 20 Hz arc peaks
                 // at 1.5 blocks (0.4634 impulse), while potion boost remains additive.
@@ -93,7 +94,8 @@ namespace HollowCraft
         private void FixedUpdate()
         {
             var runtime=HollowCraftRuntime.Instance;if(hero==null||body==null||runtime==null||!runtime.InGame||runtime.SimulationPaused) return;
-            if(runtime.NativeControlLocked) {ownHorizontal=false;return;}
+            if(runtime.NativeControlLocked) {NativeFallTracker.Reset();ownHorizontal=false;return;}
+            NativeFallTracker.Sample(hero);
             if(runtime.Spectator) {
                 var collider=hero.GetComponent<Collider2D>();
                 if(!spectatorBody) {previousTrigger=collider.isTrigger;previousBodyType=body.bodyType;collider.isTrigger=true;body.bodyType=RigidbodyType2D.Kinematic;spectatorBody=true;Gliding=false;ownHorizontal=false;}

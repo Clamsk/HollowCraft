@@ -197,6 +197,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private int sceneVisit;
     private boolean hadPose,wasGrounded;
     private float fallen;
+    private int lastNativeLanding;
     private boolean pearlDamageActive;
     private double footstepDistance;
     private BlockPos landingWater;
@@ -279,7 +280,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 var writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
                 JsonObject hello = JsonParser.parseString(readBounded(reader)).getAsJsonObject();
                 if (!"hello".equals(string(hello, "type", "")) || integer(hello, "protocol", 0) != 1) continue;
-                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean(),hello.has("nativeEntityRender")&&hello.get("nativeEntityRender").getAsBoolean(),hello.has("nativeBlockRender")&&hello.get("nativeBlockRender").getAsBoolean(),hello.has("nativeTntSteps")&&hello.get("nativeTntSteps").getAsBoolean());
+                Peer current = new Peer(socket, writer,hello.has("nativeProjectileSteps")&&hello.get("nativeProjectileSteps").getAsBoolean(),hello.has("minecraftAudio")&&hello.get("minecraftAudio").getAsBoolean(),hello.has("nativeGui")&&hello.get("nativeGui").getAsBoolean(),hello.has("nativeHud")&&hello.get("nativeHud").getAsBoolean(),hello.has("nativeEntityRender")&&hello.get("nativeEntityRender").getAsBoolean(),hello.has("nativeBlockRender")&&hello.get("nativeBlockRender").getAsBoolean(),hello.has("nativeTntSteps")&&hello.get("nativeTntSteps").getAsBoolean(),hello.has("nativeFallEvents")&&hello.get("nativeFallEvents").getAsBoolean());
                 current.send("{\"type\":\"hello\",\"protocol\":1,\"minecraft\":\"1.20.1\",\"saveSession\":true}");
                 socket.setSoTimeout(0);
                 peer = current;
@@ -529,7 +530,7 @@ public final class HollowCraftBridge implements ModInitializer {
             centerX = integer(command, "x", 0); centerY = integer(command, "y", 0);
             exactX=command.has("exactX")?command.get("exactX").getAsDouble():centerX+0.5;
             exactY=command.has("exactY")?command.get("exactY").getAsDouble():centerY;
-            hadPose=false;fallen=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
+            hadPose=false;fallen=0;lastNativeLanding=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
             owner.fallDistance=0;owner.clearActiveItem();owner.setVelocity(Vec3d.ZERO);owner.stopFallFlying();
             owner.setPosition(slot*1024+exactX,64+exactY,.5);
             syncSelectedInventory();
@@ -568,20 +569,10 @@ public final class HollowCraftBridge implements ModInitializer {
                 if(gliding && !grounded && owner.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA)) owner.startFallFlying();else if(owner.isFallFlying()) owner.stopFallFlying();
                 if(scripted) {fallen=0;owner.fallDistance=0;footstepDistance=0;}
                 if(scripted||owner.isTouchingWater()||owner.isClimbing()||gliding||flying)fallen=0;
-                else if(hadPose&&!wasGrounded)fallen+=Math.max(0,(float)(lastPoseY-exactY));
+                else if(!peer.fallEvents&&hadPose&&!wasGrounded)fallen+=Math.max(0,(float)(lastPoseY-exactY));
                 // A late connection can start after the first landing. The pending opening
                 // must still place water instead of requiring a previously observed air pose.
-                if(!scripted&&grounded&&((hadPose&&!wasGrounded)||introLanding)) {
-                    boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(fallen>=11.999f||introLanding)&&placeLandingWater();
-                    if(!creative&&!owner.isSpectator()&&!waterSave&&owner.handleFallDamage(fallen,1,owner.getDamageSources().fall()))
-                        LOG.info("Native fall damage distance={} HP={} absorption={} teleport={}",fallen,owner.getHealth(),owner.getAbsorptionAmount(),teleportSerial);
-                    if(creative&&fallen>12)landingEvent("hero",fallen);
-                    if(introLanding&&(waterSave||creative||owner.isSpectator())) {
-                        if(!waterSave&&!(creative&&fallen>12))landingEvent("plain",fallen);
-                        introLanding=false;campaigns.introDone=true;if(!waterSave)saveCampaign();
-                    }
-                    fallen=0;owner.fallDistance=0;
-                }
+                if(!scripted&&grounded&&(!peer.fallEvents&&hadPose&&!wasGrounded||introLanding))applyLanding(fallen);
                 if(hadPose && !creative && !scripted) {
                     if(command.has("sprinting") && command.get("sprinting").getAsBoolean()) owner.addExhaustion((float)Math.min(2,Math.abs(exactX-lastPoseX))*0.1f);
                     if(wasGrounded && !grounded && exactY>lastPoseY+0.02) owner.addExhaustion(0.05f);
@@ -606,6 +597,18 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.setSneaking(command.has("crouching") && command.get("crouching").getAsBoolean());owner.setSprinting(command.has("sprinting")&&command.get("sprinting").getAsBoolean()&&(creative||owner.getHungerManager().getFoodLevel()>6)); updateTerrain(command);
                 FluidBridge.seal(owner.getServerWorld(),pos(centerX,centerY));
                 if(openContainer!=null && (Math.abs(openContainer.getX()-slot*1024-centerX)>6 || Math.abs(openContainer.getY()-64-centerY)>6)) {owner.closeHandledScreen();openContainer=null;}
+            }
+            case "nativeLanding" -> {
+                int serial=integer(command,"landing",0);
+                if(!peer.fallEvents||serial<=lastNativeLanding||integer(command,"teleport",-1)!=teleportSerial||teleportWaiting!=0)break;
+                double x=command.get("x").getAsDouble(),y=command.get("y").getAsDouble(),distance=command.get("distance").getAsDouble();
+                if(!Double.isFinite(x)||!Double.isFinite(y)||!Double.isFinite(distance)||Math.abs(x)>400||y<-60||y>240||distance<0||distance>400)break;
+                lastNativeLanding=serial;double savedX=exactX,savedY=exactY;Vec3d savedPosition=owner.getPos();
+                try {
+                    exactX=x;exactY=y;owner.setPosition(slot*1024+x,64+y,.5);
+                    applyLanding((float)distance);
+                    LOG.info("Native physics landing serial={} distance={} HP={}",serial,distance,owner.getHealth());
+                } finally {exactX=savedX;exactY=savedY;owner.setPosition(savedPosition);}
             }
             case "teleportAck" -> {
                 if(teleportWaiting==0||integer(command,"teleport",-1)!=teleportSerial)break;
@@ -864,6 +867,18 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private void landingEvent(String kind,float distance) {
         if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","landing");event.addProperty("scene",scene);event.addProperty("kind",kind);event.addProperty("intro",introLanding);event.addProperty("distance",distance);event.addProperty("x",exactX);event.addProperty("y",exactY);event.addProperty("hand",landingHand==Hand.OFF_HAND?1:0);peer.event(event);
+    }
+    private void applyLanding(float distance) {
+        fallen=distance;
+        boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(distance>=11.999f||introLanding)&&placeLandingWater();
+        if(!creative&&!owner.isSpectator()&&!waterSave&&owner.handleFallDamage(distance,1,owner.getDamageSources().fall()))
+            LOG.info("Native fall damage distance={} HP={} absorption={} teleport={}",distance,owner.getHealth(),owner.getAbsorptionAmount(),teleportSerial);
+        if(creative&&distance>12)landingEvent("hero",distance);
+        if(introLanding&&(waterSave||creative||owner.isSpectator())) {
+            if(!waterSave&&!(creative&&distance>12))landingEvent("plain",distance);
+            introLanding=false;campaigns.introDone=true;if(!waterSave)saveCampaign();
+        }
+        fallen=0;owner.fallDistance=0;
     }
     private BlockPos target(JsonObject command) {
         int x = integer(command, "x", 0), y = integer(command, "y", 0);
@@ -1339,16 +1354,18 @@ public final class HollowCraftBridge implements ModInitializer {
         final boolean entityRender;
         final boolean blockRender;
         final boolean tntSteps;
+        final boolean fallEvents;
         final Set<String> audioFiles=ConcurrentHashMap.newKeySet();
         final BlockingQueue<String> output = new ArrayBlockingQueue<>(4);
         final BlockingQueue<String> events = new LinkedBlockingQueue<>();
-        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud,boolean entityRender,boolean blockRender,boolean tntSteps) {
+        Peer(Socket socket, BufferedWriter writer,boolean projectileSteps,boolean audio,boolean gui,boolean hud,boolean entityRender,boolean blockRender,boolean tntSteps,boolean fallEvents) {
             this.projectileSteps=projectileSteps;
             this.audio=audio;
             this.hud=hud;
             this.entityRender=entityRender;
             this.blockRender=blockRender;
             this.tntSteps=tntSteps;
+            this.fallEvents=fallEvents;
             this.gui=gui;
             this.socket=socket; this.writer=writer;
             Thread sender = new Thread(() -> {

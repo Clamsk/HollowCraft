@@ -1,4 +1,4 @@
-# HollowCraft 0.30.8 — Playtest Build
+# HollowCraft 0.30.9 — Playtest Build
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,15 +6,15 @@ Minecraft-style survival and combat in Hollow Knight.
 
 Use Minecraft's player, survival, equipment, building and combat systems in Hollow Knight's 2D world. **Both games must run at the same time.** This is a playable bridge prototype; a complete survival playthrough has not been verified.
 
-**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.8) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
+**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.9) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
 
 ## Current release
 
-Version 0.30.8 audits all local original scene/enemy resources and fixes shared directional/type guard and proxy lifetime handling while retaining native boss phases and death. Arrows continue through breakable decorations; solid walls still block them. Pointed MC blocks take mining priority, with vanilla progress accumulated per server tick and sent to the UI. Missing fallback attack animations are also fixed. See the [audit scope and actor inventory](docs/ENEMY_AUDIT.en.md).
+Version 0.30.9 repairs Gruz Mother brood-count bookkeeping and replaces pose-sampled fall accumulation with native physics/landing events, preventing repeated sprint-jumps from sharing fall distance. The new bilingual GUI offers normal play or independent boss recordings with fresh survival starter equipment, 45 Godhome entries and two story arenas, native difficulty, F5 retries and F8 hint toggling. See the [recording guide](docs/BOSS_RECORDING.en.md). Runtime fights remain unverified.
 
 The shield, contact melee and vanilla totem effects from 0.30.7 remain included. New campaigns receive two totems; old campaigns receive two once. A totem must be held in the main hand or offhand to activate.
 
-This release was compiled and its package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.8 playtest notes](PLAYTEST-0.30.8.en.md). Older test records below apply only to their stated versions.
+This release was compiled, PowerShell 5.1 GUI controls initialized without displaying a window, and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.9 playtest notes](PLAYTEST-0.30.9.en.md). Older test records below apply only to their stated versions.
 
 ## Download and start
 
@@ -25,7 +25,7 @@ Requirements:
 - Your own **Minecraft Java 1.20.1** installation. Launch vanilla 1.20.1 once through PCL or another launcher to download its assets and libraries.
 - **64-bit Java 17 or 21**.
 
-Download **HollowCraft-v0.30.8-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.8), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd**. Wait for Minecraft to enter its separate world and keep it running. Create or load a playtest save in the Hollow Knight copy. Each connection starts in survival mode with Steve.
+Download **HollowCraft-v0.30.9-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.9), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
 
 Save Hollow Knight's progress at a bench, then run **Stop HollowCraft.cmd** to save the Minecraft world and inventory and close both recorded processes. If only Hollow Knight was closed, restarting reuses the Minecraft backend of the same build. Stop before upgrading. Older backends without save acknowledgement must be closed normally through their Minecraft window; the script does not forcibly terminate them.
 
@@ -132,6 +132,7 @@ These are implementation notes, not confirmation that each version passed gamepl
 
 | Version | Changes |
 | --- | --- |
+| 0.30.9 | Gruz brood gate bookkeeping, per-landing physics fall events, bilingual launcher and fresh survival boss recording sessions |
 | 0.30.8 | Full offline enemy-resource audit, native direction/type guards and proxy lifetime, arrows through breakable props, reliable pointed-block mining, attack-animation fallback |
 | 0.30.7 | Player-collider melee coverage, float-residue lethal hit fix, vanilla shield/item-use poses and blocking, native shield recoil, totem activation animation/effects and two starter totems |
 | 0.30.6 | Inventory / held-item synchronization, per-entry player and HUD frame isolation, registered attack FSM, native hit/death routing and diagnostic health logs |

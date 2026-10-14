@@ -1,8 +1,8 @@
-# HollowCraft 0.30.8 安装与配置
+﻿# HollowCraft 0.30.9 安装与配置
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-0.30.8 完成原版敌人资源静态检查，修复方向/攻击类型防护及失效代理，加入箭穿过可破坏装饰，修复挖掘输入与进度及缺失攻击动画。请先 Stop，再更新两端并启动。旧存档可继续使用；逐对象检查清单随包附带，实际效果待玩家试玩。
+0.30.9 修复格鲁兹之母孵化战的残留清怪计数，并按原生物理帧区分每次落地，避免连续跑跳累积错误摔伤。新增图形启动器和 Boss 录制入口，每场使用独立生存初始装备。请先 Stop，再更新两端。旧存档可继续使用，实际效果待玩家试玩。
 
 这是 Windows 64 位试玩包。它把本机 Minecraft 的物品、数值与三维人物接入空洞骑士；游玩时两端都需要运行。完整生存通关仍在适配，本版编译后交给玩家试玩，未进行实机验收。
 
@@ -15,11 +15,13 @@
 
 ## 安装
 
-1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.8-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
+1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.9-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
 2. 完整解压到自己的可写目录，例如 `D:\Games\HollowCraft`。不要直接从 ZIP 内运行，也不要放进 Steam 或 `.minecraft` 原目录。Windows 内置 PowerShell 即可，无需 Codex、Git 或开发工具。
 3. 双击 **Install HollowCraft.cmd**。它寻找 Steam 游戏目录和 `.minecraft`；未找到时按提示输入目录。Minecraft 目录必须包含 `versions\1.20.1\1.20.1.jar`，不是启动器 EXE 所在目录。
 4. 等待下载、校验和准备结束，看到 `installed`。安装器只准备文件，不启动游戏。
-5. 保持 Steam 登录，双击 **Start HollowCraft.cmd**。等待 Minecraft 自动进入独立世界，保持其窗口运行；然后在空洞窗口新建或读取试玩存档。
+5. 保持 Steam 登录，双击 **HollowCraft Launcher.cmd**（**Start HollowCraft.cmd** 也会打开同一启动器），选择普通游玩的启动按钮。等待 Minecraft 自动进入独立世界，保持其窗口运行；然后在空洞窗口新建或读取试玩存档。
+
+录制演示可选择启动器的 **Boss 录制** 页，搜索并选择 Boss、难度与分辨率，点击开始。首次启动会自动创建独立录制存档；每场刷新为生存初始装备。**F5** 重打，**F6** 回神居雕像大厅，**F8** 隐藏画面提示。详见[录制指南](../docs/BOSS_RECORDING.md)。
 
 程序以本地独立世界运行，网络登录不参与桥接。安装包没有账号密码或访问令牌；原启动器配置不修改。
 
@@ -41,6 +43,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-hollow
 
 - `runtime\hk-test-saves`：桥接空洞存档和剧情进度。
 - `runtime\minecraft\saves`：独立 MC 世界及按空洞存档区分的物品进度。
+- `runtime\hk-boss-saves`：独立录制存档；普通游玩不读取此目录。
 
 资源运行副本使用目录联接、硬链接或跨盘文件复制。不要在 `runtime\Hollow Knight` 内编辑原生游戏资源；先退出两端再移动整个包。删除整个包之前可单独备份这两个存档目录。
 
