@@ -801,6 +801,7 @@ namespace HollowCraft
                         var nativeBox=block.AddComponent<BoxCollider2D>();nativeBox.size=new Vector2((float)box[2]-(float)box[0],(float)box[3]-(float)box[1]);nativeBox.offset=new Vector2(((float)box[0]+(float)box[2])*.5f-.5f,((float)box[1]+(float)box[3])*.5f-.5f);
                     } else block.AddComponent<BoxCollider2D>().size = new Vector2(CellSize,CellSize);
                 }
+                if(id=="minecraft:bedrock")block.AddComponent<BedrockWall>();
                 blocks[key] = block;blockStates[key]=state;
             }
             foreach (string key in blocks.Keys.Where(k => !present.Contains(k)).ToArray())

@@ -18,6 +18,7 @@ namespace HollowCraft
             root.AddComponent<MinecraftEnvironment>();
             root.AddComponent<IntroPresentation>();
             root.AddComponent<BossRecording>();
+            root.AddComponent<BedrockBarrier>();
             Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Native scene entrance/physics handoff and scene-visit isolation; localhost:31674.");
         }
         public static string SaveRoot()

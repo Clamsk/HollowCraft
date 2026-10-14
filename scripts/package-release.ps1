@@ -1,4 +1,4 @@
-param([string]$Version='0.30.9')
+param([string]$Version='0.30.10')
 $ErrorActionPreference='Stop'
 $rootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $rootTask 'artifacts\HollowCraft\HollowCraft.dll'

@@ -1,4 +1,4 @@
-# HollowCraft 0.30.9 — Playtest Build
+# HollowCraft 0.30.10 — Playtest Build
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,15 +6,17 @@ Minecraft-style survival and combat in Hollow Knight.
 
 Use Minecraft's player, survival, equipment, building and combat systems in Hollow Knight's 2D world. **Both games must run at the same time.** This is a playable bridge prototype; a complete survival playthrough has not been verified.
 
-**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.9) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
+**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.10) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
 
 ## Current release
+
+Version 0.30.10 fixes the starter hotbar order and adds 64 bedrock, continuous native charge barriers, survival mining protection with creative removal and XY explosion shielding. Existing campaigns migrate existing stacks and receive bedrock once. Gameplay awaits player feedback.
 
 Version 0.30.9 repairs Gruz Mother brood-count bookkeeping and replaces pose-sampled fall accumulation with native physics/landing events, preventing repeated sprint-jumps from sharing fall distance. The new bilingual GUI offers normal play or independent boss recordings with fresh survival starter equipment, 45 Godhome entries and two story arenas, native difficulty, F5 retries and F8 hint toggling. See the [recording guide](docs/BOSS_RECORDING.en.md). Runtime fights remain unverified.
 
 The shield, contact melee and vanilla totem effects from 0.30.7 remain included. New campaigns receive two totems; old campaigns receive two once. A totem must be held in the main hand or offhand to activate.
 
-This release was compiled, PowerShell 5.1 GUI controls initialized without displaying a window, and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.9 playtest notes](PLAYTEST-0.30.9.en.md). Older test records below apply only to their stated versions.
+This release was compiled, PowerShell 5.1 GUI controls initialized without displaying a window, and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.10 playtest notes](PLAYTEST-0.30.10.en.md). Older test records below apply only to their stated versions.
 
 ## Download and start
 
@@ -25,7 +27,7 @@ Requirements:
 - Your own **Minecraft Java 1.20.1** installation. Launch vanilla 1.20.1 once through PCL or another launcher to download its assets and libraries.
 - **64-bit Java 17 or 21**.
 
-Download **HollowCraft-v0.30.9-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.9), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
+Download **HollowCraft-v0.30.10-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.10), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
 
 Save Hollow Knight's progress at a bench, then run **Stop HollowCraft.cmd** to save the Minecraft world and inventory and close both recorded processes. If only Hollow Knight was closed, restarting reuses the Minecraft backend of the same build. Stop before upgrading. Older backends without save acknowledgement must be closed normally through their Minecraft window; the script does not forcibly terminate them.
 
@@ -88,9 +90,11 @@ A new campaign starts with full iron armor and an offhand shield, plus:
 
 - Iron sword, bow, 64 arrows, 64 steaks and 64 ender pearls (four stacks of 16).
 - 192 cobblestone, 64 oak logs, flint and steel, 64 TNT, water bucket and lava bucket.
-- Iron axe, iron pickaxe, 64 torches, 64 iron ingots, 64 regular golden apples and two separate totems of undying.
+- Iron axe, iron pickaxe, 64 torches, 64 iron ingots, 64 regular golden apples and two separate totems of undying, plus 64 bedrock.
 
-Existing campaigns keep their items. Version 0.30 grants a missing iron pickaxe once; 0.30.3 grants iron ingots once; 0.30.4 grants two extra cobblestone stacks and golden apples once. Version 0.30.7 grants two totems once. Grant flags are saved per campaign and survive death. Excess items drop when the inventory is full, and reconnecting does not grant them again. Each connection returns to survival mode.
+Hotbar slots 1–9 contain iron sword, bow, golden apples, cobblestone, water bucket, lava bucket, TNT, flint and steel, ender pearls. Arrows and other supplies stay in the backpack.
+
+Existing campaigns keep their items. Version 0.30.10 grants bedrock once and swaps existing stacks into the new hotbar order without replenishing consumed supplies. Version 0.30 grants a missing iron pickaxe once; 0.30.3 grants iron ingots once; 0.30.4 grants two extra cobblestone stacks and golden apples once. Version 0.30.7 grants two totems once. Grant flags are saved per campaign and survive death. Excess items drop when the inventory is full, and reconnecting does not grant them again. Each connection returns to survival mode.
 
 Regular `minecraft:golden_apple` items use vanilla eating, including at full hunger. They grant Regeneration II for 5 seconds and Absorption I for 2 minutes (4 absorption health points), plus vanilla hunger and saturation. The vanilla HUD shows yellow absorption hearts and status icons; the fallback HUD also reads real absorption health.
 
@@ -132,6 +136,7 @@ These are implementation notes, not confirmation that each version passed gamepl
 
 | Version | Changes |
 | --- | --- |
+| 0.30.10 | Requested hotbar layout, 64 starter bedrock, continuous native charge barriers, survival-protected bedrock and XY blast shielding |
 | 0.30.9 | Gruz brood gate bookkeeping, per-landing physics fall events, bilingual launcher and fresh survival boss recording sessions |
 | 0.30.8 | Full offline enemy-resource audit, native direction/type guards and proxy lifetime, arrows through breakable props, reliable pointed-block mining, attack-animation fallback |
 | 0.30.7 | Player-collider melee coverage, float-residue lethal hit fix, vanilla shield/item-use poses and blocking, native shield recoil, totem activation animation/effects and two starter totems |

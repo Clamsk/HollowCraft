@@ -21,6 +21,8 @@
     ,"NativeTntMovementMixin"
     ,"CreativeTridentMixin"
     ,"CreativeTridentDamageMixin"
+    ,"BedrockMiningMixin"
+    ,"BedrockExplosionMixin"
   ],
   "client": [
     "ItemRendererAccess",

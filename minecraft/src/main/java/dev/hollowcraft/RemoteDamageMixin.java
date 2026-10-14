@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class RemoteDamageMixin {
     @Inject(method="damage",at=@At("HEAD"),cancellable=true)
     private void hollowcraft$nativeCollisionAuthority(DamageSource source,float amount,CallbackInfoReturnable<Boolean> callback) {
+        if(dev.hollowcraft.BedrockRules.blocksExplosion((LivingEntity)(Object)this,source)) {callback.setReturnValue(false);return;}
         // The native XY collider already prevents wall penetration. MC's projected door/wall
         // volume has a different Z thickness and must not invent suffocation at the doorway.
         if(dev.hollowcraft.HollowCraftBridge.isRemotePlayer((LivingEntity)(Object)this)&&source.isOf(DamageTypes.IN_WALL)) callback.setReturnValue(false);

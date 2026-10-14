@@ -448,6 +448,10 @@ public final class HollowCraftBridge implements ModInitializer {
             if(!owner.getCommandTags().contains(totemTag)) {
                 give(new ItemStack(Items.TOTEM_OF_UNDYING));give(new ItemStack(Items.TOTEM_OF_UNDYING));owner.addCommandTag(totemTag);
             }
+            if(!owner.getCommandTags().contains(StarterLoadout.BEDROCK_TAG)) {
+                give(new ItemStack(Items.BEDROCK,64));owner.addCommandTag(StarterLoadout.BEDROCK_TAG);
+            }
+            StarterLoadout.arrangeExisting(owner);
             return;
         }
         boolean fresh=owner.getInventory().isEmpty();
@@ -455,8 +459,8 @@ public final class HollowCraftBridge implements ModInitializer {
             Items.IRON_AXE,Items.WATER_BUCKET,Items.LAVA_BUCKET,Items.FLINT_AND_STEEL,
             Items.ARROW,Items.ENDER_PEARL,Items.TNT,Items.TORCH,Items.IRON_PICKAXE,Items.IRON_INGOT,Items.GOLDEN_APPLE,Items.TOTEM_OF_UNDYING};
         int[] amounts={1,1,64,192,64,1,1,1,1,64,64,64,64,1,64,64,2};
-        int nextSlot=0;
-        for(int i=0;i<items.length;i++) {
+        if(fresh)StarterLoadout.fresh(owner);
+        else for(int i=0;i<items.length;i++) {
             int missing=amounts[i];
             if(!fresh)for(int slot=0;slot<36;slot++) {
                 ItemStack existing=owner.getInventory().getStack(slot);
@@ -465,9 +469,12 @@ public final class HollowCraftBridge implements ModInitializer {
             while(missing>0) {
                 ItemStack stack=new ItemStack(items[i],Math.min(missing,items[i].getMaxCount()));
                 missing-=stack.getCount();
-                if(fresh)owner.getInventory().setStack(nextSlot++,stack);
-                else give(stack);
+                give(stack);
             }
+        }
+        if(!fresh) {
+            give(new ItemStack(Items.BEDROCK,64));owner.addCommandTag(StarterLoadout.BEDROCK_TAG);
+            StarterLoadout.arrangeExisting(owner);
         }
         EquipmentSlot[] slots={EquipmentSlot.HEAD,EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET,EquipmentSlot.OFFHAND};
         Item[] equipment={Items.IRON_HELMET,Items.IRON_CHESTPLATE,Items.IRON_LEGGINGS,Items.IRON_BOOTS,Items.SHIELD};
@@ -645,6 +652,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "mining" -> {
                 if(command.has("active") && !command.get("active").getAsBoolean()) {miningPos=null;miningProgress=0;break;}
                 BlockPos target=target(command);if(target==null || NativeTerrainBlock.proxy(owner.getServerWorld().getBlockState(target))||!owner.getAbilities().allowModifyWorld||owner.isSpectator()) break;
+                if(!creative&&owner.getServerWorld().getBlockState(target).isOf(Blocks.BEDROCK)) {miningPos=null;miningProgress=0;status="Bedrock cannot be broken in survival";break;}
                 if(server.getTicks()<nextMiningTick)break;
                 if(!target.equals(miningPos)) {
                     miningPos=target;miningState=owner.getServerWorld().getBlockState(target);miningProgress=0;miningStartedTick=server.getTicks();
@@ -943,6 +951,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if (!foundation&&terrain.contains(target)&&(nativeShape==null||nativeShape.getMax(Direction.Axis.Y)>=.999)) { status = "Hollow Knight terrain occupies target"; return ActionResult.FAIL; }
         if (!world.getBlockState(target).isAir()&&!world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)&&!(foundation&&NativeTerrainBlock.proxy(world.getBlockState(target)))) { status = "Target already contains a Minecraft block"; return ActionResult.FAIL; }
         if (!(owner.getStackInHand(hand).getItem() instanceof BlockItem)) { status = "Select a block in either hand"; return ActionResult.FAIL; }
+        if(owner.getStackInHand(hand).isOf(Items.BEDROCK)&&BedrockRules.occupied(world,target)) {status="An enemy occupies this bedrock cell";return ActionResult.FAIL;}
         boolean floorEdge=world.getBlockState(target).isOf(NativeTerrainBlock.INSTANCE)||foundation&&NativeTerrainBlock.proxy(world.getBlockState(target));
         // A native floor can sit a few hundredths above a voxel edge. Keep the physical
         // floor in Unity, but let vanilla put the requested block against its supporting cell.
@@ -1139,6 +1148,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if(peer!=null)peer.event(event);
     }
     private boolean breakRemoteBlock(BlockPos position) {
+        if(!creative&&owner.getServerWorld().getBlockState(position).isOf(Blocks.BEDROCK)) {status="Bedrock cannot be broken in survival";return false;}
         try(var effects=RemoteEffects.begin()) {return owner.interactionManager.tryBreakBlock(position);}
     }
     private boolean miningReach(BlockPos target) {
@@ -1150,6 +1160,7 @@ public final class HollowCraftBridge implements ModInitializer {
         BlockPos target = target(command);
         if (target == null || NativeTerrainBlock.proxy(owner.getServerWorld().getBlockState(target))) { status = "Hollow Knight terrain cannot be mined"; return; }
         BlockState state = owner.getServerWorld().getBlockState(target);
+        if(!creative&&state.isOf(Blocks.BEDROCK)) {status="Bedrock cannot be broken in survival";return;}
         if (state.isAir()) return;
         float progress = state.calcBlockBreakingDelta(owner, owner.getServerWorld(), target);
         if (!creative && progress <= 0) { status = "This block cannot be mined with this tool"; return; }

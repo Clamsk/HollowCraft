@@ -54,6 +54,7 @@ namespace HollowCraft
             var nativeHero=HeroController.instance;
             if(nativeHero!=null)hero=nativeHero;
             if(hero==null)return true;
+            if(hazardType==1&&BedrockBarrier.BlocksContact(source,hero))return true;
             // Preserve native transition/story immunity before replacing mask damage with MC damage.
             if(nativeHero!=null) {
                 if(nativeHero.damageMode==DamageMode.NO_DAMAGE||nativeHero.transitionState!=HeroTransitionState.WAITING_TO_TRANSITION
