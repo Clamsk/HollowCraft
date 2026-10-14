@@ -469,7 +469,7 @@ namespace HollowCraft
             while(pointerInput.Read(out NativePointerBuffer.Press press,out Vector2 screen)) {
                 if(!GameCursor.WorldTarget(hero,screen,out Vector2 pressed,out _))continue;
                 nativeLeft|=press.Button==0;nativeRight|=press.Button==1;
-                HandlePointer(hero,pressed,press.Button==0,false,press.Button==1,rightHeld);
+                HandlePointer(hero,pressed,press.Button==0,leftHeld,press.Button==1,rightHeld);
             }
             HandlePointer(hero,mouse,!nativeLeft&&Input.GetMouseButtonDown(0),leftHeld,!nativeRight&&Input.GetMouseButtonDown(1),rightHeld);
             JumpBuild.Tick(hero);
@@ -516,19 +516,23 @@ namespace HollowCraft
             }
             if(usingItem && !rightHeld) {SendItemUse(hero,mouse,false,true);usingItem=false;}
             else if(usingItem && Time.unscaledTime>=nextUseAim) {nextUseAim=Time.unscaledTime+.05f;SendItemUse(hero,mouse,false,false);}
-            // A short click always swings, including clicks aimed at a placed block. Holding also mines.
-            if(leftDown) Combat.Request(scene,hero,mouse,true);
-            if (leftHeld)
+            // A pointed MC block owns left-click/hold, even inside a boss collider.
+            // Air/native targets retain the queued Better Combat swing path.
+            bool pointedBlock=blocks.ContainsKey(Key(cell.x,cell.y));
+            if(leftDown&&!pointedBlock)Combat.Request(scene,hero,mouse,true);
+            if (leftHeld||leftDown&&pointedBlock)
             {
-                bool enemy=Combat.HasEnemy(hero,mouse);
-                if(blocks.ContainsKey(Key(cell.x,cell.y))&&!GameCursor.BlockInReach(cell,hero)) {StopMining();return;}
-                if(enemy || !blocks.ContainsKey(Key(cell.x,cell.y)))
+                if(pointedBlock&&!GameCursor.BlockInReach(cell,hero)) {StopMining();return;}
+                if(!pointedBlock)
                 {
                     StopMining();mineCell=new Vector2Int(int.MinValue,int.MinValue);mineProgress=0;
                     if(Time.unscaledTime>=nextAttackRequest) {Combat.Request(scene,hero,mouse);nextAttackRequest=Time.unscaledTime+0.1f;}
                     return;
                 }
-                if (cell != mineCell) { mineCell = cell; miningStarted = Time.unscaledTime; }
+                if (cell != mineCell||!wasMining) {
+                    Combat.Cancel();StopMining();mineCell=cell;miningStarted=Time.unscaledTime;nextMineSend=0;
+                    Debug.Log("[HollowCraft] Mining target="+cell+" held="+inventory[selected]);
+                }
                 int held = 1+(int)((Time.unscaledTime - miningStarted) * 20);
                 int needed=breakingTicks.TryGetValue(Key(cell.x,cell.y),out int required) ? required : 20;
                 mineProgress=creative ? 1 : Mathf.Clamp01((float)held/Math.Max(1,needed));
@@ -575,7 +579,7 @@ namespace HollowCraft
             if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));}
             bridge.Send(pose);
         }
-        private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;}
+        private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;mineProgress=0;}
         private void LateUpdate() {
             FlushNativeSteps();GameCursor.ApplyCursor();
             bool visible=InGame&&bridge?.Connected==true&&building&&!Dead;
@@ -724,6 +728,9 @@ namespace HollowCraft
             status = (string)message["status"] ?? "Connected";
             creative = (bool?)message["creative"] ?? false;
             selected = (int?)message["selected"] ?? selected;
+            var mining=message["mining"] as JObject;
+            if(wasMining&&mining!=null&&(int?)mining["x"]==mineCell.x&&(int?)mining["y"]==mineCell.y)
+                mineProgress=Mathf.Clamp01((float?)mining["progress"]??0);
             Combat.Profile=message["combat"] as JObject;
             var nextContainer=message["container"] as JObject;
             if((long?)message["gui"]?["session"]>0&&(bool?)message["gui"]?["inventory"]==false)inventoryOpen=true;

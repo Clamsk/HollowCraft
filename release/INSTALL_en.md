@@ -1,8 +1,8 @@
-# HollowCraft 0.30.7 — Installation and Configuration
+# HollowCraft 0.30.8 — Installation and Configuration
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-Version 0.30.7 fixes contact-range melee and float-residue enemy death, restores shield poses/blocking, and exports vanilla totem activation effects. New and existing campaigns receive two totems once. Hold a totem in the main hand or offhand for it to activate. Stop both games before updating and restart both matching mods. Existing saves remain usable; gameplay awaits player feedback.
+Version 0.30.8 audits original enemy resources, fixes native direction/type guards and removed proxies, adds arrows through breakable decorations, and repairs mining input/progress and missing attack animations. Stop both games before updating and restart both matching mods. Existing saves remain usable; the actor inventory is included, and gameplay awaits player feedback.
 
 This is a **Windows 64-bit playtest package**. It brings items, numerical rules and a 3D player from your local Minecraft installation into Hollow Knight. Both games must run during play. Full survival campaign support is still being adapted; the current build was compiled and handed to players without gameplay acceptance testing.
 
@@ -15,7 +15,7 @@ This is a **Windows 64-bit playtest package**. It brings items, numerical rules 
 
 ## Install and start
 
-1. Download **HollowCraft-v0.30.7-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
+1. Download **HollowCraft-v0.30.8-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
 2. Extract the entire ZIP into a writable directory such as `D:\Games\HollowCraft`. Do not run files inside the ZIP or install into the original Steam or `.minecraft` directory. Built-in Windows PowerShell is sufficient; Codex, Git and development tools are not needed.
 3. Double-click **Install HollowCraft.cmd**. It searches for Steam's game folder and `.minecraft`; enter the paths if discovery fails. The Minecraft root must contain `versions\1.20.1\1.20.1.jar`, rather than merely the launcher executable.
 4. Wait until downloads, checksums and preparation finish and the installer reports `installed`. Installation prepares files without launching games.

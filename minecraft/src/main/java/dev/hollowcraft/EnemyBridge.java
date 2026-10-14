@@ -24,6 +24,10 @@ final class EnemyBridge {
             var entity=enemies.get(id);
             int generation=data.has("generation")?data.get("generation").getAsInt():0;
             if(entity!=null&&generations.getOrDefault(id,0)!=generation) {entity.discard();enemies.remove(id);entity=null;}
+            if(entity!=null&&entity.isRemoved()&&data.get("health").getAsFloat()>0) {
+                org.slf4j.LoggerFactory.getLogger("HollowCraft").warn("Recover removed native proxy id={} name={} HP={}",id,((NativeProxy)entity).bridgeName(),entity.getHealth());
+                enemies.remove(id);entity=null;
+            }
             if(entity==null) {
                 entity=new NativeProxy(player.getServerWorld(),data);
                 entity.setAiDisabled(true);entity.setSilent(true);entity.setNoGravity(true);entity.setPersistent();
@@ -37,8 +41,9 @@ final class EnemyBridge {
                 player.getServerWorld().spawnEntity(entity);
             }
             ((NativeProxy)entity).size(data);
+            ((NativeProxy)entity).guards(data);
             double maximum=data.get("maxHealth").getAsDouble();
-            entity.setInvulnerable(data.has("invulnerable")&&data.get("invulnerable").getAsBoolean());
+            entity.setInvulnerable(false); // Native directional/type guards are checked in damage().
             if(Math.abs(entity.getMaxHealth()-maximum)>.001) {float fraction=entity.getHealth()/entity.getMaxHealth();entity.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(maximum);entity.setHealth((float)maximum*fraction);}
             positions.put(id,point);entity.setPosition(point);entity.setVelocity(Vec3d.ZERO);
         }
@@ -57,6 +62,7 @@ final class EnemyBridge {
             value.addProperty("health",entry.getValue().getHealth());value.addProperty("maxHealth",entry.getValue().getMaxHealth());result.add(value);
             value.addProperty("x",entry.getValue().getX());value.addProperty("y",entry.getValue().getY());value.addProperty("invulnerable",entry.getValue().isInvulnerable());
             value.addProperty("moveFactor",entry.getValue().getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)/.23);value.addProperty("onFire",entry.getValue().isOnFire());
+            ((NativeProxy)entry.getValue()).combatState(value);
             var source=entry.getValue().getRecentDamageSource();if(source!=null) value.addProperty("damageKind",source.getName());
         }
         return result;
@@ -75,10 +81,16 @@ final class EnemyBridge {
             // MC's attack method includes cooldown, criticals, enchantments, armor, durability and knockback.
             // Each cleaved target receives the same fully charged swing.
             for(var target:targets) {
-                var enemy=enemies.get(target.getAsInt());if(enemy==null || !enemy.isAlive()) continue;
+                var enemy=enemies.get(target.getAsInt());
+                if(enemy==null || !enemy.isAlive()) {
+                    org.slf4j.LoggerFactory.getLogger("HollowCraft").info("Combat skipped target={} reason={}",target,enemy==null?"missing proxy":enemy.isRemoved()?"removed proxy":"awaiting native phase/death");continue;
+                }
                 var eye=player.getEyePos();var bounds=enemy.getBoundingBox();double reach=player.isCreative()?6:3;
                 var closest=new Vec3d(Math.max(bounds.minX,Math.min(bounds.maxX,eye.x)),Math.max(bounds.minY,Math.min(bounds.maxY,eye.y)),Math.max(bounds.minZ,Math.min(bounds.maxZ,eye.z)));
-                if(eye.squaredDistanceTo(closest)>reach*reach+.001)continue;
+                // Native shape overlap is also a legal contact melee hit.
+                if(!player.getBoundingBox().intersects(bounds)&&eye.squaredDistanceTo(closest)>reach*reach+.001) {
+                    org.slf4j.LoggerFactory.getLogger("HollowCraft").info("Combat skipped target={} name={} reason=reach distance={}",target,((NativeProxy)enemy).bridgeName(),eye.distanceTo(closest));continue;
+                }
                 clock.hollowcraft$setAttackTicks(chargedTicks);
                 float before=enemy.getHealth();
                 player.attack(enemy);

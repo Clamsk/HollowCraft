@@ -1,4 +1,4 @@
-param([string]$Version='0.30.7')
+param([string]$Version='0.30.8')
 $ErrorActionPreference='Stop'
 $rootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $rootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -20,12 +20,14 @@ $filesTask=@(
     'scripts\build-hollow-knight.ps1','scripts\prepare-assets.ps1',
     'scripts\prepare-hk-test.ps1','scripts\prepare-mc-test.ps1',
     'scripts\start-hollowcraft.ps1','scripts\stop-hollowcraft.ps1',
+    'scripts\audit-hk-enemies.py',
     'release\dependencies.lock.json','release\hollowcraft.example.json',
     'release\THIRD_PARTY.md','release\THIRD_PARTY.en.md',
     'release\INSTALL_zh.md','release\INSTALL_en.md',
     'README.md','README.en.md','SOURCE_SETUP.md','SOURCE_SETUP.en.md',
     'docs\ARCHITECTURE.md','docs\ARCHITECTURE.en.md',
     'docs\PLAYTHROUGH.md','docs\PLAYTHROUGH.en.md',
+    'docs\ENEMY_AUDIT.md','docs\ENEMY_AUDIT.en.md','docs\enemy-coverage-0.30.8.csv',
     'artifacts\HollowCraft\HollowCraft.dll',
     'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar'
 )

@@ -8,6 +8,8 @@ import java.lang.reflect.Method;
 import java.nio.*;
 import java.nio.file.*;
 import java.util.UUID;
+import java.util.Map;
+import java.lang.reflect.Field;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.client.gui.DrawContext;
@@ -31,6 +33,7 @@ public final class PlayerVisualBridge {
     private static ByteBuffer pixels;
     private static byte[] transfer;
     private static Method playAttack,stopAttack,updateAnimations;
+    private static Field animationRegistry;
     private static Object mainHand,twoHands;
     private static int attackSerial=-1,sequence;
     private static int avatarVisit=-1;
@@ -55,6 +58,7 @@ public final class PlayerVisualBridge {
                 Class<?> hands=Class.forName("net.bettercombat.logic.AnimatedHand");
                 playAttack=api.getMethod("playAttackAnimation",String.class,hands,float.class,float.class);
                 stopAttack=api.getMethod("stopAttackAnimation",float.class);updateAnimations=api.getMethod("updateAnimationsOnTick");
+                animationRegistry=Class.forName("net.bettercombat.client.animation.AnimationRegistry").getField("animations");
                 mainHand=hands.getField("MAIN_HAND").get(null);twoHands=hands.getField("TWO_HANDED").get(null);
             }
             avatar.tick();
@@ -93,7 +97,9 @@ public final class PlayerVisualBridge {
             int serial=(int)number(input,"attackSerial",0);
             if(!state.using&&flag(input,"swinging")&&serial!=attackSerial) {
                 attackSerial=serial;String animation=text(input,"animation","");
-                if(!animation.isEmpty())playAttack.invoke(avatar,animation,flag(input,"twoHanded")?twoHands:mainHand,
+                // Better Combat dereferences missing registry entries. Unknown/fallback
+                // animations must still render a complete vanilla hand swing.
+                if(!animation.isEmpty()&&((Map<?,?>)animationRegistry.get(null)).containsKey(animation))playAttack.invoke(avatar,animation,flag(input,"twoHanded")?twoHands:mainHand,
                     number(input,"duration",.5f)*20,number(input,"upswing",.3f));
                 else avatar.swingHand(net.minecraft.util.Hand.MAIN_HAND);
             } else if(!flag(input,"swinging")&&attackSerial!=-1) {stopAttack.invoke(avatar,3f);attackSerial=-1;}

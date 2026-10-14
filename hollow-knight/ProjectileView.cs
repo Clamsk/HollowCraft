@@ -25,6 +25,8 @@ namespace HollowCraft
         private object hitCommand;
         private MeshRenderer[] meshes;
         private int pendingTarget;
+        private Collider2D pendingOneHit;
+        private Vector2 pendingMotion;
         private readonly HashSet<int> hitTargets=new HashSet<int>();
         private void Awake() {meshes=GetComponentsInChildren<MeshRenderer>();}
         internal void Push(JObject value,string scene) {
@@ -53,6 +55,10 @@ namespace HollowCraft
         internal void Resolve(JObject message) {
             if(message["uuid"]!=null&&(string)message["uuid"]!=uuid||message["request"]!=null&&(int)message["request"]!=impactRequest)return;
             if((bool?)message["accepted"]==true&&pendingTarget!=0)hitTargets.Add(pendingTarget);
+            if((bool?)message["accepted"]==true&&pendingOneHit!=null&&HeroController.instance!=null) {
+                NativeSceneProps.Strike(pendingOneHit,pendingOneHit.gameObject,HeroController.instance,pendingMotion);
+                pendingOneHit=null;
+            }
             if((bool?)message["removed"]==true) {HollowCraftRuntime.Instance?.RetireProjectile(entity,uuid);return;}
             if(noClip) {awaitingImpact=false;return;}
             if((bool?)message["accepted"]==true&&(bool?)message["grounded"]==true) {grounded=true;awaitingImpact=false;from=to=impactPoint;velocity=Vector2.zero;}
@@ -67,11 +73,23 @@ namespace HollowCraft
                 var collider=hit.collider;if(collider==null||collider.GetComponentInParent<HeroController>()!=null)continue;
                 var node=collider.transform;while(node!=null&&!node.name.StartsWith("HollowCraft.Block"))node=node.parent;
                 if(node!=null) {if(!collider.isTrigger)return;continue;}
-                var enemy=collider.GetComponentInParent<HealthManager>();
+                var enemy=EnemySystem.Resolve(collider);
                 var breakable=collider.GetComponentInParent<Breakable>();
-                int targetId=enemy!=null?enemy.GetInstanceID():breakable!=null?breakable.GetInstanceID():0;
+                bool arrow=kind=="minecraft:arrow"||kind=="minecraft:spectral_arrow";
+                var oneHit=arrow&&enemy==null&&breakable==null?collider.GetComponentInParent<ScuttlerControl>():null;
+                var prop=arrow&&enemy==null?NativeSceneProps.Find(collider):null;
+                if(prop!=null&&breakable==null) {
+                    int propId=prop.GetInstanceID();if(hitTargets.Add(propId)) {
+                        var propHero=HeroController.instance;if(propHero!=null)NativeSceneProps.Strike(collider,prop,propHero,delta);
+                    }
+                    // Trigger-only grass/poles are native interactions, never arrow anchors.
+                    continue;
+                }
+                // Disabled/dead health responders are not inert solid walls.
+                if(enemy==null&&collider.GetComponentInParent<HealthManager>()!=null)continue;
+                int targetId=enemy!=null?enemy.GetInstanceID():breakable!=null?breakable.GetInstanceID():oneHit!=null?oneHit.GetInstanceID():0;
                 if(targetId!=0&&hitTargets.Contains(targetId))continue;
-                if(enemy==null&&breakable==null&&(collider.isTrigger||collider.gameObject.layer!=LayerMask.NameToLayer("Terrain")&&collider.gameObject.layer!=LayerMask.NameToLayer("Default")))continue;
+                if(enemy==null&&breakable==null&&oneHit==null&&(collider.isTrigger||collider.gameObject.layer!=LayerMask.NameToLayer("Terrain")&&collider.gameObject.layer!=LayerMask.NameToLayer("Default")))continue;
                 if(enemy!=null&&enemy.isDead)continue;
                 if(hit.distance<=.001f&&Vector2.Dot(hit.normal,delta)>=0)continue;
                 var runtime=HollowCraftRuntime.Instance;var hero=HeroController.instance;if(runtime==null||hero==null)return;
@@ -80,10 +98,11 @@ namespace HollowCraft
                 impactPoint=new Vector3(hit.centroid.x,hit.centroid.y,-.15f);awaitingImpact=true;retryAt=Time.unscaledTime+.4f;
                 impactAt=Time.unscaledTime+(predicted?.05f:0);
                 pendingTarget=targetId;
+                pendingOneHit=oneHit!=null?collider:null;pendingMotion=delta;
                 impactRequest=++nextImpactRequest;runtime.RevokeNativeStep(entity);
                 int target=enemy!=null?EnemySystem.Register(enemy):breakable!=null?EnemySystem.Register(breakable):0;
                 hitCommand=new {type="nativeProjectileHit",scene=room,entity,uuid,age,request=impactRequest,x=point.x,y=point.y,normalX=normal.x,normalY=normal.y,
-                    landingX=landing.x,landingY=landing.y,target,enemies=EnemySystem.Observe(hero,target)};
+                    landingX=landing.x,landingY=landing.y,target,nativeOneHit=oneHit!=null,passThrough=arrow&&breakable!=null&&enemy==null,enemies=EnemySystem.Observe(hero,target)};
                 runtime.Send(hitCommand);return;
             }
         }

@@ -9,7 +9,7 @@ namespace HollowCraft
 {
     internal static class EnemySystem
     {
-        private sealed class Adapter {internal HealthManager Enemy;internal Breakable Breakable;internal bool Resource,Rewarded;internal int NativeMax,LastNative,Generation;internal float Max,Health;}
+        private sealed class Adapter {internal HealthManager Enemy;internal Breakable Breakable;internal bool Resource,Rewarded;internal int NativeMax,LastNative,Generation,BlockSerial;internal float Max,Health;}
         private static readonly Dictionary<int,Adapter> enemies=new Dictionary<int,Adapter>();
         private static readonly FieldInfo brokenField=typeof(Breakable).GetField("isBroken",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
         private static readonly FieldInfo evasionField=typeof(HealthManager).GetField("evasionByHitRemaining",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
@@ -18,6 +18,23 @@ namespace HollowCraft
         // Tough enemies and bosses retain extra health above the common 60 native HP band.
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
         internal static void Clear() {enemies.Clear();}
+        // Match HitTaker's nearest responder, but never pick a disabled phase component.
+        internal static HealthManager Resolve(Collider2D collider) {
+            for(var node=collider.transform;node!=null;node=node.parent)
+                foreach(var enemy in node.GetComponents<HealthManager>())
+                    if(enemy.enabled&&!enemy.isDead&&enemy.hp>0)return enemy;
+            return null;
+        }
+        private static int BlockMask(HealthManager enemy,AttackTypes type) {
+            int mask=0;for(int direction=0;direction<4;direction++)if(enemy.IsBlockingByDirection(direction,type))mask|=1<<direction;return mask;
+        }
+        private static object Entry(int id,Adapter adapter,Collider2D body) {
+            var enemy=adapter.Enemy;
+            return new {id,maxHealth=adapter.Max,health=adapter.Health,generation=adapter.Generation,
+                kind=adapter.Resource?"resource":enemy.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||enemy.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0?"undead":"arthropod",
+                name=adapter.Resource?adapter.Breakable.name:enemy.name,x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,
+                nailBlock=enemy!=null?BlockMask(enemy,AttackTypes.Nail):0,spellBlock=enemy!=null?BlockMask(enemy,AttackTypes.Spell):0};
+        }
         internal static int Register(HealthManager enemy) {
             int id=enemy.GetInstanceID();
             if(!enemies.ContainsKey(id)) {
@@ -39,14 +56,13 @@ namespace HollowCraft
             foreach(var pair in enemies) {var entry=pair.Value;if(entry.Health<=0&&!entry.Rewarded&&(entry.Resource ? entry.Breakable==null||!entry.Breakable.gameObject.activeInHierarchy||(bool)(brokenField?.GetValue(entry.Breakable)??false) : entry.Enemy==null||entry.Enemy.isDead)) {entry.Rewarded=true;HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id=pair.Key,generation=entry.Generation});}}
             var observed=new HashSet<int>();var result=new List<object>();
             foreach(var collider in Physics2D.OverlapCircleAll(hero.transform.position,20)) {
-                var enemy=collider.GetComponentInParent<HealthManager>();if(enemy==null || enemy.isDead || enemy.hp<=0) continue;
+                var enemy=Resolve(collider);if(enemy==null) continue;
                 int id=Register(enemy);if(!observed.Add(id)) continue;
-                var body=enemy.GetComponent<Collider2D>()??collider;Vector3 point=body.bounds.center;
+                var body=enemy.GetComponents<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy)??collider;
                 var adapter=enemies[id];
-                if(enemy.hp>adapter.LastNative) {adapter.NativeMax=Math.Max(adapter.NativeMax,enemy.hp);adapter.Max=ConvertedHealth(adapter.NativeMax);adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;}
+                if(enemy.hp>adapter.LastNative||adapter.Health<=0) {adapter.NativeMax=Math.Max(adapter.NativeMax,enemy.hp);adapter.Max=ConvertedHealth(adapter.NativeMax);adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=0;}
                 adapter.LastNative=enemy.hp;
-                string kind=enemy.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||enemy.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0 ? "undead":"arthropod";
-                result.Add(new {id,maxHealth=adapter.Max,health=adapter.Health,generation=adapter.Generation,kind,name=enemy.name,x=point.x,y=body!=null ? body.bounds.min.y : point.y,width=body!=null ? body.bounds.size.x:.6f,height=body!=null ? body.bounds.size.y:1.95f,invulnerable=enemy.IsInvincible});
+                result.Add(Entry(id,adapter,body));
             }
             foreach(var collider in Physics2D.OverlapCircleAll(hero.transform.position,12)) {
                 var breakable=collider.GetComponentInParent<Breakable>();if(breakable==null || !breakable.gameObject.activeInHierarchy) continue;
@@ -55,11 +71,10 @@ namespace HollowCraft
             }
             if(required!=0&&!observed.Contains(required)&&enemies.TryGetValue(required,out Adapter extra)) {
                 var actor=extra.Resource?extra.Breakable?.gameObject:extra.Enemy?.gameObject;
-                if(actor!=null&&actor.activeInHierarchy&&(extra.Resource||!extra.Enemy.isDead)) {
-                    var body=actor.GetComponent<Collider2D>()??actor.GetComponentInChildren<Collider2D>();
+                if(actor!=null&&actor.activeInHierarchy&&(extra.Resource||extra.Enemy.enabled&&!extra.Enemy.isDead&&extra.Enemy.hp>0)) {
+                    var body=actor.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&(extra.Resource||Resolve(c)==extra.Enemy));
                     if(body!=null) {
-                        string kind=extra.Resource?"resource":actor.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||actor.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0?"undead":"arthropod";
-                        result.Add(new {id=required,maxHealth=extra.Max,health=extra.Health,generation=extra.Generation,kind,name=actor.name,x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,invulnerable=extra.Enemy!=null&&extra.Enemy.IsInvincible});
+                        result.Add(Entry(required,extra,body));
                     }
                 }
             }
@@ -70,6 +85,16 @@ namespace HollowCraft
             foreach(JObject value in values) {
                 int id=(int)value["id"];if(!enemies.TryGetValue(id,out Adapter adapter)) continue;
                 if(((int?)value["generation"] ?? 0)!=adapter.Generation) continue;
+                int blockSerial=(int?)value["blockSerial"]??0;
+                if(blockSerial>adapter.BlockSerial&&adapter.Enemy!=null&&!adapter.Enemy.isDead) {
+                    adapter.BlockSerial=blockSerial;float blockedAngle=(float?)value["blockedAngle"]??0;
+                    var blockedType=(bool?)value["blockedSpell"]==true?AttackTypes.Spell:AttackTypes.Nail;
+                    if(adapter.Enemy.IsBlockingByDirection(DirectionUtils.GetCardinalDirection(blockedAngle),blockedType)) {
+                        evasionField?.SetValue(adapter.Enemy,0f);
+                        adapter.Enemy.Hit(new HitInstance {Source=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,1,blockedAngle,blockedType),
+                            AttackType=blockedType,DamageDealt=1,Multiplier=1,Direction=blockedAngle});
+                    }
+                }
                 if(adapter.Enemy!=null&&!adapter.Enemy.isDead) {var effect=adapter.Enemy.GetComponent<NativeMobEffects>()??adapter.Enemy.gameObject.AddComponent<NativeMobEffects>();effect.Factor=Mathf.Clamp((float?)value["moveFactor"] ?? 1,.01f,4);effect.Burning=(bool?)value["onFire"] ?? false;}
                 float health=(float)value["health"];
                 if(health>adapter.Health+.001f && adapter.Enemy!=null&&!adapter.Enemy.isDead) {adapter.Enemy.hp=Mathf.CeilToInt(health/adapter.Max*adapter.NativeMax);adapter.LastNative=adapter.Enemy.hp;adapter.Health=health;continue;}
@@ -88,9 +113,11 @@ namespace HollowCraft
                 if(damage<=0) continue;
                 Vector2 direction=((Vector2)enemy.transform.position-(Vector2)hero.transform.position).normalized;
                 string kind=(string)value["damageKind"];
-                bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion"||kind=="fireworks";
-                if(!ranged&&direction.sqrMagnitude<.000001f)direction=HollowCraftRuntime.Instance.Combat.Aim;
-                var attackType=ranged?AttackTypes.Spell:AttackTypes.Nail;float angle=Mathf.Atan2(direction.y,direction.x)*Mathf.Rad2Deg;
+                bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion"||kind=="fireworks"||kind=="inFire"||kind=="onFire"||kind=="lava"||kind=="hotFloor"||kind=="wither";
+                if(!ranged)direction=HollowCraftRuntime.Instance.Combat.Aim;
+                var attackType=ranged?AttackTypes.Spell:AttackTypes.Nail;
+                float angle=(float?)value["damageAngle"]??Mathf.Atan2(direction.y,direction.x)*Mathf.Rad2Deg;
+                direction=new Vector2(Mathf.Cos(angle*Mathf.Deg2Rad),Mathf.Sin(angle*Mathf.Deg2Rad));
                 var sourceObject=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,damage,angle,attackType);
                 // MC already accepted this hit using its cooldown and hurt immunity.
                 // Clear only HK's extra evasion timer; scripted shields/phases still go through Hit.
@@ -100,16 +127,17 @@ namespace HollowCraft
                 // Native recoil timers must not heal an already accepted MC hit. A genuine
                 // boss phase refill increases HP above the pre-hit value and stays native-owned.
                 bool specialDeath=(bool)(specialDeathField?.GetValue(enemy)??true);
-                if(!enemy.isDead&&!enemy.IsInvincible&&enemy.hp>desired&&enemy.hp<=before&&(desired>0||!specialDeath)) {
+                bool blocked=enemy.IsBlockingByDirection(DirectionUtils.GetCardinalDirection(angle),attackType);
+                if(!enemy.isDead&&!blocked&&enemy.hp>desired&&enemy.hp<=before&&(desired>0||!specialDeath)) {
                     enemy.hp=desired;
                     // A rejected/one-point native lethal hit used to refill the MC proxy
                     // as if every ordinary enemy had a new boss phase, making it immortal.
                     if(desired==0)enemy.Die(angle,attackType,true);
                 }
-                Debug.Log("[HollowCraft] Native combat id="+id+" name="+enemy.name+" MC="+health+" native="+before+"->"+enemy.hp+" dead="+enemy.isDead+" blocked="+enemy.IsInvincible);
+                Debug.Log("[HollowCraft] Native combat id="+id+" name="+enemy.name+" MC="+health+" native="+before+"->"+enemy.hp+" dead="+enemy.isDead+" blocked="+blocked);
                 adapter.LastNative=enemy.hp;
                 if(health<=0&&enemy.isDead) HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id,generation=adapter.Generation});
-                if(!enemy.isDead&&(enemy.hp>before||health<=0&&enemy.hp>0)) {adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;}
+                if(!enemy.isDead&&(enemy.hp>before||health<=0&&enemy.hp>0)) {adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=0;}
                 var body=enemy.GetComponent<Rigidbody2D>();if(body!=null && !enemy.isDead && body.bodyType==RigidbodyType2D.Dynamic) body.linearVelocity+=direction*3;
             }
         }

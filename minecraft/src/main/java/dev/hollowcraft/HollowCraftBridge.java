@@ -214,6 +214,8 @@ public final class HollowCraftBridge implements ModInitializer {
     private float miningProgress;
     private int lastMiningTick;
     private int miningStartedTick;
+    private BlockState miningState;
+    private int nextMiningTick;
     private double attackMultiplier=1, reachY;
     private JsonObject pendingHit;
     private JsonObject pendingSwing;
@@ -378,12 +380,22 @@ public final class HollowCraftBridge implements ModInitializer {
                 }
                 if(peer.tntSteps) {var event=new JsonObject();event.addProperty("type","primed");event.addProperty("scene",scene);event.addProperty("tick",server.getTicks());event.add("primed",primedSnapshot());peer.event(event);}
                 if(miningPos!=null) {
-                    if(server.getTicks()-lastMiningTick>5) {miningPos=null;miningProgress=0;}
+                    if(server.getTicks()-lastMiningTick>10) {miningPos=null;miningProgress=0;}
                     else {
                         BlockState state=owner.getServerWorld().getBlockState(miningPos);
-                        if(state.isAir() || NativeTerrainBlock.proxy(state)) {miningPos=null;miningProgress=0;}
-                        else {miningProgress=creative ? 1 : state.calcBlockBreakingDelta(owner,owner.getServerWorld(),miningPos)*(server.getTicks()-miningStartedTick+1);
-                            if(miningProgress>=1) {breakRemoteBlock(miningPos);miningPos=null;miningProgress=0;}
+                        if(state.isAir() || NativeTerrainBlock.proxy(state)||!miningReach(miningPos)||owner.isSpectator()) {miningPos=null;miningProgress=0;}
+                        else {
+                            if(state!=miningState) {miningState=state;miningProgress=0;}
+                            // Sum the original per-tick rate. Tool changes, airborne/water
+                            // penalties and potion effects affect only their actual ticks.
+                            miningProgress=creative?1:miningProgress+state.calcBlockBreakingDelta(owner,owner.getServerWorld(),miningPos);
+                            if((server.getTicks()-miningStartedTick)%6==0)itemSwing(Hand.MAIN_HAND);
+                            if(miningProgress>=1) {
+                                boolean broken=breakRemoteBlock(miningPos);
+                                LOG.info("Mining result cell={} block={} tool={} accepted={}",miningPos,Registries.BLOCK.getId(state.getBlock()),owner.getMainHandStack().getItem(),broken);
+                                if(!broken)status="Minecraft rejected mining with the held item";
+                                nextMiningTick=server.getTicks()+(creative?4:5);miningPos=null;miningProgress=0;
+                            }
                         }
                     }
                 }
@@ -498,7 +510,7 @@ public final class HollowCraftBridge implements ModInitializer {
             grantIronStarter();creative=owner.isCreative();campaigns.save(owner);
             introLanding=command.has("intro")&&command.get("intro").getAsBoolean()&&!campaigns.introDone&&name.equals("Tutorial_01");
             owner.closeHandledScreen(); openContainer=null; combo=0; activeAttack=0;
-            enemies.clear();miningPos=null;miningProgress=0;
+            enemies.clear();miningPos=null;miningProgress=0;nextMiningTick=0;
             pendingHit=null;pendingSwing=null;
             nextSwingTick=0;lastAttackEvent=null;lastAttackRequest=cancelledAttackRequest=0;
             for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}
@@ -607,7 +619,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "rest" -> {if(owner.isAlive()) {owner.setHealth(owner.getMaxHealth());owner.getHungerManager().setFoodLevel(20);owner.getHungerManager().setSaturationLevel(5);campaigns.save(owner);server.save(false,true,true);status="Rested and saved at campaign checkpoint";}}
             case "containerButton" -> {if(openContainer!=null&&integer(command,"syncId",-1)==owner.currentScreenHandler.syncId) {int button=integer(command,"button",-1);if(button>=0&&button<1000) {owner.currentScreenHandler.onButtonClick(owner,button);owner.currentScreenHandler.sendContentUpdates();snapshot();}}}
             case "anvilName" -> {if(openContainer!=null&&owner.currentScreenHandler instanceof net.minecraft.screen.AnvilScreenHandler anvil) anvil.setNewItemName(string(command,"name","").substring(0,Math.min(50,string(command,"name","").length())));}
-            case "select" -> {owner.getInventory().selectedSlot = clamp(integer(command, "slot", 0), 0, 8);owner.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket(owner.getInventory().selectedSlot));}
+            case "select" -> {miningPos=null;miningProgress=0;owner.getInventory().selectedSlot = clamp(integer(command, "slot", 0), 0, 8);owner.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket(owner.getInventory().selectedSlot));}
             case "mode" -> {
                 GameMode mode=GameMode.byName(string(command,"mode","survival"),GameMode.SURVIVAL);
                 boolean enteringCreative=mode==GameMode.CREATIVE&&!owner.isCreative();
@@ -630,7 +642,18 @@ public final class HollowCraftBridge implements ModInitializer {
             case "mining" -> {
                 if(command.has("active") && !command.get("active").getAsBoolean()) {miningPos=null;miningProgress=0;break;}
                 BlockPos target=target(command);if(target==null || NativeTerrainBlock.proxy(owner.getServerWorld().getBlockState(target))||!owner.getAbilities().allowModifyWorld||owner.isSpectator()) break;
-                if(!target.equals(miningPos)) {miningPos=target;miningProgress=0;miningStartedTick=server.getTicks();}
+                if(server.getTicks()<nextMiningTick)break;
+                if(!target.equals(miningPos)) {
+                    miningPos=target;miningState=owner.getServerWorld().getBlockState(target);miningProgress=0;miningStartedTick=server.getTicks();
+                    pendingSwing=null;pendingHit=null;activeAttack=0;owner.clearActiveItem();
+                    LOG.info("Mining start cell={} block={} tool={} rate={}",target,Registries.BLOCK.getId(miningState.getBlock()),owner.getMainHandStack().getItem(),miningState.calcBlockBreakingDelta(owner,owner.getServerWorld(),target));
+                    if(creative||miningState.calcBlockBreakingDelta(owner,owner.getServerWorld(),target)>=1) {
+                        boolean broken=breakRemoteBlock(target);itemSwing(Hand.MAIN_HAND);
+                        LOG.info("Mining instant cell={} accepted={}",target,broken);
+                        if(!broken)status="Minecraft rejected mining with the held item";
+                        nextMiningTick=server.getTicks()+(creative?4:5);miningPos=null;miningProgress=0;
+                    }
+                }
                 lastMiningTick=server.getTicks();
             }
             case "craft" -> craft(command);
@@ -1053,7 +1076,27 @@ public final class HollowCraftBridge implements ModInitializer {
                         double lx=command.get("landingX").getAsDouble(),ly=command.get("landingY").getAsDouble();
                         if(Double.isFinite(lx)&&Double.isFinite(ly)&&Math.abs(lx-x)<=3&&Math.abs(ly-y)<=3&&Math.abs(lx)<=400&&ly>=-60&&ly<=240)position=new Vec3d(slot*1024+lx,64+ly,.5);
                     }
-                    NativeProjectileSteps.revoke(projectile);projectile.setPosition(position);
+                    NativeProjectileSteps.revoke(projectile);
+                    boolean passThrough=command.has("passThrough")&&command.get("passThrough").getAsBoolean()
+                        &&target instanceof NativeProxy resource&&resource.resource()
+                        &&projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity
+                        &&!(projectile instanceof net.minecraft.entity.projectile.TridentEntity);
+                    boolean nativeOneHit=target==null&&command.has("nativeOneHit")&&command.get("nativeOneHit").getAsBoolean()
+                        &&projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity
+                        &&!(projectile instanceof net.minecraft.entity.projectile.TridentEntity);
+                    if(nativeOneHit) {
+                        // ScuttlerControl has an original one-hit responder, not HealthManager.
+                        projectile.discard();accepted=true;removed=true;
+                    } else if(passThrough) {
+                        // A scene prop isn't a vanilla mob. Use the actual arrow's damage
+                        // source/speed/base damage, but don't consume it or spend a pierce slot.
+                        var arrow=(net.minecraft.entity.projectile.PersistentProjectileEntity)projectile;
+                        float damage=(float)Math.max(1,Math.ceil(arrow.getVelocity().length()*arrow.getDamage()));
+                        target.damage(owner.getDamageSources().arrow(arrow,owner),damage);
+                        accepted=true;removed=projectile.isRemoved();
+                        LOG.info("Native arrow passed breakable target={} entity={}",integer(command,"target",0),id);
+                    } else {
+                    projectile.setPosition(position);
                     // These vanilla impacts remove the projectile immediately. Move its client
                     // copy before status/particle packets so the burst uses the actual native hit.
                     // Retained arrows stay under the normal tracker, avoiding a second relative move.
@@ -1072,6 +1115,7 @@ public final class HollowCraftBridge implements ModInitializer {
                     // start so each native hit does not add another full tick of travel distance.
                     if(target!=null&&!removed&&NativeProjectileSteps.required(projectile)&&projectile instanceof net.minecraft.entity.projectile.PersistentProjectileEntity arrow&&arrow.getPierceLevel()>0)projectile.setPosition(stepStart);
                     LOG.info("Native projectile collision entity={} target={} point={} removed={}",id,integer(command,"target",0),point,removed);
+                    }
                 }
             }
         }
@@ -1081,6 +1125,11 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private boolean breakRemoteBlock(BlockPos position) {
         try(var effects=RemoteEffects.begin()) {return owner.interactionManager.tryBreakBlock(position);}
+    }
+    private boolean miningReach(BlockPos target) {
+        double x=target.getX()-slot*1024,y=target.getY()-64;
+        double dx=exactX-Math.max(x,Math.min(x+1,exactX)),dy=reachY-Math.max(y,Math.min(y+1,reachY));
+        double reach=creative?5:4.5;return dx*dx+dy*dy<=reach*reach+.001;
     }
     private void mine(JsonObject command) {
         BlockPos target = target(command);
@@ -1203,6 +1252,9 @@ public final class HollowCraftBridge implements ModInitializer {
         result.add("projectiles",ItemUseBridge.snapshot(owner,slot*1024,centerX,centerY));
         result.addProperty("status", status); result.addProperty("creative", creative);
         result.addProperty("selected", owner.getInventory().selectedSlot);
+        if(miningPos!=null) {
+            JsonObject mining=new JsonObject();mining.addProperty("x",miningPos.getX()-slot*1024);mining.addProperty("y",miningPos.getY()-64);mining.addProperty("progress",miningProgress);result.add("mining",mining);
+        }
         JsonArray blocks = new JsonArray();
         for (int x = centerX-12; x <= centerX+12; x++) for (int y = centerY-10; y <= centerY+10; y++) {
             BlockState state = owner.getServerWorld().getBlockState(pos(x,y));

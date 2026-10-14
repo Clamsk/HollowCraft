@@ -12,6 +12,9 @@ final class NativeProxy extends ZombieEntity {
     private final String kind,name;
     private DamageSource pendingLoot;
     private boolean pendingPlayer,deathConfirmed,rewarded;
+    private int nailBlock,spellBlock,blockSerial;
+    private float blockedAngle,damageAngle,candidateAngle;
+    private boolean blockedSpell;
     NativeProxy(ServerWorld world,JsonObject data) {
         super(EntityType.ZOMBIE,world);kind=data.has("kind")?data.get("kind").getAsString():"arthropod";name=data.has("name")?data.get("name").getAsString().toLowerCase():"";
         experiencePoints=kind.equals("resource")?0:data.get("maxHealth").getAsDouble()>=100?25:5;
@@ -20,6 +23,45 @@ final class NativeProxy extends ZombieEntity {
         float width=data.has("width")?Math.max(.2f,Math.min(16,data.get("width").getAsFloat())):.6f;
         float height=data.has("height")?Math.max(.2f,Math.min(16,data.get("height").getAsFloat())):1.95f;
         if(dimensions==null||Math.abs(dimensions.width-width)>.01||Math.abs(dimensions.height-height)>.01) {dimensions=EntityDimensions.changing(width,height);calculateDimensions();}
+    }
+    void guards(JsonObject data) {
+        nailBlock=data.has("nailBlock")?data.get("nailBlock").getAsInt():data.has("invulnerable")&&data.get("invulnerable").getAsBoolean()?15:0;
+        spellBlock=data.has("spellBlock")?data.get("spellBlock").getAsInt():nailBlock;
+    }
+    boolean resource() {return kind.equals("resource");}
+    void combatState(JsonObject value) {
+        value.addProperty("blockSerial",blockSerial);value.addProperty("blockedAngle",blockedAngle);
+        value.addProperty("blockedSpell",blockedSpell);value.addProperty("damageAngle",damageAngle);
+    }
+    @Override public void checkDespawn() {} // Only the native scene owns this entity's lifetime.
+    @Override protected void updatePostDeath() {
+        // A special native death can expose a weak point or refill a phase. Keep
+        // the dead proxy until HK acknowledges death or replaces its generation.
+        if(deathConfirmed)super.updatePostDeath();
+    }
+    @Override public boolean isInvulnerableTo(DamageSource source) {
+        if(super.isInvulnerableTo(source))return true;
+        var origin=source.getPosition();var direct=source.getSource();
+        var direction=direct instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&projectile.getVelocity().lengthSquared()>.000001
+            ?projectile.getVelocity():direct instanceof net.minecraft.entity.player.PlayerEntity player
+            ?new net.minecraft.util.math.Vec3d(-Math.sin(Math.toRadians(player.getYaw())),0,0)
+            :origin==null?net.minecraft.util.math.Vec3d.ZERO:getBoundingBox().getCenter().subtract(origin);
+        candidateAngle=(float)Math.toDegrees(Math.atan2(direction.y,direction.x));
+        // HK's DirectionUtils: right/up/left/down = 0/1/2/3.
+        int cardinal=Math.floorMod((int)Math.rint(candidateAngle/90.0),4);
+        String name=source.getName();
+        boolean spell=switch(name) {
+            case "arrow","trident","thrown","magic","indirectMagic","explosion","explosion.player","fireworks","inFire","onFire","lava","hotFloor","wither" -> true;
+            default -> false;
+        };
+        if(((spell?spellBlock:nailBlock)&(1<<cardinal))==0)return false;
+        if(!resource()) {blockSerial++;blockedAngle=candidateAngle;blockedSpell=spell;}
+        return true;
+    }
+    @Override public boolean damage(DamageSource source,float amount) {
+        boolean accepted=super.damage(source,amount);
+        if(accepted)damageAngle=candidateAngle;
+        return accepted;
     }
     String bridgeName() {return name;}
     @Override public void setHealth(float health) {

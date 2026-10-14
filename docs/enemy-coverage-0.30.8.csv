@@ -1,0 +1,1084 @@
+actor,responder,instances,scenes,native_hp_min,native_hp_max,invincible_cases,guard_directions,special_death_cases,without_own_collider,route
+Absolute Radiance,HealthManager,1,1,3000,3000,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler,HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (1),HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (10),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (11),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (12),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (13),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (14),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (16),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (17),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (18),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (19),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (2),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (20),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (22),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (3),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (4),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (5),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (6),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (7),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (8),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Abyss Crawler (9),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer,HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (1),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (10),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (11),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (12),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (13),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (14),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (15),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (16),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (17),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (2),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (3),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (4),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (5),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (6),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (7),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (8),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Flyer (9),HealthManager,1,1,30,30,1,7,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Walker,HealthManager,4,4,30,30,4,4,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Walker (1),HealthManager,1,1,30,30,1,4,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Walker (2),HealthManager,1,1,30,30,1,4,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Walker (3),HealthManager,1,1,30,30,1,4,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Walker (4),HealthManager,1,1,30,30,1,4,0,0,vanilla MC damage + original HK guard/phase/death
+Acid Walker (5),HealthManager,1,1,30,30,1,4,0,0,vanilla MC damage + original HK guard/phase/death
+Angry Buzzer,HealthManager,11,11,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Angry Buzzer (1),HealthManager,7,7,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Angry Buzzer (2),HealthManager,4,4,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede,HealthManager,7,7,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (1),HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (10),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (2),HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (3),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (4),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (5),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (6),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (7),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (8),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede (9),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede Spawner,HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede Spawner (1),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede Spawner (2),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede Spawner (3),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede Spawner (4),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Baby Centipede Spawner (5),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient,HealthManager,6,5,5,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (1),HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (10),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (11),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (12),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (13),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (14),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (15),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (16),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (17),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (18),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (19),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (2),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (20),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (21),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (22),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (23),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (24),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (25),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (26),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (27),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (29),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (3),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (30),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (31),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (32),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (34),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (35),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (4),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (5),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (6),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (7),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (8),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Hatchling Ambient (9),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger,HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (1),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (10),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (11),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (12),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (2),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (3),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (4),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (5),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (6),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (7),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (8),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bee Stinger (9),HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Big Bee,HealthManager,1,1,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Big Bee (1),HealthManager,1,1,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Big Bee (2),HealthManager,1,1,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Big Bee (3),HealthManager,1,1,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Big Bee (4),HealthManager,1,1,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Black Knight 1,HealthManager,2,2,220,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Black Knight 2,HealthManager,2,2,220,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Black Knight 3,HealthManager,2,2,220,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Black Knight 4,HealthManager,2,2,220,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Black Knight 5,HealthManager,2,2,220,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Black Knight 6,HealthManager,2,2,220,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blobble,HealthManager,1,1,70,70,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blocker,HealthManager,2,2,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blocker 1,HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blocker 2,HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blow Fly,HealthManager,4,4,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blow Fly (1),HealthManager,3,3,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blow Fly (2),HealthManager,4,4,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blow Fly (3),HealthManager,3,3,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blow Fly (4),HealthManager,2,2,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Blow Fly (5),HealthManager,2,2,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer,HealthManager,2,2,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer (1),HealthManager,2,2,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer (2),HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer (3),HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer (4),HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer (5),HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Bouncer Recycle Variant,HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Zombie,HealthManager,9,9,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Bursting Zombie (1),HealthManager,4,4,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer,HealthManager,21,18,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (1),HealthManager,8,8,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (2),HealthManager,6,6,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (3),HealthManager,3,3,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (4),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (5),HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (6),HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer (7),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer 1,HealthManager,5,5,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer 2,HealthManager,4,4,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer 2 (1),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer 3,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer Col,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Buzzer R,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Cap Hit,HealthManager,7,3,99,99,7,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper,HealthManager,15,15,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (1),HealthManager,11,11,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (2),HealthManager,8,8,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (3),HealthManager,6,6,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (4),HealthManager,5,5,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (5),HealthManager,3,3,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (6),HealthManager,3,3,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper (7),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ceiling Dropper Col,HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Centipede Hatcher,HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Centipede Hatcher (2),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Centipede Hatcher (4),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Centipede Hatcher (5),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Centipede Hatcher (7),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Centipede Hatcher (9),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber,HealthManager,7,7,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber (1),HealthManager,3,3,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber (4),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber (5),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber (6),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber (7),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber (8),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 1,HealthManager,3,3,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 2,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 3,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 4,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 5,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 6,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 7,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 8,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Climber 9,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum Grass Hopper,HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Armoured_Mosquito,HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Armoured_Mosquito R,HealthManager,1,1,40,40,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Armoured_Roller,HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Armoured_Roller R,HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Flying_Sentry,HealthManager,1,1,70,70,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Miner,HealthManager,3,3,80,80,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Shield_Zombie,HealthManager,1,1,65,65,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Colosseum_Worm,HealthManager,1,1,91,91,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Corpse Garden Zombie,HealthManager,1,1,20,20,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler,HealthManager,8,8,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (1),HealthManager,5,5,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (2),HealthManager,3,3,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (3),HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (4),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (5),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (6),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler (7),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler 1,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler 2,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler 3,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crawler Fixed,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Crawler,HealthManager,7,7,35,35,7,4,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Crawler (1),HealthManager,4,4,35,35,4,4,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Crawler (2),HealthManager,1,1,35,35,1,4,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Flyer,HealthManager,8,8,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Flyer (1),HealthManager,6,6,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Flyer (2),HealthManager,6,6,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystal Flyer (3),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug,HealthManager,3,3,15,15,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (1),HealthManager,3,3,15,15,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (10),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (11),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (12),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (2),HealthManager,2,2,15,15,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (3),HealthManager,3,3,15,15,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (4),HealthManager,2,2,15,15,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (5),HealthManager,2,2,15,15,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (6),HealthManager,2,2,15,15,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (7),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (8),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Crystallised Lazer Bug (9),HealthManager,2,2,15,15,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Dream Mage Lord,HealthManager,2,2,900,900,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Dream Mage Lord Phase2,HealthManager,5,3,350,350,5,0,0,0,vanilla MC damage + original HK guard/phase/death
+Dummy Mantis,HealthManager,1,1,999999,999999,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Dung Defender,HealthManager,2,2,700,800,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Egg Sac,HealthManager,10,10,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Electric Mage New,HealthManager,2,1,80,80,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Electric Mage New (1),HealthManager,2,1,80,80,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Enemy,HealthManager,33,5,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+False Knight Dream,HealthManager,2,2,360,360,2,0,2,0,vanilla MC damage + original HK guard/phase/death
+False Knight New,HealthManager,2,2,65,260,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Fat Fluke,HealthManager,1,1,150,150,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fluke (1),HealthManager,1,1,150,150,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fluke (2),HealthManager,1,1,150,150,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fluke (3),HealthManager,1,1,150,150,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly,HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly (1),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly (2),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly (3),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly (5),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly (6),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly 1,HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly 3,HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fat Fly 4,HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flamebearer Large,HealthManager,1,1,100,100,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Flamebearer Med,HealthManager,1,1,80,80,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Flamebearer Small,HealthManager,1,1,50,50,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Flip Hopper,HealthManager,4,4,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flip Hopper (1),HealthManager,4,4,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flip Hopper (2),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flip Hopper (3),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly,HealthManager,5,5,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly (1),HealthManager,5,5,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly (2),HealthManager,4,4,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly (3),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly (4),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly (5),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly Spawner,HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly Spawner (1),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly Spawner (2),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly Spawner (3),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly Spawner (4),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Fly Spawner (5),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fluke Mother,HealthManager,2,2,350,500,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman,HealthManager,5,5,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (1),HealthManager,5,5,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (13),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (15),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (16),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (2),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (3),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (4),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman (5),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman Bot,HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Flukeman Top,HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly,HealthManager,3,3,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly (2),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly (3),HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 1,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 10,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 2,HealthManager,3,3,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 3,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 4,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 5,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 6,HealthManager,2,2,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fly 7,HealthManager,1,1,8,8,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fung Crawler,HealthManager,8,8,12,12,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fung Crawler (1),HealthManager,6,6,12,12,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fung Crawler (2),HealthManager,1,1,12,12,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fung Crawler (3),HealthManager,1,1,12,12,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby,HealthManager,8,8,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (1),HealthManager,7,7,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (10),HealthManager,2,2,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (11),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (12),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (2),HealthManager,6,6,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (3),HealthManager,6,6,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (4),HealthManager,5,5,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (5),HealthManager,3,3,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (6),HealthManager,2,2,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (8),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungoon Baby (9),HealthManager,2,2,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungus Flyer,HealthManager,8,8,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungus Flyer (1),HealthManager,5,5,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungus Flyer (2),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Fungus Flyer (3),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Garden Zombie,HealthManager,5,4,44,44,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Garden Zombie (1),HealthManager,5,4,44,44,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Garden Zombie (2),HealthManager,2,2,44,44,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Gate Mantis,HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior Galien,HealthManager,2,2,200,650,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior Hu,HealthManager,2,2,200,600,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior Markoth,HealthManager,4,4,200,650,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior Marmu,HealthManager,3,3,200,416,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior No Eyes,HealthManager,3,3,200,570,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior Slug,HealthManager,4,4,200,650,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ghost Warrior Xero,HealthManager,3,3,200,650,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Buzzer,HealthManager,1,1,55,55,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Buzzer Col,HealthManager,3,3,100,450,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Buzzer Col (1),HealthManager,1,1,450,450,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Fly,HealthManager,3,3,90,650,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Fly Col,HealthManager,1,1,140,140,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Hopper,HealthManager,7,6,130,130,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Hopper (1),HealthManager,2,2,130,130,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Giant Hopper (2),HealthManager,1,1,130,130,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Gorgeous Husk,HealthManager,1,1,220,220,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper,HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (1),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (2),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (3),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (4),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (5),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (6),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (7),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grass Hopper (8),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grave Zombie,HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grave Zombie (1),HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grave Zombie (2),HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grave Zombie (4),HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Great Shield Zombie,HealthManager,5,5,170,170,5,0,0,0,vanilla MC damage + original HK guard/phase/death
+Great Shield Zombie (1),HealthManager,1,1,170,170,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Great Shield Zombie (2),HealthManager,1,1,170,170,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Great Shield Zombie (3),HealthManager,1,1,170,170,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Great Shield Zombie bottom,HealthManager,1,1,170,170,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grey Prince,HealthManager,2,2,1200,1200,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grimm Boss,HealthManager,2,2,750,850,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Grub Mimic,HealthManager,2,2,45,45,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grub Mimic 1,HealthManager,1,1,45,45,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grub Mimic 2,HealthManager,1,1,45,45,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Grub Mimic 3,HealthManager,1,1,45,45,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+HK Prime,HealthManager,1,1,1600,1600,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher,HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher (1),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher 1,HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher 2,HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby,HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner,HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (1),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (10),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (11),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (12),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (13),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (14),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (15),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (16),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (17),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (18),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (19),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (2),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (20),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (21),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (22),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (3),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (4),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (5),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (6),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (7),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (8),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher Baby Spawner (9),HealthManager,4,4,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hatcher NP,HealthManager,4,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Head,HealthManager,4,4,40,60,0,0,4,0,vanilla MC damage + original HK guard/phase/death
+Health Scuttler,ScuttlerControl,1,1,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Hive Knight,HealthManager,2,2,800,850,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner,HealthManager,4,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (1),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (10),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (11),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (12),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (13),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (14),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (15),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (16),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (17),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (18),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (19),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (2),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (3),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (4),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (5),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (6),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (7),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (8),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hiveling Spawner (9),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hollow Knight Boss,HealthManager,1,1,1000,1000,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Hollow Shade,HealthManager,1,1,10,10,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Hopper,HealthManager,7,6,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (1),HealthManager,5,4,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (10),HealthManager,2,2,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (11),HealthManager,2,2,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (12),HealthManager,2,2,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (13),HealthManager,2,2,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (14),HealthManager,2,2,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (15),HealthManager,1,1,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (2),HealthManager,6,5,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (3),HealthManager,7,5,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (4),HealthManager,4,4,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (5),HealthManager,3,3,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (6),HealthManager,4,4,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (7),HealthManager,3,3,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (8),HealthManager,4,4,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hopper (9),HealthManager,3,3,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hornet Boss 1,HealthManager,2,2,225,900,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hornet Boss 2,HealthManager,2,2,700,800,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Hornet Nosk,HealthManager,1,1,750,750,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Infected Knight,HealthManager,2,2,525,700,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater,HealthManager,6,6,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (1),HealthManager,7,7,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (2),HealthManager,6,6,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (3),HealthManager,6,6,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (4),HealthManager,4,4,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (5),HealthManager,3,3,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (6),HealthManager,3,3,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (7),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Inflater (8),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jar Collector,HealthManager,3,3,750,900,0,0,3,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish,HealthManager,9,9,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (1),HealthManager,8,8,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (10),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (2),HealthManager,8,8,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (3),HealthManager,7,7,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (4),HealthManager,6,6,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (5),HealthManager,4,4,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (6),HealthManager,2,2,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (7),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (8),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish (9),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish 1,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish 2,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish 3,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish 4,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish 6,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby,HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (1),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (10),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (11),HealthManager,3,3,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (12),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (2),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (3),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (4),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (5),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (6),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (7),HealthManager,7,7,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (8),HealthManager,7,7,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby (9),HealthManager,5,5,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert,HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (1),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (10),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (11),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (12),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (13),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (14),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (15),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (16),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (17),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (18),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (19),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (2),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (20),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (21),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (22),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (23),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (3),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (4),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (5),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (6),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (7),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (8),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish Baby Inert (9),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Jellyfish GG,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lancer,HealthManager,2,2,600,750,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Lazy Flyer Enemy,HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek,HealthManager,2,2,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek (1),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek (2),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek (3),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek (4),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek (8),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek 1,HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lesser Mawlek 2,HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lil Jellyfish,HealthManager,1,1,1,1,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Lobster,HealthManager,2,2,450,750,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Lost Kin,HealthManager,2,2,1200,1200,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage,HealthManager,8,5,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage (1),HealthManager,5,4,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage (2),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon,HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (1),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (10),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (11),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (2),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (3),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (4),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (5),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (6),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (7),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (8),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon (9),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner,HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (1),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (10),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (11),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (12),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (13),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (14),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (15),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (16),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (17),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (18),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (19),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (2),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (20),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (21),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (22),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (23),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (24),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (25),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (26),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (27),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (28),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (29),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (3),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (30),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (31),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (32),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (33),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (34),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (35),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (4),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (5),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (6),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (7),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (8),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Balloon Spawner (9),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1,HealthManager,4,4,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (1),HealthManager,4,4,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (10),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (11),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (2),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (3),HealthManager,3,3,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (4),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (6),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (7),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (8),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 1 (9),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 2,HealthManager,4,4,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 2 (1),HealthManager,4,4,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 2 (2),HealthManager,4,4,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 2 (3),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 2 (4),HealthManager,2,2,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Blob 2 (5),HealthManager,1,1,13,13,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Knight,HealthManager,6,5,180,750,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Lord,HealthManager,2,2,275,600,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mage Lord Phase2,HealthManager,2,2,110,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis,HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis (1),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis (2),HealthManager,4,4,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis (3),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis (4),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Flyer Child,HealthManager,4,4,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Flyer Child (1),HealthManager,4,4,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Flyer Child (2),HealthManager,4,4,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Flyer Child (3),HealthManager,4,4,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Flyer Child (4),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy,HealthManager,7,4,74,74,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy (1),HealthManager,2,2,74,74,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy (2),HealthManager,1,1,74,74,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy Flyer,HealthManager,16,9,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy Flyer (1),HealthManager,5,5,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy Flyer (2),HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy Flyer (3),HealthManager,1,1,45,45,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Heavy Spawn,HealthManager,1,1,74,74,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Lord,HealthManager,6,3,210,500,0,0,0,4,vanilla MC damage + original HK guard/phase/death
+Mantis Lord S1,HealthManager,6,3,160,750,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Lord S2,HealthManager,6,3,160,750,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Lord S3,HealthManager,2,1,560,750,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mantis Traitor Lord,HealthManager,2,2,800,800,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mato,HealthManager,1,1,1000,1000,1,0,1,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Body,HealthManager,3,3,300,1050,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Col,HealthManager,1,1,300,300,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Turret,HealthManager,1,1,135,135,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Turret (1),HealthManager,1,1,135,135,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Turret (2),HealthManager,1,1,135,135,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Turret (3),HealthManager,1,1,135,135,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Turret Ceiling,HealthManager,1,1,135,135,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mawlek Turret Ceiling (1),HealthManager,1,1,135,135,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Fat Bee,HealthManager,2,2,260,450,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Fat Bee (1),HealthManager,2,2,260,450,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Jellyfish,HealthManager,2,2,300,300,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Jellyfish GG,HealthManager,2,2,350,350,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Moss Charger,HealthManager,2,2,100,480,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Zombie Beam Miner,HealthManager,1,1,280,280,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mega Zombie Beam Miner (1),HealthManager,2,2,280,650,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mender Bug,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mimic Spider,HealthManager,4,4,680,680,4,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler,HealthManager,6,6,15,15,6,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler (1),HealthManager,5,5,15,15,5,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler (2),HealthManager,2,2,15,15,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler (3),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler (4),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler (5),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mines Crawler (6),HealthManager,1,1,15,15,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito,HealthManager,9,8,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito (1),HealthManager,5,5,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito (2),HealthManager,3,3,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito (3),HealthManager,3,3,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito (4),HealthManager,2,2,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito (6),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mosquito (7),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Charger,HealthManager,3,3,15,15,3,0,0,3,vanilla MC damage + original HK guard/phase/death
+Moss Charger (1),HealthManager,2,2,15,15,2,0,0,2,vanilla MC damage + original HK guard/phase/death
+Moss Charger (2),HealthManager,1,1,15,15,1,0,0,1,vanilla MC damage + original HK guard/phase/death
+Moss Charger 1 (1),HealthManager,1,1,15,15,1,0,0,1,vanilla MC damage + original HK guard/phase/death
+Moss Charger 1 (2),HealthManager,1,1,15,15,1,0,0,1,vanilla MC damage + original HK guard/phase/death
+Moss Flyer,HealthManager,9,9,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Flyer (1),HealthManager,11,11,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Flyer (2),HealthManager,6,6,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Flyer (3),HealthManager,8,8,10,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Flyer (4),HealthManager,4,4,10,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Flyer (5),HealthManager,4,4,10,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Flyer (6),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight,HealthManager,3,2,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight (1),HealthManager,1,1,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight B,HealthManager,1,1,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight C,HealthManager,1,1,50,50,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight Fat,HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight Fat (1),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Knight Fat (2),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Walker,HealthManager,15,15,10,10,15,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Walker (1),HealthManager,9,9,10,10,9,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Walker (2),HealthManager,4,4,10,10,4,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Walker (3),HealthManager,4,4,10,10,4,0,0,0,vanilla MC damage + original HK guard/phase/death
+Moss Walker (4),HealthManager,1,1,10,10,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mossman_Runner,HealthManager,6,6,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mossman_Runner (1),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mossman_Shaker,HealthManager,7,7,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mossman_Shaker (1),HealthManager,5,5,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mossman_Shaker (2),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby,HealthManager,6,5,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (1),HealthManager,6,5,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (10),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (11),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (12),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (2),HealthManager,7,6,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (3),HealthManager,2,2,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (4),HealthManager,2,2,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (5),HealthManager,2,2,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (6),HealthManager,2,2,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (7),HealthManager,1,1,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Baby (8),HealthManager,2,2,5,5,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Brawler,HealthManager,3,3,80,80,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Brawler (1),HealthManager,2,2,80,80,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Brawler 1,HealthManager,1,1,80,80,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Brawler 2,HealthManager,1,1,80,80,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Roller,HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Roller (1),HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Roller (2),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Roller (3),HealthManager,3,3,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Turret,HealthManager,8,8,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Turret (1),HealthManager,4,4,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Turret (2),HealthManager,4,4,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Turret (3),HealthManager,3,3,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Mushroom Turret (4),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Nightmare Grimm Boss,HealthManager,2,2,1250,1500,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Orange Scuttler,ScuttlerControl,8,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (1),ScuttlerControl,8,4,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (10),ScuttlerControl,3,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (11),ScuttlerControl,4,4,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (12),ScuttlerControl,3,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (13),ScuttlerControl,3,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (14),ScuttlerControl,2,2,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (15),ScuttlerControl,1,1,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (16),ScuttlerControl,1,1,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (2),ScuttlerControl,6,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (3),ScuttlerControl,8,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (4),ScuttlerControl,6,4,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (5),ScuttlerControl,5,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (6),ScuttlerControl,4,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (7),ScuttlerControl,4,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (8),ScuttlerControl,4,4,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Orange Scuttler (9),ScuttlerControl,3,3,1,1,0,0,0,0,original one-hit responder (melee and arrows)
+Ordeal Zoteling,HealthManager,1,1,60,60,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Ordeal Zoteling (1),HealthManager,1,1,60,60,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Oro,HealthManager,1,1,500,500,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Pale Lurker,HealthManager,1,1,200,200,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon (1),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon (2),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon (3),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon (4),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon (6),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon (7),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Parasite Balloon Spawner,HealthManager,1,1,1,1,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Pigeon,HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (1),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (10),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (11),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (12),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (13),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (14),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (15),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (16),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (17),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (2),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (3),HealthManager,8,8,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (4),HealthManager,7,7,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (5),HealthManager,6,6,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (6),HealthManager,4,4,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (7),HealthManager,3,3,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (8),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Pigeon (9),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Trap,HealthManager,7,7,16,16,0,0,0,7,vanilla MC damage + original HK guard/phase/death
+Plant Trap (1),HealthManager,3,3,16,16,0,0,0,3,vanilla MC damage + original HK guard/phase/death
+Plant Trap (10),HealthManager,1,1,16,16,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Trap (11),HealthManager,1,1,16,16,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Plant Trap (2),HealthManager,3,3,16,16,0,0,0,3,vanilla MC damage + original HK guard/phase/death
+Plant Trap (3),HealthManager,2,2,16,16,0,0,0,2,vanilla MC damage + original HK guard/phase/death
+Plant Trap (4),HealthManager,2,2,16,16,0,0,0,2,vanilla MC damage + original HK guard/phase/death
+Plant Trap (5),HealthManager,2,2,16,16,0,0,0,2,vanilla MC damage + original HK guard/phase/death
+Plant Trap (6),HealthManager,1,1,16,16,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Plant Trap (7),HealthManager,1,1,16,16,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Plant Trap (8),HealthManager,1,1,16,16,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Plant Trap (9),HealthManager,1,1,16,16,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+Plant Turret,HealthManager,3,3,10,10,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Turret (1),HealthManager,1,1,10,10,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Turret (2),HealthManager,3,3,10,10,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Turret (3),HealthManager,2,2,10,10,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Turret (4),HealthManager,1,1,10,10,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Turret (5),HealthManager,1,1,10,10,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Plant Turret Right,HealthManager,1,1,10,10,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Prayer Slug,HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Prayer Slug (1),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Radiance,HealthManager,1,1,3000,3000,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Real Bat,HealthManager,4,4,0,0,0,0,4,0,vanilla MC damage + original HK guard/phase/death
+Roller,HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 1,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 10,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 11,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 2,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 3,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 4,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 6,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 7,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 8,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller 9,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Roller R,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Gaurd,HealthManager,3,3,170,170,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Gaurd (1),HealthManager,1,1,170,170,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie 1,HealthManager,6,6,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie 1 (1),HealthManager,7,7,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie 1 (2),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie 1 (4),HealthManager,1,1,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Coward,HealthManager,7,7,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Coward (1),HealthManager,5,5,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Coward (2),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Coward (3),HealthManager,2,2,20,20,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Fat,HealthManager,7,7,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Fat (1),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Fat (2),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Royal Zombie Fat (3),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry,HealthManager,13,12,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry (1),HealthManager,10,7,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry (2),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry (3),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry Javelin,HealthManager,9,7,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry Javelin (1),HealthManager,3,3,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry Javelin (2),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying Sentry Javelin (3),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Flying SentryB,HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry 1,HealthManager,13,12,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry 1 (1),HealthManager,4,4,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry 1 (2),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry 1 (3),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry 1 (7),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry 1 (9),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry Fat,HealthManager,9,6,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry Fat (1),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry Fat (5),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry Fat B,HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins Sentry FatB,HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Ruins SentryB 1,HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling,HealthManager,2,2,25,25,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (1),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (10),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (11),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (13),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (14),HealthManager,2,2,25,25,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (15),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (17),HealthManager,4,1,25,25,0,0,4,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (18),HealthManager,4,2,25,25,0,0,4,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (19),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (2),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (20),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (21),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (22),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (23),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (24),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (25),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (26),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (27),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (3),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (30),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (31),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (32),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (33),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (34),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (4),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (5),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (6),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (7),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (8),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shade Sibling (9),HealthManager,1,1,25,25,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Shell,HealthManager,9,4,9999,9999,9,0,0,0,vanilla MC damage + original HK guard/phase/death
+Sheo Boss,HealthManager,1,1,950,950,1,0,0,0,vanilla MC damage + original HK guard/phase/death
+Slash Spider,HealthManager,4,4,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Slash Spider (1),HealthManager,1,1,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Slash Spider (2),HealthManager,2,2,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Slash Spider (3),HealthManager,2,2,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Slash Spider (4),HealthManager,2,2,100,100,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Sly Boss,HealthManager,1,1,800,800,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Spawn Roller v2,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer,HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (1),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (10),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (11),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (12),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (2),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (3),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (4),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (5),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (6),HealthManager,2,2,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (7),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (8),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Flyer (9),HealthManager,1,1,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini,HealthManager,9,9,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (1),HealthManager,9,9,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (2),HealthManager,7,7,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (3),HealthManager,5,5,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (4),HealthManager,4,4,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (5),HealthManager,5,5,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (6),HealthManager,4,4,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spider Mini (7),HealthManager,2,2,18,18,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter,HealthManager,16,5,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter (1),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter (2),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter (3),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter (4),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter (5),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter 1,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitter R,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitting Zombie,HealthManager,7,7,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Spitting Zombie (1),HealthManager,3,3,30,30,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter,HealthManager,6,6,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter (1),HealthManager,5,5,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter (2),HealthManager,4,4,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter (3),HealthManager,3,3,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter (4),HealthManager,4,4,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter (5),HealthManager,2,2,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter Col,HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Super Spitter R,HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tinger,HealthManager,2,2,0,0,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider,HealthManager,5,5,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (1),HealthManager,3,3,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (2),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (3),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (4),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (5),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (6),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (7),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Tiny Spider (8),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Defender,HealthManager,3,3,1600,1600,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly,HealthManager,4,4,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (1),HealthManager,2,2,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (10),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (11),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (12),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (13),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (14),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (15),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (16),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (17),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (18),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (2),HealthManager,4,4,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (3),HealthManager,3,3,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (4),HealthManager,3,3,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (5),HealthManager,2,2,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (6),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (7),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (8),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+White Palace Fly (9),HealthManager,1,1,10,10,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Barger,HealthManager,14,13,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Barger (1),HealthManager,3,3,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Barger 1,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Barger 2,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Barger 3,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Beam Miner,HealthManager,3,3,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Beam Miner (1),HealthManager,2,2,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Beam Miner (2),HealthManager,2,2,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Beam Miner (3),HealthManager,2,2,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Beam Miner (4),HealthManager,1,1,35,35,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Beam Miner Rematch,HealthManager,2,2,450,650,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Fungus A,HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Fungus B,HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Guard,HealthManager,2,2,70,70,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hive,HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hive (1),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hive (2),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hive (3),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hive (4),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hive (6),HealthManager,1,1,60,60,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead,HealthManager,17,16,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead (1),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead 1,HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead 2,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead Sp,HealthManager,4,4,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead Sp (1),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead Sp (2),HealthManager,3,3,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead Sp (3),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Hornhead Sp (4),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Leaper,HealthManager,10,9,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Leaper (1),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Leaper (2),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Leaper 1,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1,HealthManager,6,6,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (1),HealthManager,5,5,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (2),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (3),HealthManager,2,2,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (4),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (5),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (6),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Miner 1 (9),HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Myla,HealthManager,1,1,25,25,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner,HealthManager,12,12,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner (1),HealthManager,3,3,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner 1,HealthManager,3,3,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner 2,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner Sp,HealthManager,3,3,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner Sp (1),HealthManager,2,2,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner Sp (2),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Runner Sp (5),HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Shield,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Shield 1,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Shield 2,HealthManager,1,1,15,15,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Spider 1,HealthManager,3,3,18,18,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Spider 1 (1),HealthManager,5,2,18,18,5,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Spider 2,HealthManager,3,3,18,18,3,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zombie Spider 2 (1),HealthManager,4,1,18,18,4,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zote Balloon,HealthManager,2,2,30,30,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zote Balloon (1),HealthManager,3,3,30,30,0,0,3,0,vanilla MC damage + original HK guard/phase/death
+Zote Balloon (2),HealthManager,2,2,30,30,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zote Balloon (3),HealthManager,2,2,30,30,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zote Balloon Ordeal,HealthManager,1,1,30,30,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Boss,HealthManager,2,2,200,200,2,0,0,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Fat (1),HealthManager,1,1,190,190,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Fat (2),HealthManager,1,1,190,190,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Fat (3),HealthManager,1,1,190,190,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Normal (1),HealthManager,1,1,120,120,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Normal (2),HealthManager,1,1,120,120,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Normal (3),HealthManager,1,1,120,120,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Normal (4),HealthManager,1,1,120,120,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Tall,HealthManager,1,1,150,150,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Crew Tall (1),HealthManager,1,1,150,150,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Fluke,HealthManager,1,1,100,100,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Salubra,HealthManager,1,1,100,100,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Thwomp,HealthManager,1,1,150,150,0,0,1,0,vanilla MC damage + original HK guard/phase/death
+Zote Turret,HealthManager,2,1,100,100,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zoteling,HealthManager,2,2,20,20,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zoteling (1),HealthManager,2,2,20,20,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zoteling (2),HealthManager,2,2,20,20,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+Zoteling (3),HealthManager,2,2,20,20,0,0,2,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01,HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (1),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (10),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (11),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (12),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (13),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (14),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (15),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (16),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (17),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (18),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (19),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (2),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (20),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (21),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (22),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (23),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (24),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (3),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (4),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (5),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (6),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (7),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (8),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_01 (9),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02,HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (1),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (10),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (11),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (12),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (13),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (14),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (15),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (16),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (17),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (18),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (19),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (2),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (20),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (21),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (22),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (23),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (24),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (25),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (26),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (27),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (28),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (29),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (3),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (30),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (31),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (32),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (33),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (34),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (35),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (36),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (37),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (38),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (39),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (4),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (40),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (41),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (5),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (6),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (7),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (8),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_02 (9),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03,HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (1),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (10),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (11),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (2),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (3),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (4),HealthManager,2,2,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (46),HealthManager,1,1,1,1,0,0,0,1,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (49),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (5),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (50),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (51),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (52),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (53),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (6),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (7),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (8),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death
+fluke_baby_03 (9),HealthManager,1,1,1,1,0,0,0,0,vanilla MC damage + original HK guard/phase/death

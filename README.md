@@ -1,4 +1,4 @@
-# HollowCraft 0.30.7 试玩版本
+# HollowCraft 0.30.8 试玩版本
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,13 +6,15 @@ Minecraft-style survival and combat in Hollow Knight
 
 在《空洞骑士》的二维场景中使用 Minecraft 的人物、生存、装备、建造和战斗规则。游玩时 Minecraft 与空洞骑士需要同时运行；这是可试玩的桥接原型，完整生存通关尚未验收。
 
-**快速入口：** [下载 Windows 试玩包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.7) · [安装与配置](release/INSTALL_zh.md) · [源码构建](SOURCE_SETUP.md) · [架构说明](docs/ARCHITECTURE.md) · [通关适配状态](docs/PLAYTHROUGH.md) · [第三方来源](release/THIRD_PARTY.md)
+**快速入口：** [下载 Windows 试玩包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.8) · [安装与配置](release/INSTALL_zh.md) · [源码构建](SOURCE_SETUP.md) · [架构说明](docs/ARCHITECTURE.md) · [敌人检查](docs/ENEMY_AUDIT.md) · [通关适配状态](docs/PLAYTHROUGH.md) · [第三方来源](release/THIRD_PARTY.md)
+
+0.30.8 扫描全部本地原版场景和敌人资源，修复方向/攻击类型防护与代理生命周期的通用问题，保留 Boss 原生阶段和死亡；箭击碎可破坏装饰后继续飞行，实体墙壁仍阻挡。光标指向 MC 方块时优先挖掘，服务端逐 tick 累计原版挖掘速度并回传进度。修正三叉戟等非专用武器的缺失动画异常。检查范围和逐名称清单见 [敌人检查](docs/ENEMY_AUDIT.md)，实际效果待玩家试玩。
 
 0.30.7 修复人物碰撞体内的近战盲区，以及浮点残血导致 MC 敌人死亡而空洞仍剩 1 点血的问题；同步渲染副本的使用物品与副手标记，恢复举盾动作，原生接触伤害提供完整攻击者数据并转接格挡击退。不死图腾保命效果使用 MC 原版逻辑，原版弹出动画、粒子与音效接入空洞；新档初始增加两个，旧档按存档补发一次。日志中的复活入口名称异常一并修复。实际效果待玩家试玩。
 
 0.30.6 修复进场时人物手持与原版物品栏不同步：切存档、进场和复活主动同步完整背包及选中槽位，人物与 HUD 帧附带进场编号，旧帧不能混入新场景；HUD 等待客户端手持与服务端一致后再绘制。原生受击描述器注册为空闲 FSM，近战、远程伤害和可破坏物共用，修复柱子查找攻击 FSM 报错；MC 接受伤害后清除原生额外闪避计时，将确认的普通敌人致死伤害交给原生 Die 流程，保留特殊死亡与 Boss 阶段回血。新增命中前后血量日志，实际效果待玩家试玩。
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.7.md](试玩说明-0.30.7.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.8.md](试玩说明-0.30.8.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 0.30 接入点燃 TNT 的空洞原生地形碰撞，按玩家要求将普通跳跃上调到约 1.5 格，初始装备增加铁镐，并提供 Windows 安装配置包。保留 0.29 的 HIM 白眼、创造双击空格飞行与脚下放置目标锁定。实际操作效果待玩家试玩。
 
@@ -28,7 +30,7 @@ Minecraft-style survival and combat in Hollow Knight
 
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
-直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.7)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd**。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)。
+直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.8)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd**。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)。
 
 仓库提交只包含源码与脚本；发布包另带自编译 Mod，不包含游戏文件、提取素材、第三方依赖二进制、运行副本、日志或存档。GitHub 的 Source code 压缩包需自行构建，说明见 [SOURCE_SETUP.md](SOURCE_SETUP.md)。
 

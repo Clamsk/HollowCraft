@@ -82,7 +82,7 @@ namespace HollowCraft
         {
             float range=GameCursor.AttackReach;var eye=GameCursor.Eye(hero);
             foreach(var collider in Physics2D.OverlapCircleAll(mouse,0.25f))
-                if(collider.GetComponentInParent<HealthManager>()!=null && Vector2.Distance(eye,collider.ClosestPoint(eye))<=range) return true;
+                if(EnemySystem.Resolve(collider)!=null && Vector2.Distance(eye,collider.ClosestPoint(eye))<=range) return true;
             return false;
         }
         internal void Request(string scene,HeroController hero,Vector2 mouse,bool queueClick=false)
@@ -128,8 +128,9 @@ namespace HollowCraft
             var enemies=new HashSet<int>();bool terrainHit=false;
             foreach(var collider in Physics2D.OverlapCircleAll(origin,range))
             {
-                var enemy=collider.GetComponentInParent<HealthManager>();
+                var enemy=EnemySystem.Resolve(collider);
                 if(collider.transform.IsChildOf(hero.transform) || collider.name.StartsWith("HollowCraft.Block")) continue;
+                if(enemy==null&&collider.GetComponentInParent<HealthManager>()!=null)continue;
                 var breakable=collider.GetComponentInParent<Breakable>();
                 GameObject target=enemy!=null ? enemy.gameObject : breakable!=null ? breakable.gameObject : collider.gameObject;
                 if((enemy!=null && enemy.isDead) || hit.Contains(target)) continue;

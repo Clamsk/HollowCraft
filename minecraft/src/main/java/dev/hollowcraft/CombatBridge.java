@@ -24,7 +24,7 @@ final class CombatBridge {
             }
         } catch (ReflectiveOperationException e) { value.addProperty("error",e.toString()); }
         value.addProperty("source","vanilla unarmed/tool");
-        JsonObject fallback = JsonParser.parseString("{\"attack_range\":2,\"attacks\":[{\"damage_multiplier\":1,\"angle\":90,\"upswing\":0.3,\"animation\":\"one_handed_punch\",\"hitbox\":\"HORIZONTAL_PLANE\"}]}").getAsJsonObject();
+        JsonObject fallback = JsonParser.parseString("{\"attack_range\":2,\"attacks\":[{\"damage_multiplier\":1,\"angle\":90,\"upswing\":0.3,\"animation\":\"bettercombat:one_handed_punch\",\"hitbox\":\"HORIZONTAL_PLANE\"}]}").getAsJsonObject();
         value.add("weapon",fallback); return value;
     }
 }
