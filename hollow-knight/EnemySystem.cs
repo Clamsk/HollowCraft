@@ -9,15 +9,18 @@ namespace HollowCraft
 {
     internal static class EnemySystem
     {
-        private sealed class Adapter {internal HealthManager Enemy;internal Breakable Breakable;internal bool Resource,Rewarded;internal int NativeMax,LastNative,Generation,BlockSerial;internal float Max,Health;}
+        private sealed class Adapter {internal HealthManager Enemy;internal Breakable Breakable;internal Collider2D Body;internal bool Resource,Rewarded;internal int NativeMax,LastNative,Generation,BlockSerial;internal float Max,Health;}
         private static readonly Dictionary<int,Adapter> enemies=new Dictionary<int,Adapter>();
+        private static readonly HashSet<int> nearby=new HashSet<int>();
+        private static Collider2D[] discovery=new Collider2D[128];
+        private static float nextDiscovery;
         private static readonly FieldInfo brokenField=typeof(Breakable).GetField("isBroken",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
         private static readonly FieldInfo evasionField=typeof(HealthManager).GetField("evasionByHitRemaining",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
         private static readonly FieldInfo specialDeathField=typeof(HealthManager).GetField("hasSpecialDeath",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
         // Six points per iron-sword hit: three normal hits for ordinary enemies.
         // Tough enemies and bosses retain extra health above the common 60 native HP band.
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
-        internal static void Clear() {enemies.Clear();NativeBattle.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();WorldCreatures.Clear();}
+        internal static void Clear() {enemies.Clear();nearby.Clear();nextDiscovery=0;NativeBattle.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();WorldCreatures.Clear();}
         internal static GameObject Actor(int id)=>enemies.TryGetValue(id,out var adapter)?adapter.Enemy!=null?adapter.Enemy.gameObject:adapter.Breakable!=null?adapter.Breakable.gameObject:null:null;
         // Match HitTaker's nearest responder, but never pick a disabled phase component.
         internal static HealthManager Resolve(Collider2D collider) {
@@ -38,10 +41,9 @@ namespace HollowCraft
                 nailBlock=enemy!=null?BlockMask(enemy,AttackTypes.Nail):0,spellBlock=enemy!=null?BlockMask(enemy,AttackTypes.Spell):0};
         }
         internal static int Register(HealthManager enemy) {
-            NativeBattle.Track(enemy);
-            BedrockBarrier.Track(enemy);
             int id=enemy.GetInstanceID();
             if(!enemies.ContainsKey(id)) {
+                NativeBattle.Track(enemy);BedrockBarrier.Track(enemy);
                 float max=ConvertedHealth(enemy.hp);
                 enemies[id]=new Adapter {Enemy=enemy,NativeMax=Math.Max(1,enemy.hp),LastNative=enemy.hp,Max=max,Health=max};
             }
@@ -56,36 +58,40 @@ namespace HollowCraft
             if(body!=null&&body.bodyType==RigidbodyType2D.Dynamic&&body.constraints!=RigidbodyConstraints2D.FreezeAll)
                 body.linearVelocity+=velocity*20;
         }
-        internal static object[] Observe(HeroController hero,int required=0) {
+        internal static object[] Observe(HeroController hero,int required=0,bool discover=false) {
             foreach(var pair in enemies) {var entry=pair.Value;if(entry.Health<=0&&!entry.Rewarded&&(entry.Resource ? entry.Breakable==null||!entry.Breakable.gameObject.activeInHierarchy||(bool)(brokenField?.GetValue(entry.Breakable)??false) : entry.Enemy==null||entry.Enemy.isDead)) {entry.Rewarded=true;HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id=pair.Key,generation=entry.Generation});}}
-            var observed=new HashSet<int>();var result=new List<object>();
-            foreach(var collider in Physics2D.OverlapCircleAll(hero.transform.position,20)) {
-                var enemy=Resolve(collider);if(enemy==null) continue;
-                int id=Register(enemy);if(!observed.Add(id)) continue;
-                var body=enemy.GetComponents<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy)??collider;
-                var adapter=enemies[id];
-                if(enemy.hp>adapter.LastNative||adapter.Health<=0) {adapter.NativeMax=Math.Max(adapter.NativeMax,enemy.hp);adapter.Max=ConvertedHealth(adapter.NativeMax);adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=0;}
-                adapter.LastNative=enemy.hp;
-                result.Add(Entry(id,adapter,body));
-            }
-            foreach(var collider in Physics2D.OverlapCircleAll(hero.transform.position,12)) {
-                var breakable=collider.GetComponentInParent<Breakable>();if(breakable==null || !breakable.gameObject.activeInHierarchy) continue;
-                int id=Register(breakable);if(!observed.Add(id)) continue;
-                result.Add(new {id,maxHealth=1,health=enemies[id].Health,generation=0,kind="resource",name=breakable.name,x=breakable.transform.position.x,y=collider.bounds.min.y,width=collider.bounds.size.x,height=collider.bounds.size.y});
-            }
-            if(required!=0&&!observed.Contains(required)&&enemies.TryGetValue(required,out Adapter extra)) {
-                var actor=extra.Resource?extra.Breakable?.gameObject:extra.Enemy?.gameObject;
-                if(actor!=null&&actor.activeInHierarchy&&(extra.Resource||extra.Enemy.enabled&&!extra.Enemy.isDead&&extra.Enemy.hp>0)) {
-                    var body=actor.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&(extra.Resource||Resolve(c)==extra.Enemy));
-                    if(body!=null) {
-                        result.Add(Entry(required,extra,body));
-                    }
+            // Discovery is independent of the 20 Hz transform/guard stream. Attacks force
+            // immediate discovery, so a newly spawned brood cannot miss its first hit.
+            if(Time.unscaledTime>=nextDiscovery||required!=0||discover) {
+                nextDiscovery=Time.unscaledTime+.15f;nearby.Clear();var filter=new ContactFilter2D().NoFilter();
+                int count=Physics2D.OverlapCircle(hero.transform.position,20,filter,discovery);
+                while(count==discovery.Length&&discovery.Length<4096) {Array.Resize(ref discovery,discovery.Length*2);count=Physics2D.OverlapCircle(hero.transform.position,20,filter,discovery);}
+                for(int i=0;i<count;i++) {
+                    var collider=discovery[i];if(collider==null)continue;
+                    var enemy=Resolve(collider);
+                    if(enemy!=null) {int id=Register(enemy);if(nearby.Add(id))enemies[id].Body=enemy.GetComponents<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy)??collider;continue;}
+                    if(((Vector2)collider.bounds.ClosestPoint(hero.transform.position)-(Vector2)hero.transform.position).sqrMagnitude>144)continue;
+                    var value=collider.GetComponentInParent<Breakable>();if(value==null||!value.gameObject.activeInHierarchy)continue;
+                    int key=Register(value);if(nearby.Add(key))enemies[key].Body=collider;
                 }
+                Array.Clear(discovery,0,count);
             }
-            foreach(int id in WorldCreatures.Captured) {
-                if(observed.Contains(id)||id==required||!enemies.TryGetValue(id,out var captured)||captured.Enemy==null||captured.Enemy.isDead)continue;
-                var body=captured.Enemy.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&Resolve(c)==captured.Enemy);
-                if(body!=null)result.Add(Entry(id,captured,body));
+            var observed=new HashSet<int>(nearby);if(required!=0)observed.Add(required);
+            foreach(int id in WorldCreatures.Captured)observed.Add(id);
+            var result=new List<object>(observed.Count);
+            foreach(int id in observed) {
+                if(!enemies.TryGetValue(id,out var adapter))continue;
+                var actor=adapter.Resource?adapter.Breakable?.gameObject:adapter.Enemy?.gameObject;
+                if(actor==null||!actor.activeInHierarchy||!adapter.Resource&&(!adapter.Enemy.enabled||adapter.Enemy.isDead||adapter.Enemy.hp<=0))continue;
+                var body=adapter.Body;
+                if(body==null||!body.enabled||!body.gameObject.activeInHierarchy)adapter.Body=body=actor.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&(adapter.Resource||Resolve(c)==adapter.Enemy));
+                if(body==null)continue;
+                if(!adapter.Resource) {
+                    var enemy=adapter.Enemy;
+                    if(enemy.hp>adapter.LastNative||adapter.Health<=0) {adapter.NativeMax=Math.Max(adapter.NativeMax,enemy.hp);adapter.Max=ConvertedHealth(adapter.NativeMax);adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=0;}
+                    adapter.LastNative=enemy.hp;
+                }
+                result.Add(Entry(id,adapter,body));
             }
             result.AddRange(WorldCreatures.FriendlyActors(hero));return result.ToArray();
         }

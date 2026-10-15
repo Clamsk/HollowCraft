@@ -2,6 +2,7 @@
 
 [简体中文](MC_CREATURES.md) | [English](MC_CREATURES.en.md)
 
+0.30.12 updates spawn clearance, offscreen cameras and client tracking fallback. For invisible models or frame drops, see [performance and troubleshooting](PERFORMANCE.en.md).
 Version 0.30.11 creates real Minecraft 1.20.1 entities. Minecraft's entity renderers provide transparent frames of their actual 3D models, materials and animation for the Hollow Knight scene. Boats and mobs are not replaced with item icons.
 
 ## Boats

@@ -24,7 +24,12 @@ public final class NativeEntityBridge {
     private record Pose(int id,UUID uuid,double x,double y,double z,double px,double py,double pz,float yaw,float pitch,float pyaw,float ppitch,int age,int fuse) {
         Pose(Entity e) {this(e.getId(),e.getUuid(),e.getX(),e.getY(),e.getZ(),e.lastRenderX,e.lastRenderY,e.lastRenderZ,e.getYaw(),e.getPitch(),e.prevYaw,e.prevPitch,e.age,e instanceof TntEntity t?t.getFuse():-1);}
     }
-    private record State(String scene,String campaign,int offset,List<Pose> entities) { }
+    private record Visual(EntityType<?> type,net.minecraft.nbt.NbtCompound data,int tick) { }
+    private record State(String scene,String campaign,int offset,List<Pose> entities,Map<UUID,Visual> visuals) { }
+    private static final Map<UUID,Visual> visualCache=new HashMap<>();
+    private static final Map<UUID,Entity> replicas=new HashMap<>();
+    private static net.minecraft.client.world.ClientWorld replicaWorld;
+    private static String replicaKey="";
     private static volatile State latest;
     private static final FlatCamera camera=new FlatCamera();
     private static SimpleFramebuffer framebuffer;
@@ -38,24 +43,39 @@ public final class NativeEntityBridge {
     static void publish(ServerPlayerEntity player,String scene,String campaign,int offset) {
         var list=player.getServerWorld().getEntitiesByClass(Entity.class,new Box(player.getX()-72,player.getY()-52,-4,player.getX()+72,player.getY()+52,4),NativeEntityBridge::supported);
         list.sort(Comparator.comparingDouble(e->e.squaredDistanceTo(player)));
-        latest=new State(scene,campaign,offset,list.stream().limit(MAX).map(Pose::new).toList());
+        var poses=new ArrayList<Pose>();var visuals=new HashMap<UUID,Visual>();
+        for(var entity:list) {
+            if(poses.size()>=MAX)break;poses.add(new Pose(entity));
+            if(entity instanceof net.minecraft.entity.mob.MobEntity||entity instanceof net.minecraft.entity.vehicle.BoatEntity) {
+                var visual=visualCache.get(entity.getUuid());
+                if(visual==null||player.age-visual.tick>=5) {
+                    var nbt=new net.minecraft.nbt.NbtCompound();entity.saveNbt(nbt);
+                    visual=new Visual(entity.getType(),nbt,player.age);visualCache.put(entity.getUuid(),visual);
+                }
+                visuals.put(entity.getUuid(),visual);
+            }
+        }
+        visualCache.keySet().retainAll(visuals.keySet());
+        latest=new State(scene,campaign,offset,List.copyOf(poses),Map.copyOf(visuals));
     }
-    static void clear() {latest=null;}
+    static void clear() {latest=null;visualCache.clear();}
     private static boolean supported(Entity e) {return !e.isRemoved()&&!(e instanceof NativeProxy)&&(e instanceof ProjectileEntity||e instanceof ItemEntity||e instanceof TntEntity||e instanceof FallingBlockEntity||e instanceof net.minecraft.entity.vehicle.BoatEntity||e instanceof net.minecraft.entity.mob.MobEntity||e instanceof ExperienceOrbEntity);}
     public static void render(MinecraftClient client,float delta) {
         var state=latest;var input=PlayerRenderState.controls;
         if(!RenderSystem.isOnRenderThread()||!HollowCraftBridge.entityRenderRequested()||client.world==null||client.player==null||state==null||input==null
             ||!state.scene.equals(text(input,"scene"))||!state.campaign.equals(text(input,"campaign")))return;
         String root=System.getProperty("hollowcraft.icons","");if(root.isEmpty())return;
-        var dispatcher=client.getEntityRenderDispatcher();if(dispatcher.camera==null||dispatcher.getRotation()==null)return;
+        // Configure our own camera below. The minimized backend may never have drawn a world frame.
+        var dispatcher=client.getEntityRenderDispatcher();
         long now=System.nanoTime();if(now<retryAt||now-lastRender<50_000_000L)return;
-        float x=number(input,"viewX",(float)client.player.getX()-state.offset),y=number(input,"viewY",(float)client.player.getY()-64+1);
-        float sx=number(input,"viewWidth",36),sy=number(input,"viewHeight",24);
-        if(!Float.isFinite(x)||!Float.isFinite(y)||!Float.isFinite(sx)||!Float.isFinite(sy)||Math.abs(x)>500||y<-100||y>300||sx<2||sx>120||sy<2||sy>80)return;
+        var rectangle=WorldRenderView.read(input,client.player.getX()-state.offset,client.player.getY()-63);
+        float x=rectangle.x(),y=rectangle.y(),sx=rectangle.width(),sy=rectangle.height();
         String key=state.scene+"|"+state.campaign;
+        if(replicaWorld!=client.world||!replicaKey.equals(key)) {replicas.clear();replicaWorld=client.world;replicaKey=key;}
+        replicas.keySet().retainAll(state.visuals.keySet());
         if(state.entities.isEmpty()&&!hadEntities&&lastScene.equals(key))return;lastRender=now;
         var access=(dev.hollowcraft.mixin.EntityRenderDispatcherAccess)dispatcher;
-        var oldWorld=access.hollowcraft$world();var oldCamera=dispatcher.camera;var oldTarget=dispatcher.targetedEntity;var oldRotation=new Quaternionf(dispatcher.getRotation());
+        var oldWorld=access.hollowcraft$world();var oldCamera=dispatcher.camera;var oldTarget=dispatcher.targetedEntity;var oldRotation=dispatcher.getRotation()==null?new Quaternionf():new Quaternionf(dispatcher.getRotation());
         boolean shadows=access.hollowcraft$shadows(),hitboxes=dispatcher.shouldRenderHitboxes();
         float fogStart=RenderSystem.getShaderFogStart(),fogEnd=RenderSystem.getShaderFogEnd();
         var ids=new ArrayList<Integer>(MAX);
@@ -75,7 +95,16 @@ public final class NativeEntityBridge {
             float partial=HollowCraftBridge.remotePaused?1:delta;
             for(var pose:state.entities) {
                 Entity entity=client.world.getEntityById(pose.id);
-                if(entity==null||!entity.getUuid().equals(pose.uuid)||!supported(entity)||Math.abs(pose.x-state.offset-x)>sx/2+3||Math.abs(pose.y-64-y)>sy/2+3)continue;
+                if(Math.abs(pose.x-state.offset-x)>sx/2+3||Math.abs(pose.y-64-y)>sy/2+3)continue;
+                // A server-created mob can precede its vanilla tracking packet. Keep a render-only
+                // vanilla replica until that packet arrives; it never enters the client simulation.
+                if(entity==null||!entity.getUuid().equals(pose.uuid)||!supported(entity)) {
+                    var visual=state.visuals.get(pose.uuid);if(visual==null)continue;
+                    entity=replicas.get(pose.uuid);
+                    if(entity==null) {entity=visual.type.create(client.world);if(entity==null)continue;replicas.put(pose.uuid,entity);}
+                    entity.readNbt(visual.data);entity.lastRenderX=pose.x;entity.lastRenderY=pose.y;entity.lastRenderZ=pose.z;
+                    if(entity instanceof LivingEntity living) {living.bodyYaw=living.prevBodyYaw=pose.yaw;living.headYaw=living.prevHeadYaw=pose.yaw;}
+                }
                 try(var placement=new Placement(entity,pose,partial)) {
                     int light=entity instanceof net.minecraft.entity.mob.MobEntity||entity instanceof net.minecraft.entity.vehicle.BoatEntity?net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE:dispatcher.getLight(entity,partial);
                     dispatcher.render(entity,entity.getX()-state.offset-x,entity.getY()-64-y,entity.getZ()-16,entity.getYaw(),partial,matrices,vertices,light);
@@ -90,6 +119,7 @@ public final class NativeEntityBridge {
             header.position(HEADER+WIDTH*HEIGHT*4);header.putInt(ids.size());for(int id:ids)header.putInt(id);header.putInt(sequence);
             Path directory=Path.of(root).getParent().resolve("entity_frames");Files.createDirectories(directory);
             try(var output=Files.newOutputStream(directory.resolve("frame-"+(sequence%3)+".bin"))) {output.write(transfer,0,header.position());}
+            if(!lastScene.equals(key))LoggerFactory.getLogger("HollowCraft").info("Native world entity frames ready: requested={}, rendered={}, viewport={}x{}",state.entities.size(),ids.size(),sx,sy);
             hadEntities=!ids.isEmpty();lastScene=key;
         } catch(Exception error) {
             try {client.getBufferBuilders().getEntityVertexConsumers().draw();var buffer=net.minecraft.client.render.Tessellator.getInstance().getBuffer();if(buffer.isBuilding()) {var built=buffer.endNullable();if(built!=null)built.release();buffer.clear();}}catch(Exception ignored) { }
@@ -109,7 +139,7 @@ public final class NativeEntityBridge {
         }
         public void close() {e.setPosition(previous.x,previous.y,previous.z);e.prevYaw=previous.pyaw;e.prevPitch=previous.ppitch;e.setYaw(previous.yaw);e.setPitch(previous.pitch);e.age=previous.age;if(e instanceof TntEntity t&&previous.fuse>=0)t.setFuse(previous.fuse);}
     }
-    public static void close() {clear();if(framebuffer!=null)framebuffer.delete();framebuffer=null;pixels=null;transfer=null;hadEntities=false;lastScene="";}
+    public static void close() {clear();replicas.clear();replicaWorld=null;replicaKey="";if(framebuffer!=null)framebuffer.delete();framebuffer=null;pixels=null;transfer=null;hadEntities=false;lastScene="";}
     private static float number(com.google.gson.JsonObject input,String key,float fallback) {return input.has(key)?input.get(key).getAsFloat():fallback;}
     private static String text(com.google.gson.JsonObject input,String key) {return input.has(key)?input.get(key).getAsString():"";}
     private static final class FlatCamera extends Camera {void place(double x,double y,double z) {setRotation(180,0);setPos(x,y,z);}}

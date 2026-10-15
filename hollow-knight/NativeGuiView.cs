@@ -27,8 +27,7 @@ namespace HollowCraft
             if(session!=expected||sceneKey!=key) {Reset();session=expected;sceneKey=key;}
             if(Time.unscaledTime<nextRead)return;nextRead=Time.unscaledTime+.025f;
             int expectedSync=(int?)runtime.LatestSnapshot?["gui"]?["syncId"]??0;
-            for(int slot=0;slot<3;slot++) {
-                string path=Path.Combine(assets,"gui_frames","frame-"+slot+".bin");
+            foreach(string path in NativeFrameFiles.NewestFirst(assets,"gui_frames")) {
                 try {
                     if(!File.Exists(path)||File.GetLastWriteTimeUtc(path)<readAfter)continue;
                     using(var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new BinaryReader(stream)) {
@@ -42,6 +41,7 @@ namespace HollowCraft
                         stream.Position=4;if(reader.ReadInt32()!=serial||reader.ReadInt32()!=px||reader.ReadInt32()!=py||reader.ReadInt64()!=id||reader.ReadInt32()!=handler||reader.ReadInt32()!=hash)continue;
                         if(texture==null||texture.width!=px||texture.height!=py) {if(texture!=null)UnityEngine.Object.Destroy(texture);texture=new Texture2D(px,py,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};}
                         texture.LoadRawTextureData(rgba);texture.Apply(false,false);sequence=serial;sync=handler;width=w;height=h;focused=(flags&1)!=0;ready=true;lastRead=Time.unscaledTime;
+                        break;
                     }
                 } catch(IOException) { } catch(UnauthorizedAccessException) { }
             }

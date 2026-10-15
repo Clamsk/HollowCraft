@@ -36,7 +36,7 @@ function ButtonTask([string]$Text,[int]$X,[int]$Y,[int]$W,[int]$H,[bool]$Primary
     return $buttonTask
 }
 $titleTask=LabelTask 'HollowCraft' 28 22 440 42 25
-$subtitleTask=LabelTask 'Minecraft × Hollow Knight  ·  0.30.11' 30 71 650 28 11
+$subtitleTask=LabelTask 'Minecraft × Hollow Knight  ·  0.30.12' 30 71 650 28 11
 $subtitleTask.ForeColor=$mutedTask
 $formTask.Controls.AddRange(@($titleTask,$subtitleTask))
 $tabsTask=New-Object Windows.Forms.TabControl;$tabsTask.Location=New-Object Drawing.Point(28,113)

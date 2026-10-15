@@ -29,10 +29,20 @@ public final class HollowCraftClient implements ClientModInitializer {
     private Boolean previousPause;
     private Double previousMusic;
     private String lastScreen = "";
+    private boolean profileConfigured;
     @Override public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             boolean isolated = Files.exists(client.runDirectory.toPath().resolve(".hollowcraft-profile"));
             if (!isolated) return;
+            if(!profileConfigured) {
+                profileConfigured=true;
+                // The hidden backend supplies a 30 Hz avatar and 20 Hz world layers.
+                client.options.getMaxFps().setValue(Math.max(30,Math.min(120,Integer.getInteger("hollowcraft.backendFps",30))));
+                client.options.getViewDistance().setValue(2);
+                client.options.getSimulationDistance().setValue(5);
+                client.options.getEnableVsync().setValue(false);
+                LoggerFactory.getLogger("HollowCraft").info("Isolated backend budget: FPS={}, view distance=2, simulation distance=5",client.options.getMaxFps().getValue());
+            }
             CreativeHotbars.tick(client);
             ItemModelIcons.tick(client);
             NativePlayerEffects.sync(client);

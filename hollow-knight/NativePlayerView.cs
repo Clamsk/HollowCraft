@@ -23,8 +23,7 @@ namespace HollowCraft
             if(sceneKey!=expected) {sceneKey=expected;sequence=-1;ready=false;Hide();}
             if(Time.unscaledTime>=nextRead) {
                 nextRead=Time.unscaledTime+.016f;
-                for(int slot=0;slot<3;slot++) {
-                    string file=Path.Combine(assets,"player_frames","frame-"+slot+".bin");
+                foreach(string file in NativeFrameFiles.NewestFirst(assets,"player_frames")) {
                     try {
                         if(!File.Exists(file)||File.GetLastWriteTimeUtc(file)<started)continue;
                         using(var stream=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new BinaryReader(stream)) {
@@ -40,7 +39,7 @@ namespace HollowCraft
                                 root=new GameObject("HollowCraft.MinecraftPlayerRenderer");UnityEngine.Object.DontDestroyOnLoad(root);renderer=root.AddComponent<SpriteRenderer>();
                                 renderer.sprite=Sprite.Create(Texture,new Rect(0,0,w,h),new Vector2(.5f,48f/256),64,0,SpriteMeshType.FullRect);
                             }
-                            Texture.LoadRawTextureData(rgba);Texture.Apply(false,false);sequence=serial;session=frameSession;ready=true;
+                            Texture.LoadRawTextureData(rgba);Texture.Apply(false,false);sequence=serial;session=frameSession;ready=true;break;
                         }
                     } catch(IOException) { } catch(UnauthorizedAccessException) { }
                 }

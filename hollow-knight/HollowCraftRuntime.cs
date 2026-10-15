@@ -436,13 +436,12 @@ namespace HollowCraft
             if(connected&&Time.unscaledTime>=nextVisual) {
                 nextVisual=Time.unscaledTime+.033f;
                 var body=hero.GetComponent<Rigidbody2D>();
-                var camera=GameCursor.GameCamera();
+                var worldView=GameCursor.WorldView(hero);
                 var pointer=GameCursor.ReadScreenPosition();float guiScale=Mathf.Max(1,Mathf.Min(Mathf.Clamp(Mathf.Floor(Screen.height/240f),2,4),Mathf.Floor(Screen.width/320f),Mathf.Floor(Screen.height/240f)));
                 float viewYaw=MinecraftControls.FrontView?0:-MinecraftControls.Facing*75;
                 if(Combat.Swinging)viewYaw=-Mathf.Sign(Combat.Aim.x)*75;
                 bridge.Send(new {type="visual",scene,viewYaw,speed=body.linearVelocity.x,vy=body.linearVelocity.y,
-                    viewX=camera!=null?camera.transform.position.x:hero.transform.position.x,viewY=camera!=null?camera.transform.position.y:hero.transform.position.y,
-                    viewWidth=camera!=null?camera.orthographicSize*2*camera.aspect:36,viewHeight=camera!=null?camera.orthographicSize*2:24,
+                    viewX=worldView.center.x,viewY=worldView.center.y,viewWidth=worldView.width,viewHeight=worldView.height,
                     guiWidth=Mathf.FloorToInt(Screen.width/guiScale),guiHeight=Mathf.FloorToInt(Screen.height/guiScale),guiMouseX=pointer.x/Screen.width,guiMouseY=(Screen.height-pointer.y)/Screen.height,
                     guiMods=NativeGuiView.Modifiers,guiC=Input.GetKey(KeyCode.C),guiX=Input.GetKey(KeyCode.X),
                     crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,flying=MinecraftEnvironment.Flying,
@@ -634,10 +633,11 @@ namespace HollowCraft
             var result = new List<float[]>();
             int mask = LayerMask.GetMask("Terrain","Default");
             if (mask == 0) return result;
+            var filter=new ContactFilter2D();filter.SetLayerMask(mask);filter.useTriggers=false;
+            var ignored=new Dictionary<Collider2D,bool>();
             foreach(var cell in WorldCreatures.SampleCells(cx,cy))
             {
                 int x=cell.x,y=cell.y;
-                var filter=new ContactFilter2D();filter.SetLayerMask(mask);filter.useTriggers=false;
                 int found=Physics2D.OverlapBox(new Vector2((x + 0.5f) * CellSize, (y + 0.5f) * CellSize),
                     // Native platforms can be much thinner than a block and sit at cell edges.
                     // Sampling only the middle half missed their floors, letting server items
@@ -645,7 +645,9 @@ namespace HollowCraft
                     new Vector2(CellSize * 0.9999f, CellSize * 0.9999f), 0, filter,terrainProbe);
                 while(found==terrainProbe.Length&&terrainProbe.Length<256) {Array.Resize(ref terrainProbe,terrainProbe.Length*2);found=Physics2D.OverlapBox(new Vector2(x+.5f,y+.5f),new Vector2(.9999f,.9999f),0,filter,terrainProbe);}
                 for(int index=0;index<found;index++) {
-                    var c=terrainProbe[index];if(c==null||c.name.StartsWith("HollowCraft.Block")||c.GetComponent<CreatureBody>()!=null||c.GetComponentInParent<HeroController>()!=null||c.GetComponentInParent<HealthManager>()!=null)continue;
+                    var c=terrainProbe[index];if(c==null)continue;
+                    if(!ignored.TryGetValue(c,out bool skip)) {skip=c.name.StartsWith("HollowCraft.Block")||c.GetComponent<CreatureBody>()!=null||c.GetComponentInParent<HeroController>()!=null||c.GetComponentInParent<HealthManager>()!=null;ignored[c]=skip;}
+                    if(skip)continue;
                     var bounds=c.bounds;float x0=Mathf.Max(x,bounds.min.x),x1=Mathf.Min(x+1,bounds.max.x),y0=Mathf.Max(y,bounds.min.y),y1=Mathf.Min(y+1,bounds.max.y);
                     var center=new Vector2(x+.5f,y+.5f);var closest=c.ClosestPoint(center);
                     // Polygon terrain bounds can span a whole room. Use the nearby surface

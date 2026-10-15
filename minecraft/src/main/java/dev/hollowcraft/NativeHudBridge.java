@@ -32,7 +32,10 @@ public final class NativeHudBridge {
         String root=System.getProperty("hollowcraft.icons","");if(root.isEmpty())return;
         long now=System.nanoTime();if(now<retryAt||now-lastRender<50_000_000L)return;lastRender=now;
         width=Math.max(320,Math.min(1024,integer(input,"guiWidth",480)));height=Math.max(240,Math.min(576,integer(input,"guiHeight",270)));
-        int px=width*2,py=height*2;
+        // Vanilla HUD is pixel art: one texel per GUI pixel avoids a redundant 2x
+        // supersample and cuts continuous readback, transfer and Unity upload by 75%.
+        int scale=Math.max(1,Math.min(2,Integer.getInteger("hollowcraft.hudScale",1)));
+        int px=width*scale,py=height*scale;
         var hud=client.inGameHud;var access=(dev.hollowcraft.mixin.InGameHudAccess)hud;
         int oldWidth=access.hollowcraft$width(),oldHeight=access.hollowcraft$height();
         try(var guard=new OffscreenRenderState(client)) {

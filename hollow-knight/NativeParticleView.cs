@@ -36,8 +36,7 @@ namespace HollowCraft
             if(sceneKey!=expected) {sceneKey=expected;Reset();}
             if(Time.unscaledTime>=nextRead) {
                 nextRead=Time.unscaledTime+.025f;
-                for(int slot=0;slot<3;slot++) {
-                    string path=Path.Combine(assets,folder,"frame-"+slot+".bin");
+                foreach(string path in NativeFrameFiles.NewestFirst(assets,folder)) {
                     try {
                         if(!File.Exists(path)||File.GetLastWriteTimeUtc(path)<readAfter)continue;
                         using(var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new BinaryReader(stream)) {
@@ -66,11 +65,12 @@ namespace HollowCraft
                             texture.LoadRawTextureData(rgba);texture.Apply(false,false);
                             center=new Vector2(x,y);span=new Vector2(sx,sy);sequence=serial;session=frameSession;ready=true;lastRead=Time.unscaledTime;
                             if(ids!=null)rendered=ids;
+                            break;
                         }
                     } catch(IOException) { } catch(UnauthorizedAccessException) { }
                 }
             }
-            if(!ready||root==null||!runtime.AudioPaused&&Time.unscaledTime-lastRead>(entities?.25f:1.5f)) {Hide();return;}
+            if(!ready||root==null||!runtime.AudioPaused&&Time.unscaledTime-lastRead>(entities?.75f:1.5f)) {Hide();return;}
             var original=hero.GetComponent<Renderer>()??hero.GetComponentInChildren<Renderer>();
             renderer.sortingLayerID=original!=null?original.sortingLayerID:0;renderer.sortingOrder=(original!=null?original.sortingOrder:0)+order;
             root.transform.position=new Vector3(center.x,center.y,hero.transform.position.z-.15f);

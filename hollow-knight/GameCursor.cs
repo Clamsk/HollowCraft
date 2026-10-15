@@ -41,6 +41,20 @@ namespace HollowCraft
             var available=Camera.allCameras;return gameCamera=Array.Find(available,c=>c.enabled&&c.orthographic)??Camera.main;
         }
         internal static float BlockReach => HollowCraftRuntime.Instance?.Creative==true?5:4.5f;
+        internal static Rect WorldView(HeroController hero) {
+            var camera=GameCamera();
+            if(camera!=null) {
+                // HK's main camera is perspective. orthographicSize is not its visible area.
+                var plane=new Plane(Vector3.forward,new Vector3(0,0,hero.transform.position.z));
+                var a=camera.ViewportPointToRay(Vector3.zero);var b=camera.ViewportPointToRay(new Vector3(1,1,0));
+                if(plane.Raycast(a,out float da)&&plane.Raycast(b,out float db)) {
+                    var p=a.GetPoint(da);var q=b.GetPoint(db);
+                    var rect=Rect.MinMaxRect(Mathf.Min(p.x,q.x),Mathf.Min(p.y,q.y),Mathf.Max(p.x,q.x),Mathf.Max(p.y,q.y));
+                    if(rect.width>=2&&rect.width<=120&&rect.height>=2&&rect.height<=80&&Mathf.Abs(rect.center.x)<=500&&rect.center.y>=-100&&rect.center.y<=300)return rect;
+                }
+            }
+            return new Rect(hero.transform.position.x-18,hero.transform.position.y-12,36,24);
+        }
         internal static float AttackReach => HollowCraftRuntime.Instance?.Creative==true?6:3;
         internal static Vector2 Eye(HeroController hero) {
             var body=hero.GetComponent<Collider2D>();

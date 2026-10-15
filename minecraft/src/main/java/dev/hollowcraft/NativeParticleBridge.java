@@ -35,9 +35,8 @@ public final class NativeParticleBridge {
         boolean any=queues.values().stream().anyMatch(queue->!queue.isEmpty());
         String scene=state.scene+"|"+state.campaign;
         if(!any&&!hadParticles&&lastScene.equals(scene))return;
-        float x=number(input,"viewX",(float)state.x),y=number(input,"viewY",(float)state.y+1);
-        float spanX=number(input,"viewWidth",36),spanY=number(input,"viewHeight",24);
-        if(!Float.isFinite(x)||!Float.isFinite(y)||!Float.isFinite(spanX)||!Float.isFinite(spanY)||Math.abs(x)>500||y<-100||y>300||spanX<2||spanX>120||spanY<2||spanY>80)return;
+        var rectangle=WorldRenderView.read(input,state.x,state.y+1);
+        float x=rectangle.x(),y=rectangle.y(),spanX=rectangle.width(),spanY=rectangle.height();
         lastRender=now;
         var view=RenderSystem.getModelViewStack();int depth=((dev.hollowcraft.mixin.MatrixStackAccess)view).hollowcraft$stack().size();
         var projection=new Matrix4f(RenderSystem.getProjectionMatrix());var sorting=RenderSystem.getVertexSorting();

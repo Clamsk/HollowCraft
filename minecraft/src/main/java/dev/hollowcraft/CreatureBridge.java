@@ -21,6 +21,9 @@ public final class CreatureBridge {
     private static ServerPlayerEntity owner;
     private static int offset;
     private static boolean terrainReady;
+    private static boolean spawning;
+    private static String placementFailure="";
+    static String placementFailure() {return placementFailure;}
     static void configure(ServerPlayerEntity player,int base) {
         owner=player;offset=base;entities.clear();terrainReady=false;
         player.getServerWorld().setTimeOfDay(18000);
@@ -40,7 +43,8 @@ public final class CreatureBridge {
         if(entity instanceof MobEntity mob)mob.setPersistent();
         entity.setPosition(entity.getX(),entity.getY(),.5);
     }
-    public static boolean plane(Entity entity) {return !entity.getWorld().isClient&&HollowCraftBridge.bridgeWorld(entity)&&entity.getCommandTags().contains(TAG);}
+    public static boolean plane(Entity entity) {return entity.getWorld()!=null&&!entity.getWorld().isClient&&HollowCraftBridge.bridgeWorld(entity)
+        &&(entity.getCommandTags().contains(TAG)||spawning&&(entity instanceof MobEntity||entity instanceof BoatEntity));}
     public static boolean dormant(Entity entity) {
         if(!plane(entity))return false;
         return owner==null||!terrainReady||!HollowCraftBridge.remoteActive()||entity.getWorld()!=owner.getWorld()
@@ -50,7 +54,9 @@ public final class CreatureBridge {
     static void beforeTick() {
         entities.entrySet().removeIf(entry->entry.getValue().isRemoved());
         for(var entity:entities.values()) {
-            entity.setPosition(entity.getX(),entity.getY(),.5);entity.setVelocity(entity.getVelocity().multiply(1,1,0));
+            if(dormant(entity))continue;
+            if(Math.abs(entity.getZ()-.5)>.00001)entity.setPosition(entity.getX(),entity.getY(),.5);
+            if(Math.abs(entity.getVelocity().z)>.00001)entity.setVelocity(entity.getVelocity().multiply(1,1,0));
             if(entity instanceof BoatEntity boat) {boat.setVelocity(0,boat.getVelocity().y,0);boat.setYaw(90);}
         }
     }
@@ -94,8 +100,10 @@ public final class CreatureBridge {
     static ActionResult place(ServerPlayerEntity player,Hand hand,BlockPos pos) {
         ItemStack stack=player.getStackInHand(hand);var world=player.getServerWorld();
         if(!(stack.getItem() instanceof BoatItem||stack.getItem() instanceof SpawnEggItem))return ActionResult.PASS;
-        if(pos==null||player.isSpectator()||!player.getAbilities().allowModifyWorld)return ActionResult.FAIL;
-        if(entities.size()>=160)return ActionResult.FAIL;
+        placementFailure="";entities.entrySet().removeIf(entry->entry.getValue().isRemoved());
+        if(pos==null) {placementFailure="Move the cursor closer (survival 4.5 blocks, creative 5 blocks)";return ActionResult.FAIL;}
+        if(player.isSpectator()||!player.getAbilities().allowModifyWorld) {placementFailure="This game mode cannot place entities";return ActionResult.FAIL;}
+        if(entities.size()>=160) {placementFailure="Room creature/boat limit reached (160)";return ActionResult.FAIL;}
         Item used=stack.getItem();var shape=world.getBlockState(pos).getCollisionShape(world,pos);
         double floor=shape.isEmpty()?pos.getY():pos.getY()+shape.getMax(Direction.Axis.Y);
         if(stack.getItem() instanceof BoatItem boatItem) {
@@ -103,12 +111,18 @@ public final class CreatureBridge {
             BoatEntity boat=access.hollowcraft$chest()?new ChestBoatEntity(world,pos.getX()+.5,floor+.005,.5):new BoatEntity(world,pos.getX()+.5,floor+.005,.5);
             boat.setVariant(access.hollowcraft$type());boat.setYaw(90);boat.addCommandTag(TAG);
             boat.setPosition(boat.getX(),boat.getY(),.5);
-            if(!world.isSpaceEmpty(boat,boat.getBoundingBox()))return ActionResult.FAIL;
-            if(!world.spawnEntity(boat))return ActionResult.FAIL;register(boat);
+            if(!world.isSpaceEmpty(boat,boat.getBoundingBox())) {placementFailure="The boat needs a clear space 1.4 blocks wide above the clicked surface";return ActionResult.FAIL;}
+            if(!world.spawnEntity(boat)) {placementFailure="Minecraft rejected this boat spawn";return ActionResult.FAIL;}register(boat);
         }else if(stack.getItem() instanceof SpawnEggItem egg) {
-            Entity entity=egg.getEntityType(stack.getNbt()).spawnFromItemStack(world,stack,player,shape.isEmpty()?pos:pos.up(),SpawnReason.SPAWN_EGG,false,false);
-            if(entity==null)return ActionResult.FAIL;register(entity);
+            // Vanilla's 3D spawn clearance must use the same thin plane as subsequent ticks.
+            // Applying the plane only after spawn made large creatures collide with back walls.
+            Entity entity;spawning=true;
+            try {entity=egg.getEntityType(stack.getNbt()).spawnFromItemStack(world,stack,player,pos,SpawnReason.SPAWN_EGG,false,false);}
+            finally {spawning=false;}
+            if(entity==null) {placementFailure="Minecraft rejected this spawn egg";return ActionResult.FAIL;}
+            register(entity);entity.setPosition(pos.getX()+.5,floor+.005,.5);
         }
+        org.slf4j.LoggerFactory.getLogger("HollowCraft").info("Placed creature item={} at={},{} active={}",Registries.ITEM.getId(used),pos.getX()-offset,floor-64,entities.size());
         if(!player.isCreative())stack.decrement(1);
         player.incrementStat(net.minecraft.stat.Stats.USED.getOrCreateStat(used));
         return ActionResult.SUCCESS;

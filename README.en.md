@@ -1,4 +1,4 @@
-# HollowCraft 0.30.11 — Playtest Build
+# HollowCraft 0.30.12 — Playtest Build
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,9 +6,11 @@ Minecraft-style survival and combat in Hollow Knight.
 
 Use Minecraft's player, survival, equipment, building and combat systems in Hollow Knight's 2D world. **Both games must run at the same time.** This is a playable bridge prototype; a complete survival playthrough has not been verified.
 
-**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.11) · [Boats and mobs](docs/MC_CREATURES.en.md) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
+**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.12) · [Boats and mobs](docs/MC_CREATURES.en.md) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
 
 ## Current release
+
+Version 0.30.12 corrects spawn-plane clearance, placement acknowledgements and native camera bounds; offscreen entities initialize their own camera and can use a vanilla render replica before client tracking arrives. Enemy discovery scans and obsolete texture uploads are reduced, the HUD defaults to native GUI pixels, and the isolated MC backend receives an FPS/chunk budget. Both sides compile; entity appearance and FPS changes await playtesting. See [performance and troubleshooting](docs/PERFORMANCE.en.md).
 
 Version 0.30.11 adds vanilla-rendered boats/rafts/chest variants, native actor capture constraints and real spawn-egg mobs with original models, stats and basic AI. Spawn eggs are creative-only; starter backpacks gain an oak boat. Complex XY adaptation remains in progress; see [boats and mobs](docs/MC_CREATURES.en.md). Gameplay remains unverified.
 
@@ -18,7 +20,7 @@ Version 0.30.9 repairs Gruz Mother brood-count bookkeeping and replaces pose-sam
 
 The shield, contact melee and vanilla totem effects from 0.30.7 remain included. New campaigns receive two totems; old campaigns receive two once. A totem must be held in the main hand or offhand to activate.
 
-This release was compiled, PowerShell 5.1 GUI controls initialized without displaying a window, and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.11 playtest notes](PLAYTEST-0.30.11.en.md). Older test records below apply only to their stated versions.
+Both bridges were compiled and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.12 playtest notes](PLAYTEST-0.30.12.en.md). Older test records below apply only to their stated versions.
 
 ## Download and start
 
@@ -29,7 +31,7 @@ Requirements:
 - Your own **Minecraft Java 1.20.1** installation. Launch vanilla 1.20.1 once through PCL or another launcher to download its assets and libraries.
 - **64-bit Java 17 or 21**.
 
-Download **HollowCraft-v0.30.11-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.11), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
+Download **HollowCraft-v0.30.11-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.12), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
 
 Save Hollow Knight's progress at a bench, then run **Stop HollowCraft.cmd** to save the Minecraft world and inventory and close both recorded processes. If only Hollow Knight was closed, restarting reuses the Minecraft backend of the same build. Stop before upgrading. Older backends without save acknowledgement must be closed normally through their Minecraft window; the script does not forcibly terminate them.
 

@@ -182,7 +182,7 @@ namespace HollowCraft
             var heroBody=hero.GetComponent<Rigidbody2D>();
             send(new {type="hit",scene=room,attack=(int)Current["attack"],targets=new List<int>(enemies),creatures,terrain=terrainHit,
                 playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,grounded=MinecraftControls.Grounded(hero),
-                enemies=EnemySystem.Observe(hero),
+                enemies=EnemySystem.Observe(hero,discover:true),
                 falling=!MinecraftControls.Grounded(hero) && heroBody!=null && heroBody.linearVelocity.y<-.1f && !MinecraftControls.Sprinting});
         }
     }

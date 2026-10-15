@@ -173,7 +173,9 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int PORT = 31674;
-    private static final int MAX_LINE = 65536;
+    // Expanded creature terrain can exceed 64 KiB. A bounded full pose must not
+    // disconnect the bridge just because several entities occupy different ledges.
+    private static final int MAX_LINE = 1024*1024;
     private final BlockingQueue<JsonObject> commands = new ArrayBlockingQueue<>(128);
     private final Map<String, Integer> scenes = new LinkedHashMap<>();
     private final Set<BlockPos> terrain = new HashSet<>();
@@ -1020,8 +1022,8 @@ public final class HollowCraftBridge implements ModInitializer {
                     if(stack.getItem() instanceof BoatItem||stack.getItem() instanceof SpawnEggItem) {
                         String itemId=Registries.ITEM.getId(stack.getItem()).toString();
                         var creaturePlace=CreatureBridge.place(owner,hand,target(placement));
-                        if(creaturePlace.isAccepted()) {status="Placed entity from "+itemId;itemSwing(hand);return;}
-                        if(creaturePlace==ActionResult.FAIL) {status="Entity needs clear space within reach (maximum 160 active creatures/boats)";return;}
+                        if(creaturePlace.isAccepted()) {placed[0]=true;status="Placed entity from "+itemId;itemSwing(hand);return;}
+                        if(creaturePlace==ActionResult.FAIL) {status=CreatureBridge.placementFailure();notice(status);LOG.info("Entity placement rejected item={} reason={}",itemId,status);return;}
                     }
                     if(clicked!=null) {
                         var result=owner.interactionManager.interactBlock(owner,world,stack,hand,new BlockHitResult(Vec3d.ofCenter(clicked),Direction.UP,clicked,false));

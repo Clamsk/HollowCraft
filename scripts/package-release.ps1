@@ -1,4 +1,4 @@
-param([string]$Version='0.30.11')
+param([string]$Version='0.30.12')
 $ErrorActionPreference='Stop'
 $rootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $rootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -32,6 +32,7 @@ $filesTask=@(
     'docs\PLAYTHROUGH.md','docs\PLAYTHROUGH.en.md',
     'docs\BOSS_RECORDING.md','docs\BOSS_RECORDING.en.md',
     'docs\MC_CREATURES.md','docs\MC_CREATURES.en.md',
+    'docs\PERFORMANCE.md','docs\PERFORMANCE.en.md',
     'docs\ENEMY_AUDIT.md','docs\ENEMY_AUDIT.en.md','docs\enemy-coverage-0.30.8.csv',
     'artifacts\HollowCraft\HollowCraft.dll',
     'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar'

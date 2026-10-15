@@ -47,9 +47,8 @@ public final class NativeBlockBridge {
             ||!state.scene.equals(text(input,"scene"))||!state.campaign.equals(text(input,"campaign")))return;
         String root=System.getProperty("hollowcraft.icons","");if(root.isEmpty())return;
         long now=System.nanoTime();if(now<retryAt||now-lastRender<50_000_000L)return;
-        float x=number(input,"viewX",(float)client.player.getX()-state.offset),y=number(input,"viewY",(float)client.player.getY()-64+1);
-        float sx=number(input,"viewWidth",36),sy=number(input,"viewHeight",24);
-        if(!Float.isFinite(x)||!Float.isFinite(y)||!Float.isFinite(sx)||!Float.isFinite(sy)||Math.abs(x)>500||y<-100||y>300||sx<2||sx>120||sy<2||sy>80)return;
+        var rectangle=WorldRenderView.read(input,client.player.getX()-state.offset,client.player.getY()-63);
+        float x=rectangle.x(),y=rectangle.y(),sx=rectangle.width(),sy=rectangle.height();
         String key=state.scene+"|"+state.campaign;
         if(state.cells.isEmpty()&&!hadBlocks&&lastScene.equals(key))return;lastRender=now;
         var dispatcher=client.getBlockEntityRenderDispatcher();var oldWorld=dispatcher.world;var oldCamera=dispatcher.camera;var oldTarget=dispatcher.crosshairTarget;

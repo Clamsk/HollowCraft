@@ -34,3 +34,7 @@ Moving immediate input and collision to the Hollow Knight side is a reusable ste
 First address player reports involving eating, pearls, the creative catalog, jump-building and missed clicks. Then address save isolation, teleport/landing state, container interaction, story progression and route obstacles. Check conflicts between these systems and compile/deliver each version.
 
 The player requested direct playtesting without automatic game launches. Version notes must distinguish **compiled**, **implementation adjusted** and **confirmed in gameplay**. A successful build does not prove that a full campaign can be completed. See [campaign compatibility](PLAYTHROUGH.en.md).
+
+## Performance work
+
+0.30.12 reduces redundant physics discovery and frame uploads, sets isolated backend budgets and uses native-pixel HUD frames. The remaining GPU readback and cross-process RGBA transport costs require further work. See [performance](PERFORMANCE.en.md).
