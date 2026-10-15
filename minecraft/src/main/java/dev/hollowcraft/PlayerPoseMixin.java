@@ -20,9 +20,12 @@ public abstract class PlayerPoseMixin extends BipedEntityModel<LivingEntity> {
     }
     @Inject(method="setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",at=@At("TAIL"))
     private void hollowcraft$wingPose(LivingEntity entity,float limb,float amount,float age,float yaw,float pitch,CallbackInfo callback) {
-        if(!dev.hollowcraft.PlayerVisualBridge.rendering||!dev.hollowcraft.PlayerVisualBridge.isAvatar(entity)||!dev.hollowcraft.PlayerVisualBridge.wingActive())return;
-        rightLeg.pitch=.35f;leftLeg.pitch=-.2f;rightLeg.yaw=leftLeg.yaw=0;
-        if(!entity.isUsingItem()&&handSwingProgress<=0){rightArm.roll=.16f;leftArm.roll=-.16f;}
+        if(!dev.hollowcraft.PlayerVisualBridge.rendering||!dev.hollowcraft.PlayerVisualBridge.isAvatar(entity)||!dev.hollowcraft.TerrariaEasterEgg.wings(entity))return;
+        String state=dev.hollowcraft.PlayerVisualBridge.wingState();boolean fly=state.equals("fly"),glide=state.equals("glide");
+        if(!fly&&!glide&&!state.equals("fall"))return;
+        float wave=fly?(float)Math.sin(dev.hollowcraft.PlayerVisualBridge.wingPhase()*1.6f)*.12f:0;
+        rightLeg.pitch=glide?.55f:fly?.35f+wave:.12f;leftLeg.pitch=glide?.4f:fly?-.15f-wave:.08f;rightLeg.yaw=leftLeg.yaw=0;
+        if(!entity.isUsingItem()&&handSwingProgress<=0){rightArm.roll=glide?.45f:fly?.25f:.13f;leftArm.roll=-rightArm.roll;rightArm.pitch=leftArm.pitch=glide?-.6f:fly?-.3f:0;}
         var model=(PlayerEntityModel<?>)(Object)this;model.rightPants.copyTransform(rightLeg);model.leftPants.copyTransform(leftLeg);model.rightSleeve.copyTransform(rightArm);model.leftSleeve.copyTransform(leftArm);
     }
     @Inject(method="setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",at=@At("TAIL"))

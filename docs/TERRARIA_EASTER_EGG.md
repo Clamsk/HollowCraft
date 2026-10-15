@@ -19,9 +19,11 @@
 
 原生敌人的方向防御、不可受击阶段、阶段变换、受击动作和死亡流程仍走原来的桥接路径。它不能攻击 NPC 或绕过剧情触发条件。录制福光时可用启动器选择对应 Boss 战，进入战斗后输入口令。
 
+0.30.16 从 Boss 当前状态机中读取接下来可达的血量检查，单次高伤害止于下一阶段边界，等待原版受击事件和阶段转场完成；最后一次转阶段短暂保留 1 点原生血量，给原版控制器安装无敌状态的时间。这项保护同时覆盖天顶剑、创造三叉戟等桥接伤害，保留剧情无敌。旧版本已经卡在 0 血的战斗请重新进入。
+
 ## 星尘之翼
 
-将星尘之翼拖到 **胸甲栏**，也可以手持后右键装备；会替换原胸甲，不提供护甲值。它采用原版四帧贴图，左右翼接在 MC 人模的躯干上，带振翅和蓝色星尘粒子。
+将星尘之翼拖到 **胸甲栏**，也可以手持后右键装备；会替换原胸甲，不提供护甲值。0.30.16 使用重新制作的 3D 体素骨骼模型，包含背部挂点、翼根、外翼和弯曲翼尖；深蓝轮廓与青色发光脉络跟随实际 MC 躯干变换，覆盖下蹲与战斗姿态，并区分地面收翼、飞行振翅、滑翔展开和下落收拢。
 
 - 空中按住空格飞行，累计可用约 **3 秒**；落地恢复，不因松开空格立即补满。
 - 松开空格下降；耗尽后继续按空格缓降。A / D 控制方向，有加速、减速和地形碰撞。
@@ -38,3 +40,6 @@
 先装好泰拉瑞亚，再运行新版 **Install HollowCraft.cmd**。已经安装 HollowCraft 的开发目录可运行 `scripts/prepare-terraria-assets.ps1`；非标准路径使用 `-TerrariaRoot` 指向包含 `Content` 的目录。导入后重启两端，私有 MC 配置会启用 `HollowCraft-Terraria` 资源包。没有泰拉瑞亚素材时，普通 HollowCraft 仍可运行，口令会提示先导入素材。
 
 原版参考：[天顶剑](https://terraria.wiki.gg/wiki/Zenith)、[星尘之翼](https://terraria.wiki.gg/wiki/Stardust_Wings)。导入工具采用 MonoGame 的 LZX 解码器，来源和许可证见 [第三方说明](../release/THIRD_PARTY.md)。
+
+
+模型与状态分层参考：汇流来世的 [翅膀骨骼层级](https://github.com/Magic-team-jvav/confluence/blob/neoforge/1.21.1/ConfluenceOtherworld/src/main/resources/assets/confluence/geo/curio/fledgling_wings.geo.json)、[待机/飞行/滑翔动画](https://github.com/Magic-team-jvav/confluence/blob/neoforge/1.21.1/ConfluenceOtherworld/src/main/resources/assets/confluence/animations/curio/fledgling_wings.animation.json)，以及泰拉饰品的 [躯干跟随渲染层](https://github.com/Magic-team-jvav/TerraCurio/blob/neoforge/1.21.1/src/main/java/org/confluence/terra_curio/client/renderer/accessory/WormScarfRenderer.java)。本项目自行实现 Fabric 1.20.1 模型与二维控制。

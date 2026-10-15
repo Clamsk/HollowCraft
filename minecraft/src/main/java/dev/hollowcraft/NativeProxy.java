@@ -15,6 +15,7 @@ final class NativeProxy extends ZombieEntity {
     private int nailBlock,spellBlock,blockSerial;
     private float blockedAngle,damageAngle,candidateAngle;
     Float zenithAngle;
+    private float phaseFloor;private boolean applyingDamage;
     private boolean blockedSpell;
     private final int actorId;
     private net.minecraft.util.math.Vec3d previousNative,currentNative;
@@ -31,6 +32,7 @@ final class NativeProxy extends ZombieEntity {
     void guards(JsonObject data) {
         nailBlock=data.has("nailBlock")?data.get("nailBlock").getAsInt():data.has("invulnerable")&&data.get("invulnerable").getAsBoolean()?15:0;
         spellBlock=data.has("spellBlock")?data.get("spellBlock").getAsInt():nailBlock;
+        phaseFloor=data.has("phaseFloor")?Math.max(0,Math.min(getMaxHealth(),data.get("phaseFloor").getAsFloat())):0;
     }
     boolean resource() {return kind.equals("resource");}
     int actorId() {return actorId;}
@@ -74,12 +76,15 @@ final class NativeProxy extends ZombieEntity {
         return true;
     }
     @Override public boolean damage(DamageSource source,float amount) {
-        boolean accepted=super.damage(source,amount);
+        if(phaseFloor>0&&getHealth()<=phaseFloor+.0001f)return false;
+        boolean accepted;applyingDamage=true;
+        try {accepted=super.damage(source,amount);}finally{applyingDamage=false;}
         if(accepted)damageAngle=candidateAngle;
         return accepted;
     }
     String bridgeName() {return name;}
     @Override public void setHealth(float health) {
+        if(applyingDamage&&phaseFloor>0)health=Math.max(health,Math.min(getHealth(),phaseFloor));
         // Cleave multipliers can leave sub-millipoint float residue. Normalize only
         // native proxies; LivingEntity.damage still runs its original death/loot path.
         super.setHealth(health>0&&health<.0001f?0:health);

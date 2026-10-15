@@ -48,6 +48,7 @@ public final class PlayerVisualBridge {
     public static boolean riding() {return PlayerRenderState.latest!=null&&PlayerRenderState.latest.riding;}
     public static boolean wingActive() {return flag(PlayerRenderState.controls,"wingActive");}
     public static float wingPhase() {return number(PlayerRenderState.controls,"wingPhase",0);}
+    public static String wingState() {return text(PlayerRenderState.controls,"wingState","ground");}
 
     static void tick(MinecraftClient client) {
         var state=PlayerRenderState.latest;var input=PlayerRenderState.controls;

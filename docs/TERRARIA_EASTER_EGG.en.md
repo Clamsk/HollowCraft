@@ -19,9 +19,11 @@ Body-range aiming compresses the minimum loop so that small enemies overlapping 
 
 Native enemies retain directional guards, invulnerable phases, phase changes, hit reactions and death handling. NPCs and story triggers remain protected. For Radiance footage, select the appropriate fight in the recording launcher and enter the command after arriving.
 
+Version 0.30.16 reads native HP comparisons reachable from the active boss FSM state. A hit stops at the next threshold while the original damage event/phase transition completes. The terminal transition briefly retains one HP while the native shield is installed. This applies to bridged native damage generally, including Zenith and the creative trident; scripted invulnerability is preserved. Re-enter a fight already stalled at zero HP in an older build.
+
 ## Stardust Wings
 
-Place the wings in the **chest slot**, or hold them and right-click to equip. They replace the chestplate and add no armor. Original four-frame textures form two wings attached to the MC torso, with flapping and blue stardust particles.
+Place the wings in the **chest slot**, or hold them and right-click to equip. They replace the chestplate and add no armor. Version 0.30.16 uses an authored 3D voxel rig with a back mount, shoulder, outer-wing and curved-tip joints. Blue shells and luminous cyan cores follow the actual MC torso transform, including crouching and combat animation, with separate ground, flight, glide and fall poses.
 
 - Hold Space in the air to fly for a cumulative **3 seconds**. Landing restores the budget; releasing Space does not refill it.
 - Release Space to descend; hold it after exhaustion to slow descent. A / D steer with acceleration, deceleration and terrain collision.
@@ -38,3 +40,6 @@ The installer detects Steam Terraria and imports the Zenith/component-sword spri
 Install Terraria, then run the new **Install HollowCraft.cmd**. A development checkout can run `scripts/prepare-terraria-assets.ps1`; use `-TerrariaRoot` for a custom directory containing `Content`. Restart both games after importing. The private MC profile enables the `HollowCraft-Terraria` resource pack. Normal HollowCraft remains available without Terraria; the Easter egg command requests asset import first.
 
 Original references: [Zenith](https://terraria.wiki.gg/wiki/Zenith), [Stardust Wings](https://terraria.wiki.gg/wiki/Stardust_Wings). The importer uses MonoGame's LZX decoder; see [third-party notices](../release/THIRD_PARTY.en.md).
+
+
+Model/state design references: Confluence’s [wing skeleton](https://github.com/Magic-team-jvav/confluence/blob/neoforge/1.21.1/ConfluenceOtherworld/src/main/resources/assets/confluence/geo/curio/fledgling_wings.geo.json) and [standby/fly/glide animation states](https://github.com/Magic-team-jvav/confluence/blob/neoforge/1.21.1/ConfluenceOtherworld/src/main/resources/assets/confluence/animations/curio/fledgling_wings.animation.json), and TerraCurio’s [torso-following renderer](https://github.com/Magic-team-jvav/TerraCurio/blob/neoforge/1.21.1/src/main/java/org/confluence/terra_curio/client/renderer/accessory/WormScarfRenderer.java). HollowCraft implements its own Fabric 1.20.1 model and XY controls.

@@ -453,6 +453,7 @@ namespace HollowCraft
                     guiMods=NativeGuiView.Modifiers,guiC=Input.GetKey(KeyCode.C),guiX=Input.GetKey(KeyCode.X),
                     crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,flying=MinecraftEnvironment.Flying,
                     wingActive=TerrariaEquipment.WingActive,wingPhase=TerrariaEquipment.WingPhase,
+                    wingState=TerrariaEquipment.WingState,
                     zenithSwing=Terraria.Swinging,zenithSerial=Terraria.SwingSerial,
                     pitch=usingItem&&GameCursor.WorldTarget(hero,out Vector2 aimPoint,out _)?-Mathf.Atan2(aimPoint.y-GameCursor.Eye(hero).y,Mathf.Abs(aimPoint.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0,
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",

@@ -56,6 +56,7 @@ namespace HollowCraft
         internal const string Zenith="hollowcraft_bridge:zenith",Wings="hollowcraft_bridge:stardust_wings";
         internal static bool WingEquipped=>(string)HollowCraftRuntime.Instance?.Stats?["equipment"]?[1]?["id"]==Wings;
         internal static bool WingActive;internal static float WingPhase,FlightRemaining=3;
+        internal static string WingState="none";
         private HollowCraftRuntime runtime;private bool sent;private float nextSend;
         internal int SwingSerial;private float swungAt=-100;
         internal bool Swinging=>runtime.HeldItem==Zenith&&Time.unscaledTime-swungAt<.5f;

@@ -20,7 +20,7 @@ namespace HollowCraft
         // Six points per iron-sword hit: three normal hits for ordinary enemies.
         // Tough enemies and bosses retain extra health above the common 60 native HP band.
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
-        internal static void Clear() {enemies.Clear();nearby.Clear();nextDiscovery=0;NativeBattle.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();WorldCreatures.Clear();}
+        internal static void Clear() {enemies.Clear();nearby.Clear();nextDiscovery=0;NativeBattle.Clear();NativeBossPhases.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();WorldCreatures.Clear();}
         internal static GameObject Actor(int id)=>enemies.TryGetValue(id,out var adapter)?adapter.Enemy!=null?adapter.Enemy.gameObject:adapter.Breakable!=null?adapter.Breakable.gameObject:null:null;
         internal static Collider2D Body(int id)=>enemies.TryGetValue(id,out var adapter)?adapter.Body:null;
         // Match HitTaker's nearest responder, but never pick a disabled phase component.
@@ -39,6 +39,7 @@ namespace HollowCraft
             return new {id,maxHealth=adapter.Max,health=adapter.Health,generation=adapter.Generation,
                 kind=adapter.Resource?"resource":enemy.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||enemy.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0?"undead":"arthropod",
                 name=adapter.Resource?adapter.Breakable.name:enemy.name,actor=body.attachedRigidbody!=null?body.attachedRigidbody.transform.GetInstanceID():actor.GetInstanceID(),x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,
+                phaseFloor=enemy!=null?Math.Max(0,(NativeBossPhases.Floor(enemy,adapter.NativeMax)-.01f)/adapter.NativeMax*adapter.Max):0,
                 nailBlock=enemy!=null?BlockMask(enemy,AttackTypes.Nail):0,spellBlock=enemy!=null?BlockMask(enemy,AttackTypes.Spell):0};
         }
         internal static int Register(HealthManager enemy) {
@@ -126,6 +127,7 @@ namespace HollowCraft
                 }
                 if(adapter.Enemy==null || adapter.Enemy.isDead) continue;
                 var enemy=adapter.Enemy;int before=enemy.hp;int desired=Mathf.CeilToInt(Math.Max(0,health)/adapter.Max*adapter.NativeMax);
+                int floor=NativeBossPhases.Floor(enemy,adapter.NativeMax);bool gated=desired<floor;desired=Math.Max(desired,floor);
                 int damage=Math.Max(0,enemy.hp-desired);adapter.Health=health;
                 if(damage<=0) continue;
                 Vector2 direction=((Vector2)enemy.transform.position-(Vector2)hero.transform.position).normalized;
@@ -151,10 +153,10 @@ namespace HollowCraft
                     // as if every ordinary enemy had a new boss phase, making it immortal.
                     if(desired==0)enemy.Die(angle,attackType,true);
                 }
-                Debug.Log("[HollowCraft] Native combat id="+id+" name="+enemy.name+" MC="+health+" native="+before+"->"+enemy.hp+" dead="+enemy.isDead+" blocked="+blocked);
+                Debug.Log("[HollowCraft] Native combat id="+id+" name="+enemy.name+" MC="+health+" native="+before+"->"+enemy.hp+" dead="+enemy.isDead+" blocked="+blocked+" phaseFloor="+floor);
                 adapter.LastNative=enemy.hp;
                 if(health<=0&&enemy.isDead) HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id,generation=adapter.Generation});
-                if(!enemy.isDead&&(enemy.hp>before||health<=0&&enemy.hp>0)) {adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=0;}
+                if(!enemy.isDead&&(gated||enemy.hp>before||health<=0&&enemy.hp>0)) {adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=0;}
                 var body=enemy.GetComponent<Rigidbody2D>();if(body!=null && !enemy.isDead && body.bodyType==RigidbodyType2D.Dynamic) body.linearVelocity+=direction*3;
             }
         }
