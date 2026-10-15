@@ -13,7 +13,7 @@ namespace HollowCraft
         internal static void Reset() {hero=null;initialized=airborne=false;distance=0;}
         internal static void Sample(HeroController value) {
             var runtime=HollowCraftRuntime.Instance;
-            if(value==null||runtime==null||!runtime.InGame||runtime.NativeControlLocked) {Reset();return;}
+            if(value==null||runtime==null||!runtime.InGame||runtime.NativeControlLocked||WorldCreatures.Riding) {Reset();return;}
             float feet=value.GetComponent<Collider2D>().bounds.min.y;
             if(hero!=value||!initialized) {hero=value;previousY=feet;initialized=true;}
             if(runtime.Spectator||MinecraftEnvironment.Flying||MinecraftEnvironment.Gliding||(bool?)runtime.Stats?["water"]==true||(bool?)runtime.Stats?["climbing"]==true) {

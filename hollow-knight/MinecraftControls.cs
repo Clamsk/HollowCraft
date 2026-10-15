@@ -82,6 +82,9 @@ namespace HollowCraft
         }
         private static void SetCrouch(bool requested)
         {
+            // The vanilla seated player's standing collision box intersects its boat.
+            // That is not a low ceiling and must not turn into an automatic Shift press.
+            if(WorldCreatures.Riding) {Crouching=false;return;}
             if(body==null) {Crouching=requested;return;}
             float height=standingSize.y*(MinecraftEnvironment.Gliding ? .6f/1.8f : requested ? 1.5f/1.8f : 1);
             var scale=body.transform.lossyScale;
@@ -101,6 +104,7 @@ namespace HollowCraft
             if(!Active) return movement;
             var runtime=HollowCraftRuntime.Instance;
             if(runtime==null||!runtime.InGame||runtime.NativeControlLocked)return movement;
+            if(WorldCreatures.Riding)return 0;
             if(PlayerSystem.KnockbackActive) return PlayerSystem.KnockbackX/Math.Max(1,hero.RUN_SPEED);
             if(TestMovement.HasValue)movement=TestMovement.Value;
             if((InterfaceOpen || !Application.isFocused)&&!TestMovement.HasValue) return 0;

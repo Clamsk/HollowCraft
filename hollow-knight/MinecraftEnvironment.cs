@@ -29,6 +29,7 @@ namespace HollowCraft
         internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;Flying=false;JumpOriginFeet=null;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;instance.lastSpacePress=-1000;instance.flightY=instance.flightPhase=0;instance.motionX=instance.walkPhase=instance.walkVelocity=instance.lastAppliedX=0;instance.fluidActive=false;}}
         internal static float? HorizontalSpeed=>instance!=null&&instance.ownHorizontal?instance.lastAppliedX:(float?)null;
         internal static void SceneChanged() {StopMotion();if(instance!=null) {instance.ownGravity=false;instance.ownHorizontal=false;}}
+        internal static void VehicleChanged() {SceneChanged();NativeFallTracker.Reset();}
         internal static void SuspendNativeMotion() {
             if(instance==null)return;
             // Restore before AffectedByGravity(false) records prevGravityScale.
@@ -73,6 +74,7 @@ namespace HollowCraft
             var runtime=HollowCraftRuntime.Instance;if(runtime==null||!runtime.InGame) return;
             var current=HeroController.instance;if(current==null) return;
             if(hero!=current) {Restore();hero=current;body=hero.GetComponent<Rigidbody2D>();movementCollider=hero.GetComponent<Collider2D>();gravity=hero.DEFAULT_GRAVITY;jump=hero.JUMP_SPEED;Gliding=Flying=false;JumpOriginFeet=null;lastSpacePress=-1000;ownHorizontal=false;fluidActive=false;walkPhase=0;}
+            if(WorldCreatures.Riding) {StopMotion();ownHorizontal=false;ownGravity=false;body.gravityScale=0;body.linearVelocity=Vector2.zero;return;}
             if(!runtime.Creative&&Flying)SetFlying(false);
             if(runtime.SimulationPaused) {lastSpacePress=-1000;if(runtime.Dead)Gliding=Flying=false;return;}
             bool test=Environment.GetEnvironmentVariable("HOLLOWCRAFT_SMOKE")=="1";
@@ -96,7 +98,7 @@ namespace HollowCraft
         {
             var runtime=HollowCraftRuntime.Instance;if(hero==null||body==null||runtime==null||!runtime.InGame||runtime.SimulationPaused) return;
             if(runtime.NativeControlLocked) {NativeFallTracker.Reset();ownHorizontal=false;return;}
-            if(WorldCreatures.Riding) {body.linearVelocity=Vector2.zero;NativeFallTracker.Reset();ownHorizontal=false;return;}
+            if(WorldCreatures.Riding) {body.gravityScale=0;body.linearVelocity=Vector2.zero;NativeFallTracker.Reset();ownHorizontal=false;ownGravity=false;return;}
             NativeFallTracker.Sample(hero);
             if(runtime.Spectator) {
                 var collider=hero.GetComponent<Collider2D>();

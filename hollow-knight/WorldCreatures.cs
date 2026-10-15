@@ -16,14 +16,42 @@ namespace HollowCraft
     internal sealed class WorldCreatures : MonoBehaviour
     {
         private sealed class Friendly {internal GameObject Actor;internal Collider2D Body;internal Renderer Sprite;}
-        private sealed class Seat {internal int Id;internal Transform Root;internal Rigidbody2D Body;internal HealthManager Health;internal Vector2 Point,Offset,Velocity;internal float Gravity;internal string MovingState;internal PlayMakerFSM[] Machines;}
+        private sealed class VehicleCollision : IDisposable {
+            private Collider2D vehicle;private Transform root;
+            private readonly Dictionary<Collider2D,bool> previous=new Dictionary<Collider2D,bool>();
+            internal void Bind(Transform value,Collider2D boat) {
+                if(root==value&&vehicle==boat)return;Dispose();root=value;vehicle=boat;
+                if(value==null||boat==null)return;
+                foreach(var shape in value.GetComponentsInChildren<Collider2D>(true)) {
+                    if(shape==boat)continue;previous[shape]=Physics2D.GetIgnoreCollision(shape,boat);Physics2D.IgnoreCollision(shape,boat,true);
+                }
+            }
+            public void Dispose() {
+                if(vehicle!=null)foreach(var pair in previous)if(pair.Key!=null)Physics2D.IgnoreCollision(pair.Key,vehicle,pair.Value);
+                previous.Clear();vehicle=null;root=null;
+            }
+        }
+        private sealed class Visual {internal Renderer Renderer;internal int Layer,Order,Relative;}
+        private sealed class Seat {
+            internal int Id,Boat;internal string BoatUuid;internal Transform Root;internal Rigidbody2D Body;
+            internal HealthManager Health;internal Vector2 Point,Offset,Velocity;internal Vector3 Foot;internal Quaternion Rotation;internal float Gravity;internal string MovingState;
+            internal RigidbodyInterpolation2D Interpolation;internal PlayMakerFSM[] Machines;internal Visual[] Visuals;
+            internal readonly VehicleCollision Collision=new VehicleCollision();
+        }
+        private sealed class PlayerSeat {
+            internal HeroController Hero;internal Rigidbody2D Body;internal Collider2D Shape;internal float Gravity;
+            internal RigidbodyType2D Type;internal RigidbodyInterpolation2D Interpolation;internal Vector2 Offset;
+            internal readonly VehicleCollision Collision=new VehicleCollision();
+        }
         private static readonly Dictionary<int,CreatureBody> bodies=new Dictionary<int,CreatureBody>();
         private static readonly Dictionary<int,Friendly> friendly=new Dictionary<int,Friendly>();
         private static readonly Dictionary<int,Seat> seats=new Dictionary<int,Seat>();
         private static readonly string[] names={"npc","elderbug","hornet","quirrel","cloth","cornifer","bretta","tiso","zote","myla","sly","mato","oro","sheo","iselda","salubra","leg eater","willoh","divine","emilitia","nailsmith","hunter","stag"};
         private static float nextFriendly;
         private static JObject rider;
+        private static PlayerSeat playerSeat;
         internal static bool Riding=>rider!=null&&HollowCraftRuntime.Instance?.InGame==true&&HollowCraftRuntime.Instance.Dead==false;
+        internal static Vector2? PlayerFeet=>Riding?new Vector2((float)rider["x"],(float)rider["y"]):(Vector2?)null;
         internal static IEnumerable<int> Captured=>seats.Values.Where(s=>s.Root!=null&&(s.Health==null||!s.Health.isDead)).Select(s=>s.Id);
         internal static IEnumerable<Vector2Int> SampleCells(int x,int y) {
             var cells=new HashSet<Vector2Int>();
@@ -60,48 +88,86 @@ namespace HollowCraft
                 if(actor==null&&friendly.TryGetValue(id,out var npc))actor=npc.Actor;
                 if(actor==null||!actor.activeInHierarchy)continue;
                 var health=actor.GetComponent<HealthManager>();if(health!=null&&health.isDead)continue;
-                var body=actor.GetComponentInParent<Rigidbody2D>();var root=body!=null?body.transform:actor.transform;
+                var collision=EnemySystem.Body(id)??actor.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&!c.isTrigger);
+                var body=collision!=null?collision.attachedRigidbody:null;if(body==null)body=actor.GetComponentInParent<Rigidbody2D>();
+                var root=body!=null?body.transform:actor.transform;
                 int key=root.GetInstanceID();active.Add(key);
                 if(!seats.TryGetValue(key,out var seat)) {
-                    var collision=actor.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy);
                     Bounds bounds=collision!=null?collision.bounds:new Bounds(root.position,Vector3.one);
                     if(friendly.TryGetValue(id,out var person)&&person.Sprite!=null)bounds=person.Sprite.bounds;
+                    var renderers=root.GetComponentsInChildren<Renderer>(true);int baseOrder=renderers.Length>0?renderers.Min(r=>r.sortingOrder):0;
                     seats[key]=seat=new Seat {Id=id,Root=root,Body=body,Health=health,Gravity=body!=null?body.gravityScale:0,Machines=root.GetComponents<PlayMakerFSM>(),
+                        Foot=root.InverseTransformPoint(new Vector3(bounds.center.x,bounds.min.y,root.position.z)),Rotation=root.rotation,Interpolation=body!=null?body.interpolation:RigidbodyInterpolation2D.None,
+                        Visuals=renderers.Select(r=>new Visual {Renderer=r,Layer=r.sortingLayerID,Order=r.sortingOrder,Relative=Mathf.Clamp(r.sortingOrder-baseOrder,0,16)}).ToArray(),
                         Offset=new Vector2(root.position.x-bounds.center.x,root.position.y-bounds.min.y)};
                     Debug.Log("[HollowCraft] Native actor boarded boat: "+root.name);
                 }
+                seat.Boat=(int)anchor["boat"];seat.BoatUuid=(string)anchor["uuid"];
                 seat.Point=new Vector2((float)anchor["x"],(float)anchor["y"]);
             }
             foreach(int id in seats.Keys.Where(id=>!active.Contains(id)).ToArray()) {Release(seats[id]);seats.Remove(id);}
-            rider=message["rider"] as JObject;Constrain();Physics2D.SyncTransforms();
+            bool wasRiding=rider!=null;rider=message["rider"] as JObject;
+            if(wasRiding&&rider==null&&playerSeat!=null) {
+                var hero=playerSeat.Hero;ReleasePlayer();
+                if(hero!=null&&HollowCraftRuntime.Instance?.InGame==true&&!HollowCraftRuntime.Instance.Dead&&!HollowCraftRuntime.Instance.NativeControlLocked) {
+                    var candidate=new Vector2((float?)message["playerX"]??hero.transform.position.x,(float?)message["playerY"]??hero.GetComponent<Collider2D>().bounds.min.y);
+                    var feet=NativeLanding.Resolve(hero,candidate,Vector2.up);var offset=hero.transform.position.y-hero.GetComponent<Collider2D>().bounds.min.y;
+                    hero.transform.position=new Vector3(feet.x,feet.y+offset,hero.transform.position.z);hero.GetComponent<Rigidbody2D>().position=hero.transform.position;
+                }
+            }
+            Constrain();Physics2D.SyncTransforms();
         }
         private void FixedUpdate() {Constrain();}
         private void LateUpdate() {Constrain();}
         private static void Constrain() {
-            if(HollowCraftRuntime.Instance?.InGame!=true)return;
+            if(HollowCraftRuntime.Instance?.InGame!=true) {ReleasePlayer();return;}
             foreach(var seat in seats.Values)Pin(seat);
-            if(Riding&&HeroController.instance!=null) {
-                var hero=HeroController.instance;var shape=hero.GetComponent<Collider2D>();float offset=hero.transform.position.y-shape.bounds.min.y;
-                var position=hero.transform.position;position.x=(float)rider["x"];position.y=(float)rider["y"]+offset;hero.transform.position=position;
-                hero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;NativeFallTracker.Reset();
+            ConstrainPlayer(HeroController.instance);
+        }
+        private static Collider2D BoatShape(int id,string uuid)=>bodies.TryGetValue(id,out var boat)&&boat!=null&&boat.Boat&&boat.Uuid==uuid?boat.Shape:null;
+        internal static void ConstrainPlayer(HeroController hero) {
+            if(!Riding||hero==null) {ReleasePlayer();return;}
+            if(playerSeat==null||playerSeat.Hero!=hero) {
+                ReleasePlayer();var body=hero.GetComponent<Rigidbody2D>();var shape=hero.GetComponent<Collider2D>();
+                if(body==null||shape==null)return;
+                playerSeat=new PlayerSeat {Hero=hero,Body=body,Shape=shape,Gravity=body.gravityScale>0?body.gravityScale:hero.DEFAULT_GRAVITY,
+                    Type=body.bodyType,Interpolation=body.interpolation,Offset=(Vector2)hero.transform.position-new Vector2(shape.bounds.center.x,shape.bounds.min.y)};
+                MinecraftEnvironment.VehicleChanged();Debug.Log("[HollowCraft] Player boat physics acquired");
             }
+            var seat=playerSeat;seat.Collision.Bind(hero.transform,BoatShape((int)rider["entity"],(string)rider["uuid"]));
+            seat.Body.bodyType=RigidbodyType2D.Kinematic;seat.Body.interpolation=RigidbodyInterpolation2D.None;
+            seat.Body.gravityScale=0;seat.Body.linearVelocity=Vector2.zero;seat.Body.angularVelocity=0;
+            var position=hero.transform.position;position.x=(float)rider["x"]+seat.Offset.x;position.y=(float)rider["y"]+seat.Offset.y;
+            seat.Body.position=position;hero.transform.position=position;NativeFallTracker.Reset();
+        }
+        private static void ReleasePlayer() {
+            if(playerSeat==null)return;var seat=playerSeat;playerSeat=null;seat.Collision.Dispose();
+            if(seat.Body!=null) {seat.Body.bodyType=seat.Type;seat.Body.interpolation=seat.Interpolation;seat.Body.gravityScale=seat.Gravity;seat.Body.linearVelocity=Vector2.zero;}
+            MinecraftEnvironment.VehicleChanged();Debug.Log("[HollowCraft] Player boat physics released");
         }
         private static void Pin(Seat seat) {
             if(seat.Root==null||seat.Health!=null&&seat.Health.isDead)return;
+            seat.Collision.Bind(seat.Root,BoatShape(seat.Boat,seat.BoatUuid));seat.Root.rotation=seat.Rotation;
+            // A local anchor follows facing flips without reading stale physics-world bounds.
+            seat.Offset=seat.Root.position-seat.Root.TransformPoint(seat.Foot);
             var position=seat.Root.position;position.x=seat.Point.x+seat.Offset.x;position.y=seat.Point.y+seat.Offset.y;seat.Root.position=position;
+            var hero=HeroController.instance;var original=hero!=null?hero.GetComponent<Renderer>():null;
+            foreach(var visual in seat.Visuals)if(visual.Renderer!=null) {visual.Renderer.sortingLayerID=original!=null?original.sortingLayerID:visual.Layer;visual.Renderer.sortingOrder=(original!=null?original.sortingOrder:0)+26+visual.Relative;}
             if(seat.Body!=null) {
                 if(seat.Body.gravityScale!=0)seat.Gravity=seat.Body.gravityScale;
                 if(seat.Body.linearVelocity.sqrMagnitude>.001f) {seat.Velocity=seat.Body.linearVelocity;seat.MovingState=State(seat);}
-                seat.Body.position=position;seat.Body.gravityScale=0;seat.Body.linearVelocity=Vector2.zero;
+                seat.Body.position=position;seat.Body.interpolation=RigidbodyInterpolation2D.None;seat.Body.gravityScale=0;seat.Body.linearVelocity=Vector2.zero;seat.Body.angularVelocity=0;
             }
         }
         private static string State(Seat seat)=>string.Join("|",seat.Machines.Where(f=>f!=null).Select(f=>f.ActiveStateName));
         private static void Release(Seat seat) {
-            if(seat.Body==null)return;seat.Body.gravityScale=seat.Gravity;
+            seat.Collision.Dispose();foreach(var visual in seat.Visuals)if(visual.Renderer!=null) {visual.Renderer.sortingLayerID=visual.Layer;visual.Renderer.sortingOrder=visual.Order;}
+            if(seat.Body==null)return;seat.Body.gravityScale=seat.Gravity;seat.Body.interpolation=seat.Interpolation;
             if((seat.Health==null||!seat.Health.isDead)&&seat.MovingState==State(seat))seat.Body.linearVelocity=seat.Velocity;
         }
         internal static bool Seated(HealthManager enemy) {
-            if(enemy==null)return false;var body=enemy.GetComponentInParent<Rigidbody2D>();return seats.ContainsKey((body!=null?body.transform:enemy.transform).GetInstanceID());
+            if(enemy==null)return false;var shape=EnemySystem.Body(enemy.GetInstanceID());var body=shape!=null?shape.attachedRigidbody:null;
+            if(body==null)body=enemy.GetComponentInParent<Rigidbody2D>();return seats.ContainsKey((body!=null?body.transform:enemy.transform).GetInstanceID());
         }
         internal static bool ConstrainSource(GameObject source) {
             if(source==null)return false;
@@ -135,7 +201,7 @@ namespace HollowCraft
             return result;
         }
         internal static void Clear() {
-            foreach(var seat in seats.Values)Release(seat);seats.Clear();friendly.Clear();rider=null;nextFriendly=0;
+            rider=null;ReleasePlayer();foreach(var seat in seats.Values)Release(seat);seats.Clear();friendly.Clear();nextFriendly=0;
             foreach(var body in bodies.Values)if(body!=null) {body.gameObject.SetActive(false);UnityEngine.Object.Destroy(body.gameObject);}bodies.Clear();
         }
     }

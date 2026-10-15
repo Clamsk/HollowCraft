@@ -16,6 +16,7 @@ import net.minecraft.util.math.*;
 public final class CreatureBridge {
     private static final String TAG="hollowcraft_creature";
     private static final Map<UUID,Entity> entities=new LinkedHashMap<>();
+    private static volatile Set<UUID> bridgeBoats=Set.of();
     private static final net.minecraft.server.world.ChunkTicketType<UUID> BOAT_TICKET=net.minecraft.server.world.ChunkTicketType.create("hollowcraft_boat",Comparator.<UUID>naturalOrder(),100);
     private static final Map<UUID,ChunkPos> tickets=new HashMap<>();
     private static ServerPlayerEntity owner;
@@ -25,14 +26,14 @@ public final class CreatureBridge {
     private static String placementFailure="";
     static String placementFailure() {return placementFailure;}
     static void configure(ServerPlayerEntity player,int base) {
-        owner=player;offset=base;entities.clear();terrainReady=false;
+        owner=player;offset=base;entities.clear();bridgeBoats=Set.of();terrainReady=false;
         player.getServerWorld().setTimeOfDay(18000);
         player.getServerWorld().getGameRules().get(net.minecraft.world.GameRules.DO_DAYLIGHT_CYCLE).set(false,player.getServer());
         for(var entity:player.getServerWorld().getEntitiesByClass(Entity.class,new Box(base-401,3,-4,base+401,307,4),e->e instanceof MobEntity||e instanceof BoatEntity))register(entity);
     }
     static void clear() {
         if(owner!=null)for(var entry:tickets.entrySet())owner.getServerWorld().getChunkManager().removeTicket(BOAT_TICKET,entry.getValue(),2,entry.getKey());
-        tickets.clear();owner=null;entities.clear();terrainReady=false;
+        tickets.clear();owner=null;entities.clear();bridgeBoats=Set.of();terrainReady=false;
     }
     static void terrainReady() {terrainReady=true;}
     static void playerChanged(ServerPlayerEntity player) {owner=player;}
@@ -40,19 +41,26 @@ public final class CreatureBridge {
         if(owner==null||entity instanceof NativeProxy||entity.getCommandTags().contains("hollowcraft_proxy")||entity.getWorld()!=owner.getWorld()
             ||!(entity instanceof MobEntity||entity instanceof BoatEntity)||Math.abs(entity.getX()-offset)>400||Math.abs(entity.getZ()-.5)>4)return;
         entity.addCommandTag(TAG);entities.put(entity.getUuid(),entity);
+        if(entity instanceof BoatEntity&&!bridgeBoats.contains(entity.getUuid())) {var copy=new HashSet<>(bridgeBoats);copy.add(entity.getUuid());bridgeBoats=Set.copyOf(copy);}
         if(entity instanceof MobEntity mob)mob.setPersistent();
         entity.setPosition(entity.getX(),entity.getY(),.5);
     }
     public static boolean plane(Entity entity) {return entity.getWorld()!=null&&!entity.getWorld().isClient&&HollowCraftBridge.bridgeWorld(entity)
         &&(entity.getCommandTags().contains(TAG)||spawning&&(entity instanceof MobEntity||entity instanceof BoatEntity));}
+    public static boolean authoritativeBoat(Entity entity) {return entity instanceof BoatEntity&&HollowCraftBridge.remoteActive()&&bridgeBoats.contains(entity.getUuid());}
     public static boolean dormant(Entity entity) {
         if(!plane(entity))return false;
         return owner==null||!terrainReady||!HollowCraftBridge.remoteActive()||entity.getWorld()!=owner.getWorld()
             ||Math.abs(entity.getX()-owner.getX())>24||Math.abs(entity.getY()-owner.getY())>17;
     }
     static Collection<Entity> active() {return entities.values();}
+    private static void prune() {
+        if(entities.entrySet().removeIf(entry->entry.getValue().isRemoved())) {
+            var copy=new HashSet<UUID>();for(var entity:entities.values())if(entity instanceof BoatEntity)copy.add(entity.getUuid());bridgeBoats=Set.copyOf(copy);
+        }
+    }
     static void beforeTick() {
-        entities.entrySet().removeIf(entry->entry.getValue().isRemoved());
+        prune();
         for(var entity:entities.values()) {
             if(dormant(entity))continue;
             if(Math.abs(entity.getZ()-.5)>.00001)entity.setPosition(entity.getX(),entity.getY(),.5);
@@ -100,7 +108,7 @@ public final class CreatureBridge {
     static ActionResult place(ServerPlayerEntity player,Hand hand,BlockPos pos) {
         ItemStack stack=player.getStackInHand(hand);var world=player.getServerWorld();
         if(!(stack.getItem() instanceof BoatItem||stack.getItem() instanceof SpawnEggItem))return ActionResult.PASS;
-        placementFailure="";entities.entrySet().removeIf(entry->entry.getValue().isRemoved());
+        placementFailure="";prune();
         if(pos==null) {placementFailure="Move the cursor closer (survival 4.5 blocks, creative 5 blocks)";return ActionResult.FAIL;}
         if(player.isSpectator()||!player.getAbilities().allowModifyWorld) {placementFailure="This game mode cannot place entities";return ActionResult.FAIL;}
         if(entities.size()>=160) {placementFailure="Room creature/boat limit reached (160)";return ActionResult.FAIL;}

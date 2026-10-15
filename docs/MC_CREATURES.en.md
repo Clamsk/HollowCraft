@@ -2,6 +2,8 @@
 
 [简体中文](MC_CREATURES.md) | [English](MC_CREATURES.en.md)
 
+0.30.13 addresses player riding jitter and native passengers hidden by the hull. Bridge boats use server-owned physics; riding suspends native player locomotion, gravity, jumping and collision with that boat. Native passengers use corrected height, local body anchors and foreground sorting while retaining native AI, damage and death. **Shift explicitly dismounts**; release restores collisions, physics and original rendering and checks player clearance.
+
 0.30.12 updates spawn clearance, offscreen cameras and client tracking fallback. For invisible models or frame drops, see [performance and troubleshooting](PERFORMANCE.en.md).
 Version 0.30.11 creates real Minecraft 1.20.1 entities. Minecraft's entity renderers provide transparent frames of their actual 3D models, materials and animation for the Hollow Knight scene. Boats and mobs are not replaced with item icons.
 

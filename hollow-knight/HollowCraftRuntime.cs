@@ -581,7 +581,8 @@ namespace HollowCraft
                 ["teleport"]=appliedTeleport,
                 ["exactX"]=hero.transform.position.x,["exactY"]=hero.GetComponent<Collider2D>().bounds.min.y,
                 ["grounded"]=MinecraftControls.Grounded(hero),["gliding"]=MinecraftEnvironment.Gliding,["flying"]=MinecraftEnvironment.Flying,
-                ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked };
+                ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked,
+                ["riding"]=WorldCreatures.Riding,["dismount"]=WorldCreatures.Riding&&!GameplayBlocked&&Application.isFocused&&(Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)) };
             pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));
             if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);}
             bridge.Send(pose);

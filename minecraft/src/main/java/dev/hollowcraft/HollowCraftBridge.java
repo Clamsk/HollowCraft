@@ -576,23 +576,35 @@ public final class HollowCraftBridge implements ModInitializer {
                 // Poses queued before the last pearl impact cannot reintroduce
                 // its old coordinates/fall distance, even after the wait expires.
                 if(command.has("teleport")&&integer(command,"teleport",-1)!=teleportSerial)break;
-                centerX = clamp(integer(command, "x", 0), -400, 400); centerY = clamp(integer(command, "y", 0), -60, 240);
-                exactX=command.has("exactX") ? command.get("exactX").getAsDouble() : centerX+0.5;
-                exactY=command.has("exactY") ? command.get("exactY").getAsDouble() : centerY;
+                boolean arrivedMounted=owner.hasVehicle();
+                // Do not accept an old mounted pose after the server has dismounted.
+                if(!arrivedMounted&&command.has("riding")&&command.get("riding").getAsBoolean())break;
+                boolean dismount=command.has("dismount")?command.get("dismount").getAsBoolean():command.has("crouching")&&command.get("crouching").getAsBoolean();
+                if(arrivedMounted) {
+                    if(dismount) {owner.stopRiding();owner.setPosition(owner.getX(),owner.getY(),.5);hadPose=false;fallen=0;owner.fallDistance=0;}
+                    else owner.getVehicle().updatePassengerPosition(owner);
+                    exactX=owner.getX()-slot*1024;exactY=owner.getY()-64;
+                    centerX=(int)Math.floor(exactX);centerY=(int)Math.floor(exactY);
+                } else {
+                    centerX = clamp(integer(command, "x", 0), -400, 400); centerY = clamp(integer(command, "y", 0), -60, 240);
+                    exactX=command.has("exactX") ? command.get("exactX").getAsDouble() : centerX+0.5;
+                    exactY=command.has("exactY") ? command.get("exactY").getAsDouble() : centerY;
+                }
+                boolean riding=owner.hasVehicle();
                 reachY=exactY+(command.has("gliding")&&command.get("gliding").getAsBoolean()?.4:command.has("crouching")&&command.get("crouching").getAsBoolean()?1.27:1.62);
-                boolean grounded=command.has("grounded") && command.get("grounded").getAsBoolean();
-                boolean gliding=command.has("gliding")&&command.get("gliding").getAsBoolean();
-                boolean flying=owner.getAbilities().allowFlying&&(owner.isSpectator()||command.has("flying")&&command.get("flying").getAsBoolean());
+                boolean grounded=!riding&&command.has("grounded") && command.get("grounded").getAsBoolean();
+                boolean gliding=!riding&&command.has("gliding")&&command.get("gliding").getAsBoolean();
+                boolean flying=!riding&&owner.getAbilities().allowFlying&&(owner.isSpectator()||command.has("flying")&&command.get("flying").getAsBoolean());
                 if(owner.getAbilities().flying!=flying) {owner.getAbilities().flying=flying;owner.sendAbilitiesUpdate();}
                 boolean scripted=command.has("scripted")&&command.get("scripted").getAsBoolean();
                 if(gliding && !grounded && owner.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA)) owner.startFallFlying();else if(owner.isFallFlying()) owner.stopFallFlying();
                 if(scripted) {fallen=0;owner.fallDistance=0;footstepDistance=0;}
-                if(scripted||owner.isTouchingWater()||owner.isClimbing()||gliding||flying)fallen=0;
+                if(riding||scripted||owner.isTouchingWater()||owner.isClimbing()||gliding||flying)fallen=0;
                 else if(!peer.fallEvents&&hadPose&&!wasGrounded)fallen+=Math.max(0,(float)(lastPoseY-exactY));
                 // A late connection can start after the first landing. The pending opening
                 // must still place water instead of requiring a previously observed air pose.
                 if(!scripted&&grounded&&(!peer.fallEvents&&hadPose&&!wasGrounded||introLanding))applyLanding(fallen);
-                if(hadPose && !creative && !scripted) {
+                if(hadPose && !creative && !scripted&&!riding) {
                     if(command.has("sprinting") && command.get("sprinting").getAsBoolean()) owner.addExhaustion((float)Math.min(2,Math.abs(exactX-lastPoseX))*0.1f);
                     if(wasGrounded && !grounded && exactY>lastPoseY+0.02) owner.addExhaustion(0.05f);
                 }
@@ -613,13 +625,13 @@ public final class HollowCraftBridge implements ModInitializer {
                     if(entity instanceof net.minecraft.entity.ItemEntity && Math.abs(x-exactX)<20 && Math.abs(y-exactY)<20 && Math.abs(entity.getX()-slot*1024-exactX)<20)
                         entity.setPosition(slot*1024+x,64+y,0.5);
                 }
-                owner.setSneaking(command.has("crouching") && command.get("crouching").getAsBoolean());
-                if(owner.isSneaking()&&owner.hasVehicle())owner.stopRiding();
-                owner.setSprinting(command.has("sprinting")&&command.get("sprinting").getAsBoolean()&&(creative||owner.getHungerManager().getFoodLevel()>6)); updateTerrain(command);
+                owner.setSneaking(!riding&&command.has("crouching") && command.get("crouching").getAsBoolean());
+                owner.setSprinting(!riding&&command.has("sprinting")&&command.get("sprinting").getAsBoolean()&&(creative||owner.getHungerManager().getFoodLevel()>6)); updateTerrain(command);
                 FluidBridge.seal(owner.getServerWorld(),pos(centerX,centerY));
                 if(openContainer!=null && (Math.abs(openContainer.getX()-slot*1024-centerX)>6 || Math.abs(openContainer.getY()-64-centerY)>6)) {owner.closeHandledScreen();openContainer=null;}
             }
             case "nativeLanding" -> {
+                if(owner.hasVehicle())break;
                 int serial=integer(command,"landing",0);
                 if(!peer.fallEvents||serial<=lastNativeLanding||integer(command,"teleport",-1)!=teleportSerial||teleportWaiting!=0)break;
                 double x=command.get("x").getAsDouble(),y=command.get("y").getAsDouble(),distance=command.get("distance").getAsDouble();
@@ -744,7 +756,7 @@ public final class HollowCraftBridge implements ModInitializer {
             case "hit" -> {
                 if(activeAttack!=0 && integer(command,"attack",0)==activeAttack && server.getTicks()<hitReadyTick) {pendingHit=command;break;}
                 if(activeAttack!=0 && integer(command,"attack",0)==activeAttack && server.getTicks()>=hitReadyTick) {
-                    if(command.has("playerX")&&command.has("playerY")) {
+                    if(!owner.hasVehicle()&&command.has("playerX")&&command.has("playerY")) {
                         double x=command.get("playerX").getAsDouble(),y=command.get("playerY").getAsDouble();
                         if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)break;
                         owner.setPosition(slot*1024+x,64+y,.5);owner.setOnGround(command.has("grounded")&&command.get("grounded").getAsBoolean());
@@ -955,7 +967,7 @@ public final class HollowCraftBridge implements ModInitializer {
         if(peer!=null)peer.event(reply);owner.currentScreenHandler.sendContentUpdates();snapshot();
     }
     private ActionResult place(JsonObject command,Hand hand) {
-        if(command.has("playerX")&&command.has("playerY")) {
+        if(!owner.hasVehicle()&&command.has("playerX")&&command.has("playerY")) {
             double x=command.get("playerX").getAsDouble(),y=command.get("playerY").getAsDouble();
             if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>400||y<-60||y>240)return ActionResult.FAIL;
             exactX=x;exactY=y;reachY=y+(owner.isSneaking()?1.27:1.62);

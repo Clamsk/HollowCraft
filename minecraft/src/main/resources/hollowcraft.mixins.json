@@ -29,6 +29,7 @@
     ,"CreaturePathMixin"
     ,"CreatureMoveMixin"
     ,"BoatDamageMixin"
+    ,"BoatAuthorityMixin"
   ],
   "client": [
     "ItemRendererAccess",
@@ -58,6 +59,7 @@
     ,"EntityRenderDispatcherAccess"
     ,"RenderSystemAccess"
     ,"NativeEntityPerspectiveMixin"
+    ,"RemoteVehicleControlMixin"
   ],
   "injectors": {
     "defaultRequire": 1

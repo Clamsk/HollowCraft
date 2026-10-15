@@ -42,10 +42,12 @@ namespace HollowCraft
         {
             if(hero==null && Time.unscaledTime>=nextLookup) {nextLookup=Time.unscaledTime+1;hero=FindFirstObjectByType<HeroController>();if(hero!=null) CreateAvatar();}
             if(hero==null||avatar==null) return;
+            WorldCreatures.ConstrainPlayer(hero);
             bool visible=hero.gameObject.activeInHierarchy&&!hero.cState.dead;
             if(visible) foreach(var original in hero.GetComponentsInChildren<Renderer>(true)) original.enabled=false;
             avatar.SetActive(visible);if(!visible) {nativeView.Hide();return;}
-            var collider=hero.GetComponent<Collider2D>();var position=hero.transform.position;if(collider!=null) position.y=collider.bounds.min.y;
+            var collider=hero.GetComponent<Collider2D>();var position=hero.transform.position;var seated=WorldCreatures.PlayerFeet;
+            if(seated.HasValue) {position.x=seated.Value.x;position.y=seated.Value.y;}else if(collider!=null)position.y=collider.bounds.min.y;
             position.z-=.1f;avatar.transform.position=position;
             if(nativeView.Draw(assets,position,layer,order)) {NativeTexture=nativeView.Texture;avatar.SetActive(false);return;}
             NativeTexture=null;

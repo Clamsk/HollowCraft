@@ -22,6 +22,7 @@ namespace HollowCraft
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
         internal static void Clear() {enemies.Clear();nearby.Clear();nextDiscovery=0;NativeBattle.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();WorldCreatures.Clear();}
         internal static GameObject Actor(int id)=>enemies.TryGetValue(id,out var adapter)?adapter.Enemy!=null?adapter.Enemy.gameObject:adapter.Breakable!=null?adapter.Breakable.gameObject:null:null;
+        internal static Collider2D Body(int id)=>enemies.TryGetValue(id,out var adapter)?adapter.Body:null;
         // Match HitTaker's nearest responder, but never pick a disabled phase component.
         internal static HealthManager Resolve(Collider2D collider) {
             for(var node=collider.transform;node!=null;node=node.parent)

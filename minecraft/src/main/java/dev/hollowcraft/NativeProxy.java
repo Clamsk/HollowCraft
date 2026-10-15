@@ -83,6 +83,12 @@ final class NativeProxy extends ZombieEntity {
         super.setHealth(health>0&&health<.0001f?0:health);
     }
     @Override public EntityDimensions getDimensions(EntityPose pose) {return dimensions==null?super.getDimensions(pose):dimensions;}
+    @Override public double getHeightOffset() {
+        // Native sprites have no bent humanoid legs. Zombie's -0.45 offset plus
+        // the wooden boat's -0.1 offset otherwise buries a crawler under the hull.
+        if(getVehicle() instanceof net.minecraft.entity.vehicle.BoatEntity boat)return boat.getHeight()*.75-boat.getMountedHeightOffset();
+        return super.getHeightOffset();
+    }
     @Override protected boolean burnsInDaylight() {return false;}
     @Override protected boolean canConvertInWater() {return false;}
     @Override public EntityGroup getGroup() {return "undead".equals(kind)?EntityGroup.UNDEAD:EntityGroup.ARTHROPOD;}
