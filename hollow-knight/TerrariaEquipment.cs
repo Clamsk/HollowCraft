@@ -11,28 +11,43 @@ namespace HollowCraft
     internal sealed class LocalChat
     {
         private readonly HollowCraftRuntime runtime;
-        internal bool Open;private int closedFrame=-1,openedFrame=-1;private string text="";private bool focus;
+        internal bool Open;private int closedFrame=-1,openedFrame=-1,compositionFrame=-2;private string text="";private bool focus,submitRequested;
         internal bool Captured=>Open||closedFrame==Time.frameCount;
         internal LocalChat(HollowCraftRuntime runtime) {this.runtime=runtime;}
-        internal void Close() {if(Open)closedFrame=Time.frameCount;Open=false;GUIUtility.keyboardControl=0;}
+        internal void Close() {if(Open)closedFrame=Time.frameCount;Open=focus=submitRequested=false;GUIUtility.keyboardControl=0;}
+        private bool CanSubmit=>string.IsNullOrEmpty(Input.compositionString)&&Time.frameCount>compositionFrame+1;
+        private void Submit() {
+            // Both physical-key polling and IMGUI use this single, idempotent path.
+            if(!Open||!CanSubmit)return;
+            if(!string.IsNullOrWhiteSpace(text))runtime.Send(new {type="chat",scene=runtime.Room,text=text.Trim(),assets=File.Exists(Path.Combine(runtime.Assets,"terraria","ready.txt"))});
+            Close();
+        }
         internal void Tick() {
-            if(Open) {if(!runtime.InGame||runtime.Dead||runtime.NativeControlLocked||Input.GetKeyDown(KeyCode.Escape))Close();return;}
+            if(!string.IsNullOrEmpty(Input.compositionString)) {compositionFrame=Time.frameCount;submitRequested=false;}
+            if(Open) {
+                if(!runtime.InGame||!runtime.Connected||runtime.Dead||runtime.NativeControlLocked||Input.GetKeyDown(KeyCode.Escape))Close();
+                else if(Application.isFocused&&CanSubmit&&(Input.GetKeyDown(KeyCode.Return)||Input.GetKeyDown(KeyCode.KeypadEnter)))submitRequested=true;
+                return;
+            }
             if(!runtime.InGame||!runtime.Connected||runtime.GameplayBlocked||!Application.isFocused)return;
             if(Input.GetKeyDown(KeyCode.T)||Input.GetKeyDown(KeyCode.Slash)) {Open=focus=true;openedFrame=Time.frameCount;text=Input.GetKeyDown(KeyCode.Slash)?"/":"";runtime.Combat.Cancel();}
         }
         internal void Draw() {
             if(!Open)return;
-            if(openedFrame==Time.frameCount&&Event.current.type==EventType.KeyDown&&(Event.current.keyCode==KeyCode.T||Event.current.keyCode==KeyCode.Slash))Event.current.Use();
+            var e=Event.current;
+            if(!string.IsNullOrEmpty(Input.compositionString)) {compositionFrame=Time.frameCount;submitRequested=false;}
+            // A focused TextField consumes Return in its own key handler. Handle it
+            // before drawing the field, while leaving IME confirmation to the editor.
+            if(CanSubmit&&e.type==EventType.KeyDown&&(e.keyCode==KeyCode.Return||e.keyCode==KeyCode.KeypadEnter)) {Submit();e.Use();return;}
+            if(openedFrame==Time.frameCount&&e.type==EventType.KeyDown&&(e.keyCode==KeyCode.T||e.keyCode==KeyCode.Slash))e.Use();
             float scale=Mathf.Clamp(Screen.height/540f,1,3),height=32*scale;
             var box=new Rect(8,Screen.height-height-8,Screen.width-16,height);
             GUI.Box(box,GUIContent.none);var style=new GUIStyle(GUI.skin.textField){fontSize=Mathf.RoundToInt(18*scale)};
             GUI.SetNextControlName("HollowCraft.Chat");text=GUI.TextField(new Rect(box.x+5,box.y+4,box.width-10,box.height-8),text,256,style);
             if(focus){GUI.FocusControl("HollowCraft.Chat");focus=false;}
-            var e=Event.current;
-            if(e.type==EventType.KeyDown&&(e.keyCode==KeyCode.Return||e.keyCode==KeyCode.KeypadEnter)) {
-                if(!string.IsNullOrWhiteSpace(text))runtime.Send(new {type="chat",scene=runtime.Room,text=text.Trim(),assets=File.Exists(Path.Combine(runtime.Assets,"terraria","ready.txt"))});
-                Close();e.Use();
-            }
+            // Fallback if another OnGUI listener consumed the key. Repaint follows
+            // text/paste events, so submission sees the field's final contents.
+            if(submitRequested&&e.type==EventType.Repaint)Submit();
         }
     }
 

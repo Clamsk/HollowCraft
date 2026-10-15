@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>HollowCraft</AssemblyName>
-    <Version>0.30.14</Version>
+    <Version>0.30.15</Version>
     <GameManaged>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed</GameManaged>
     <FrameworkPathOverride>$(GameManaged)</FrameworkPathOverride>
   </PropertyGroup>
