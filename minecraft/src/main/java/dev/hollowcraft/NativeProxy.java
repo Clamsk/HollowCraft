@@ -49,6 +49,8 @@ final class NativeProxy extends ZombieEntity {
         value.addProperty("blockedSpell",blockedSpell);value.addProperty("damageAngle",damageAngle);
     }
     @Override public void checkDespawn() {} // Only the native scene owns this entity's lifetime.
+    @Override public boolean shouldSave() {return false;} // Rebuilt from HK, never reloaded as a vanilla zombie.
+    @Override public boolean saveSelfNbt(net.minecraft.nbt.NbtCompound nbt) {return false;} // Includes boat passengers.
     @Override protected void updatePostDeath() {
         // A special native death can expose a weak point or refill a phase. Keep
         // the dead proxy until HK acknowledges death or replaces its generation.

@@ -1,8 +1,8 @@
-# HollowCraft 0.30.16 — Installation and Configuration
+# HollowCraft 0.30.17 — Installation and Configuration
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-0.30.16 reworks Stardust Wings into an articulated 3D model, adds glide/fall poses, fixes ground acceleration and protects native boss HP phase boundaries against large hits. Stop the old build and update both bridges. Re-enter a previously stalled boss fight. See the [Easter egg guide](../docs/TERRARIA_EASTER_EGG.en.md). Gameplay awaits player testing.
+Version 0.30.17 corrects wing folding toward the back and moves the mount beyond the back armor. Native combat proxies retain their occupied chunks and are no longer saved as ordinary zombies. MC left click reaches Radiance ending states that explicitly wait for native attack input. Existing phase gates and Zenith damage remain. Both bridges compile; gameplay awaits player testing. Stop both games before updating, then retry the fight with F5 or re-enter it. See the [Easter egg guide](../docs/TERRARIA_EASTER_EGG.en.md).
 
 This is a **Windows 64-bit playtest package**. It brings items, numerical rules and a 3D player from your local Minecraft installation into Hollow Knight. Both games must run during play. Full survival campaign support is still being adapted; the current build was compiled and handed to players without gameplay acceptance testing.
 
@@ -15,7 +15,7 @@ This is a **Windows 64-bit playtest package**. It brings items, numerical rules 
 
 ## Install and start
 
-1. Download **HollowCraft-v0.30.16-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
+1. Download **HollowCraft-v0.30.17-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
 2. Extract the entire ZIP into a writable directory such as `D:\Games\HollowCraft`. Do not run files inside the ZIP or install into the original Steam or `.minecraft` directory. Built-in Windows PowerShell is sufficient; Codex, Git and development tools are not needed.
 3. Double-click **Install HollowCraft.cmd**. It searches for Steam's game folder and `.minecraft`; enter the paths if discovery fails. The Minecraft root must contain `versions\1.20.1\1.20.1.jar`, rather than merely the launcher executable.
 4. Wait until downloads, checksums and preparation finish and the installer reports `installed`. Installation prepares files without launching games.

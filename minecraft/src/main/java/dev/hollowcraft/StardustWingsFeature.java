@@ -39,7 +39,7 @@ public final class StardustWingsFeature extends FeatureRenderer<AbstractClientPl
             var data=new ModelData();var root=data.getRoot();var anchor=root.addChild("back",ModelPartBuilder.create(),ModelTransform.NONE);
             for(int sign:new int[]{-1,1}) {
                 String side=sign<0?"left":"right";
-                var wing=anchor.addChild(side,box(sign,0,-.85f,-.9f,7,1.7f,1.8f,glow),ModelTransform.pivot(sign*2.5f,2.1f,2.7f));
+                var wing=anchor.addChild(side,box(sign,0,-.85f,-.9f,7,1.7f,1.8f,glow),ModelTransform.pivot(sign*2.5f,2.1f,3.4f));
                 var fan=wing.addChild("fan",box(sign,0,-.7f,-.7f,5.5f,1.4f,1.4f,glow),ModelTransform.pivot(sign*6.6f,.2f,.2f));
                 for(int feather=0;feather<7;feather++) {
                     float length=10.5f-(float)Math.abs(feather-2)*.9f,width=1.8f-feather*.08f;
@@ -53,10 +53,13 @@ public final class StardustWingsFeature extends FeatureRenderer<AbstractClientPl
         }
         void pose(ModelPart body,float spread,float fold,float flap) {
             mount.copyTransform(body);
-            left.yaw=-(1.25f*(1-spread)+.18f+flap);right.yaw=-left.yaw;
+            // Model-space +Z is the back. Mirrored wings extend along opposite X
+            // axes, so the left hinge needs POSITIVE yaw to fold toward +Z.
+            // Keep the full flight stroke behind the shoulders as well.
+            left.yaw=1.1f*(1-spread)+.6f+flap*.55f;right.yaw=-left.yaw;
             left.roll=-.25f+fold*.65f;right.roll=-left.roll;
             left.pitch=right.pitch=-.12f+fold*.2f;
-            leftFan.yaw=-fold*.65f-flap*.35f;rightFan.yaw=-leftFan.yaw;
+            leftFan.yaw=fold*.4f+flap*.15f;rightFan.yaw=-leftFan.yaw;
             leftFan.roll=fold*.55f;rightFan.roll=-leftFan.roll;
         }
         private static ModelPartBuilder box(int sign,float x,float y,float z,float width,float height,float depth,boolean glow) {

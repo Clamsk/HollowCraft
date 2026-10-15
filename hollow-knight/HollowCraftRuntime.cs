@@ -297,6 +297,9 @@ namespace HollowCraft
         {
             Gui?.Refresh(assets);
             Hud?.Refresh(assets);
+            // Scripted final attacks must remain available when the native ending
+            // temporarily owns movement, while menus and pause still block input.
+            if(InGame&&Connected&&!Automated&&Application.isFocused&&!InterfaceBlocked)NativeScriptedAttacks.Input(scene);
             pointerInput.Context(InGame&&!GameplayBlocked&&!Automated&&Application.isFocused);
             string activeScene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (activeScene!=diagnosticScene)

@@ -7,6 +7,10 @@ import net.minecraft.entity.*;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.world.ChunkTicketType;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 
 /** Vanilla living entities own all combat arithmetic; HK owns movement, attacks and death animation. */
@@ -14,18 +18,35 @@ final class EnemyBridge {
     private final Map<Integer,ZombieEntity> enemies=new HashMap<>();
     private final Map<Integer,Vec3d> positions=new HashMap<>();
     private final Map<Integer,Integer> generations=new HashMap<>();
-    void clear() {for(var enemy:enemies.values()) enemy.discard();enemies.clear();positions.clear();generations.clear();}
+    private static final ChunkTicketType<ChunkPos> NATIVE_TICKET=ChunkTicketType.create("hollowcraft_native",Comparator.comparingLong(ChunkPos::toLong),100);
+    private final Set<ChunkPos> chunks=new HashSet<>();
+    private ServerWorld world;
+    void clear() {
+        for(var enemy:enemies.values())enemy.discard();enemies.clear();positions.clear();generations.clear();
+        if(world!=null)for(var chunk:chunks)world.getChunkManager().removeTicket(NATIVE_TICKET,chunk,2,chunk);
+        chunks.clear();world=null;
+    }
     void observe(ServerPlayerEntity player,JsonArray entries,int offset) {
+        if(world!=null&&world!=player.getServerWorld())clear();world=player.getServerWorld();
         Set<Integer> present=new HashSet<>();
+        Set<ChunkPos> held=new HashSet<>();
         for(var entry:entries) {
             var data=entry.getAsJsonObject();int id=data.get("id").getAsInt();
             present.add(id);
             var point=new Vec3d(offset+data.get("x").getAsDouble(),64+data.get("y").getAsDouble(),.5);
+            // Loading once is insufficient: the reduced backend view distance can
+            // unload a still-visible native boss. Refresh one expiring ticket per
+            // occupied chunk, independent of the client's camera and enemy count.
+            var chunk=new ChunkPos(BlockPos.ofFloored(point));
+            if(held.add(chunk)) {world.getChunkManager().addTicket(NATIVE_TICKET,chunk,2,chunk);chunks.add(chunk);}
             var entity=enemies.get(id);
+            float health=data.get("health").getAsFloat();
             int generation=data.has("generation")?data.get("generation").getAsInt():0;
             if(entity!=null&&generations.getOrDefault(id,0)!=generation) {entity.discard();enemies.remove(id);entity=null;}
             if(entity!=null&&entity.isRemoved()&&data.get("health").getAsFloat()>0) {
-                org.slf4j.LoggerFactory.getLogger("HollowCraft").warn("Recover removed native proxy id={} name={} HP={}",id,((NativeProxy)entity).bridgeName(),entity.getHealth());
+                org.slf4j.LoggerFactory.getLogger("HollowCraft").warn("Recover removed native proxy id={} name={} HP={} reason={} position={}",id,((NativeProxy)entity).bridgeName(),entity.getHealth(),entity.getRemovalReason(),entity.getPos());
+                // Do not undo an accepted hit while its native acknowledgement is in flight.
+                health=Math.min(health,entity.getHealth());
                 enemies.remove(id);entity=null;
             }
             if(entity==null) {
@@ -35,10 +56,14 @@ final class EnemyBridge {
                 entity.addCommandTag("hollowcraft_proxy");
                 entity.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(data.get("maxHealth").getAsDouble());
                 entity.getAttributeInstance(EntityAttributes.GENERIC_ARMOR).setBaseValue(0);
-                entity.setHealth(data.has("health")?data.get("health").getAsFloat():entity.getMaxHealth());enemies.put(id,entity);generations.put(id,generation);
+                entity.setHealth(health);enemies.put(id,entity);generations.put(id,generation);
+                ((NativeProxy)entity).size(data);((NativeProxy)entity).guards(data);
                 entity.setPosition(point);
-                player.getServerWorld().getChunk(entity.getBlockPos());
-                player.getServerWorld().spawnEntity(entity);
+                world.getChunk(entity.getBlockPos());
+                if(!world.spawnEntity(entity)) {
+                    org.slf4j.LoggerFactory.getLogger("HollowCraft").warn("Native proxy spawn rejected id={} name={} chunk={}",id,((NativeProxy)entity).bridgeName(),chunk);
+                    entity.discard();
+                }
             }
             ((NativeProxy)entity).size(data);
             ((NativeProxy)entity).nativePoint(point);
@@ -51,6 +76,7 @@ final class EnemyBridge {
             entity.setVelocity(Vec3d.ZERO);
         }
         for(int id:new ArrayList<>(enemies.keySet())) if(!present.contains(id)) {enemies.remove(id).discard();positions.remove(id);generations.remove(id);}
+        for(var chunk:new ArrayList<>(chunks))if(!held.contains(chunk)) {world.getChunkManager().removeTicket(NATIVE_TICKET,chunk,2,chunk);chunks.remove(chunk);}
     }
     void tick() {
         for(var entry:enemies.entrySet()) {

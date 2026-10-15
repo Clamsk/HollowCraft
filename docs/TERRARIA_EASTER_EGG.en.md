@@ -21,6 +21,8 @@ Native enemies retain directional guards, invulnerable phases, phase changes, hi
 
 Version 0.30.16 reads native HP comparisons reachable from the active boss FSM state. A hit stops at the next threshold while the original damage event/phase transition completes. The terminal transition briefly retains one HP while the native shield is installed. This applies to bridged native damage generally, including Zenith and the creative trident; scripted invulnerability is preserved. Re-enter a fight already stalled at zero HP in an older build.
 
+Version 0.30.17 refreshes temporary chunk tickets shared by native proxies in the same chunk, releasing them when targets leave observation or the scene ends. Proxies are excluded from vanilla zombie saves; recovery preserves unacknowledged damage and logs removal reasons. MC left click also forwards the explicitly enabled native `ListenForAttack` event in Radiance ending states, including after its damage collider disappears. It does not set victory flags or skip story states. Zenith retains 190 base damage and 14% critical chance. Mirrored wing hinges now fold toward the back, keep the flight stroke rearward and mount outside the back armor.
+
 ## Stardust Wings
 
 Place the wings in the **chest slot**, or hold them and right-click to equip. They replace the chestplate and add no armor. Version 0.30.16 uses an authored 3D voxel rig with a back mount, shoulder, outer-wing and curved-tip joints. Blue shells and luminous cyan cores follow the actual MC torso transform, including crouching and combat animation, with separate ground, flight, glide and fall poses.
