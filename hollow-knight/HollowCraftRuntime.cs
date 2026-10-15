@@ -583,7 +583,8 @@ namespace HollowCraft
                 ["exactX"]=hero.transform.position.x,["exactY"]=hero.GetComponent<Collider2D>().bounds.min.y,
                 ["grounded"]=MinecraftControls.Grounded(hero),["gliding"]=MinecraftEnvironment.Gliding,["flying"]=MinecraftEnvironment.Flying,
                 ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked };
-            if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));}
+            pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));
+            if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);}
             bridge.Send(pose);
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;mineProgress=0;}
@@ -633,8 +634,9 @@ namespace HollowCraft
             var result = new List<float[]>();
             int mask = LayerMask.GetMask("Terrain","Default");
             if (mask == 0) return result;
-            for (int x = cx - 8; x <= cx + 8; x++) for (int y = cy - 6; y <= cy + 6; y++)
+            foreach(var cell in WorldCreatures.SampleCells(cx,cy))
             {
+                int x=cell.x,y=cell.y;
                 var filter=new ContactFilter2D();filter.SetLayerMask(mask);filter.useTriggers=false;
                 int found=Physics2D.OverlapBox(new Vector2((x + 0.5f) * CellSize, (y + 0.5f) * CellSize),
                     // Native platforms can be much thinner than a block and sit at cell edges.
@@ -643,7 +645,7 @@ namespace HollowCraft
                     new Vector2(CellSize * 0.9999f, CellSize * 0.9999f), 0, filter,terrainProbe);
                 while(found==terrainProbe.Length&&terrainProbe.Length<256) {Array.Resize(ref terrainProbe,terrainProbe.Length*2);found=Physics2D.OverlapBox(new Vector2(x+.5f,y+.5f),new Vector2(.9999f,.9999f),0,filter,terrainProbe);}
                 for(int index=0;index<found;index++) {
-                    var c=terrainProbe[index];if(c==null||c.name.StartsWith("HollowCraft.Block")||c.GetComponentInParent<HeroController>()!=null||c.GetComponentInParent<HealthManager>()!=null)continue;
+                    var c=terrainProbe[index];if(c==null||c.name.StartsWith("HollowCraft.Block")||c.GetComponent<CreatureBody>()!=null||c.GetComponentInParent<HeroController>()!=null||c.GetComponentInParent<HealthManager>()!=null)continue;
                     var bounds=c.bounds;float x0=Mathf.Max(x,bounds.min.x),x1=Mathf.Min(x+1,bounds.max.x),y0=Mathf.Max(y,bounds.min.y),y1=Mathf.Min(y+1,bounds.max.y);
                     var center=new Vector2(x+.5f,y+.5f);var closest=c.ClosestPoint(center);
                     // Polygon terrain bounds can span a whole room. Use the nearby surface
@@ -726,6 +728,7 @@ namespace HollowCraft
         {
             LatestSnapshot=message;
             EnemySystem.Apply(message["enemies"] as JArray,cachedHero);
+            WorldCreatures.Apply(message);
             ApplyProjectiles(message);ApplyPrimed(message);
             if (!snapshotLogged)
             {

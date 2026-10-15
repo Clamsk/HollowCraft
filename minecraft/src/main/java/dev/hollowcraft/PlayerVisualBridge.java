@@ -44,6 +44,7 @@ public final class PlayerVisualBridge {
     public static boolean rendering;
     public static boolean isAvatar(net.minecraft.entity.Entity entity) {return entity==avatar;}
     public static float landing() {return number(PlayerRenderState.controls,"landing",-1);}
+    public static boolean riding() {return PlayerRenderState.latest!=null&&PlayerRenderState.latest.riding;}
 
     static void tick(MinecraftClient client) {
         var state=PlayerRenderState.latest;var input=PlayerRenderState.controls;

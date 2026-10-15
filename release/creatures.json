@@ -1,0 +1,548 @@
+{
+  "schema": 1,
+  "minecraft": "1.20.1",
+  "source": "Local vanilla item models and language metadata; no game assets included.",
+  "availability": "Creative groups control availability; operator-only and special entities can require further adaptation.",
+  "count": 77,
+  "items": [
+    {
+      "item": "minecraft:allay_spawn_egg",
+      "entity": "minecraft:allay",
+      "name": "Allay",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:axolotl_spawn_egg",
+      "entity": "minecraft:axolotl",
+      "name": "Axolotl",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:bat_spawn_egg",
+      "entity": "minecraft:bat",
+      "name": "Bat",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:bee_spawn_egg",
+      "entity": "minecraft:bee",
+      "name": "Bee",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:blaze_spawn_egg",
+      "entity": "minecraft:blaze",
+      "name": "Blaze",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:camel_spawn_egg",
+      "entity": "minecraft:camel",
+      "name": "Camel",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:cat_spawn_egg",
+      "entity": "minecraft:cat",
+      "name": "Cat",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:cave_spider_spawn_egg",
+      "entity": "minecraft:cave_spider",
+      "name": "Cave Spider",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:chicken_spawn_egg",
+      "entity": "minecraft:chicken",
+      "name": "Chicken",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:cod_spawn_egg",
+      "entity": "minecraft:cod",
+      "name": "Cod",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:cow_spawn_egg",
+      "entity": "minecraft:cow",
+      "name": "Cow",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:creeper_spawn_egg",
+      "entity": "minecraft:creeper",
+      "name": "Creeper",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:dolphin_spawn_egg",
+      "entity": "minecraft:dolphin",
+      "name": "Dolphin",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:donkey_spawn_egg",
+      "entity": "minecraft:donkey",
+      "name": "Donkey",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:drowned_spawn_egg",
+      "entity": "minecraft:drowned",
+      "name": "Drowned",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:elder_guardian_spawn_egg",
+      "entity": "minecraft:elder_guardian",
+      "name": "Elder Guardian",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:ender_dragon_spawn_egg",
+      "entity": "minecraft:ender_dragon",
+      "name": "Ender Dragon",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:enderman_spawn_egg",
+      "entity": "minecraft:enderman",
+      "name": "Enderman",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:endermite_spawn_egg",
+      "entity": "minecraft:endermite",
+      "name": "Endermite",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:evoker_spawn_egg",
+      "entity": "minecraft:evoker",
+      "name": "Evoker",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:fox_spawn_egg",
+      "entity": "minecraft:fox",
+      "name": "Fox",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:frog_spawn_egg",
+      "entity": "minecraft:frog",
+      "name": "Frog",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:ghast_spawn_egg",
+      "entity": "minecraft:ghast",
+      "name": "Ghast",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:glow_squid_spawn_egg",
+      "entity": "minecraft:glow_squid",
+      "name": "Glow Squid",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:goat_spawn_egg",
+      "entity": "minecraft:goat",
+      "name": "Goat",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:guardian_spawn_egg",
+      "entity": "minecraft:guardian",
+      "name": "Guardian",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:hoglin_spawn_egg",
+      "entity": "minecraft:hoglin",
+      "name": "Hoglin",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:horse_spawn_egg",
+      "entity": "minecraft:horse",
+      "name": "Horse",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:husk_spawn_egg",
+      "entity": "minecraft:husk",
+      "name": "Husk",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:iron_golem_spawn_egg",
+      "entity": "minecraft:iron_golem",
+      "name": "Iron Golem",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:llama_spawn_egg",
+      "entity": "minecraft:llama",
+      "name": "Llama",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:magma_cube_spawn_egg",
+      "entity": "minecraft:magma_cube",
+      "name": "Magma Cube",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:mooshroom_spawn_egg",
+      "entity": "minecraft:mooshroom",
+      "name": "Mooshroom",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:mule_spawn_egg",
+      "entity": "minecraft:mule",
+      "name": "Mule",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:ocelot_spawn_egg",
+      "entity": "minecraft:ocelot",
+      "name": "Ocelot",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:panda_spawn_egg",
+      "entity": "minecraft:panda",
+      "name": "Panda",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:parrot_spawn_egg",
+      "entity": "minecraft:parrot",
+      "name": "Parrot",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:phantom_spawn_egg",
+      "entity": "minecraft:phantom",
+      "name": "Phantom",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:pig_spawn_egg",
+      "entity": "minecraft:pig",
+      "name": "Pig",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:piglin_brute_spawn_egg",
+      "entity": "minecraft:piglin_brute",
+      "name": "Piglin Brute",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:piglin_spawn_egg",
+      "entity": "minecraft:piglin",
+      "name": "Piglin",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:pillager_spawn_egg",
+      "entity": "minecraft:pillager",
+      "name": "Pillager",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:polar_bear_spawn_egg",
+      "entity": "minecraft:polar_bear",
+      "name": "Polar Bear",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:pufferfish_spawn_egg",
+      "entity": "minecraft:pufferfish",
+      "name": "Pufferfish",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:rabbit_spawn_egg",
+      "entity": "minecraft:rabbit",
+      "name": "Rabbit",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:ravager_spawn_egg",
+      "entity": "minecraft:ravager",
+      "name": "Ravager",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:salmon_spawn_egg",
+      "entity": "minecraft:salmon",
+      "name": "Salmon",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:sheep_spawn_egg",
+      "entity": "minecraft:sheep",
+      "name": "Sheep",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:shulker_spawn_egg",
+      "entity": "minecraft:shulker",
+      "name": "Shulker",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:silverfish_spawn_egg",
+      "entity": "minecraft:silverfish",
+      "name": "Silverfish",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:skeleton_horse_spawn_egg",
+      "entity": "minecraft:skeleton_horse",
+      "name": "Skeleton Horse",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:skeleton_spawn_egg",
+      "entity": "minecraft:skeleton",
+      "name": "Skeleton",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:slime_spawn_egg",
+      "entity": "minecraft:slime",
+      "name": "Slime",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:sniffer_spawn_egg",
+      "entity": "minecraft:sniffer",
+      "name": "Sniffer",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:snow_golem_spawn_egg",
+      "entity": "minecraft:snow_golem",
+      "name": "Snow Golem",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:spider_spawn_egg",
+      "entity": "minecraft:spider",
+      "name": "Spider",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:squid_spawn_egg",
+      "entity": "minecraft:squid",
+      "name": "Squid",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:stray_spawn_egg",
+      "entity": "minecraft:stray",
+      "name": "Stray",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:strider_spawn_egg",
+      "entity": "minecraft:strider",
+      "name": "Strider",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:tadpole_spawn_egg",
+      "entity": "minecraft:tadpole",
+      "name": "Tadpole",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:trader_llama_spawn_egg",
+      "entity": "minecraft:trader_llama",
+      "name": "Trader Llama",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:tropical_fish_spawn_egg",
+      "entity": "minecraft:tropical_fish",
+      "name": "Tropical Fish",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:turtle_spawn_egg",
+      "entity": "minecraft:turtle",
+      "name": "Turtle",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:vex_spawn_egg",
+      "entity": "minecraft:vex",
+      "name": "Vex",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:villager_spawn_egg",
+      "entity": "minecraft:villager",
+      "name": "Villager",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:vindicator_spawn_egg",
+      "entity": "minecraft:vindicator",
+      "name": "Vindicator",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:wandering_trader_spawn_egg",
+      "entity": "minecraft:wandering_trader",
+      "name": "Wandering Trader",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:warden_spawn_egg",
+      "entity": "minecraft:warden",
+      "name": "Warden",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:witch_spawn_egg",
+      "entity": "minecraft:witch",
+      "name": "Witch",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:wither_skeleton_spawn_egg",
+      "entity": "minecraft:wither_skeleton",
+      "name": "Wither Skeleton",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:wither_spawn_egg",
+      "entity": "minecraft:wither",
+      "name": "Wither",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:wolf_spawn_egg",
+      "entity": "minecraft:wolf",
+      "name": "Wolf",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:zoglin_spawn_egg",
+      "entity": "minecraft:zoglin",
+      "name": "Zoglin",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:zombie_horse_spawn_egg",
+      "entity": "minecraft:zombie_horse",
+      "name": "Zombie Horse",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:zombie_spawn_egg",
+      "entity": "minecraft:zombie",
+      "name": "Zombie",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:zombie_villager_spawn_egg",
+      "entity": "minecraft:zombie_villager",
+      "name": "Zombie Villager",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    },
+    {
+      "item": "minecraft:zombified_piglin_spawn_egg",
+      "entity": "minecraft:zombified_piglin",
+      "name": "Zombified Piglin",
+      "integration": "vanilla entity/model/AI via spawn egg",
+      "gameplayTested": false
+    }
+  ]
+}

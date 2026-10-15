@@ -15,8 +15,11 @@ final class NativeProxy extends ZombieEntity {
     private int nailBlock,spellBlock,blockSerial;
     private float blockedAngle,damageAngle,candidateAngle;
     private boolean blockedSpell;
+    private final int actorId;
+    private net.minecraft.util.math.Vec3d previousNative,currentNative;
     NativeProxy(ServerWorld world,JsonObject data) {
         super(EntityType.ZOMBIE,world);kind=data.has("kind")?data.get("kind").getAsString():"arthropod";name=data.has("name")?data.get("name").getAsString().toLowerCase():"";
+        actorId=data.has("actor")?data.get("actor").getAsInt():data.get("id").getAsInt();
         experiencePoints=kind.equals("resource")?0:data.get("maxHealth").getAsDouble()>=100?25:5;
     }
     void size(JsonObject data) {
@@ -29,6 +32,15 @@ final class NativeProxy extends ZombieEntity {
         spellBlock=data.has("spellBlock")?data.get("spellBlock").getAsInt():nailBlock;
     }
     boolean resource() {return kind.equals("resource");}
+    int actorId() {return actorId;}
+    void nativePoint(net.minecraft.util.math.Vec3d point) {previousNative=currentNative==null?point:currentNative;currentNative=point;}
+    void clearMotion() {previousNative=currentNative;}
+    boolean crossed(net.minecraft.util.math.Box box) {
+        if(previousNative==null||currentNative==null)return false;
+        var half=new net.minecraft.util.math.Vec3d(0,getHeight()/2,0);
+        return box.expand(getWidth()/2,getHeight()/2,0).raycast(previousNative.add(half),currentNative.add(half)).isPresent();
+    }
+    @Override public boolean isAttackable() {return !"npc".equals(kind)&&super.isAttackable();}
     void combatState(JsonObject value) {
         value.addProperty("blockSerial",blockSerial);value.addProperty("blockedAngle",blockedAngle);
         value.addProperty("blockedSpell",blockedSpell);value.addProperty("damageAngle",damageAngle);
@@ -40,6 +52,7 @@ final class NativeProxy extends ZombieEntity {
         if(deathConfirmed)super.updatePostDeath();
     }
     @Override public boolean isInvulnerableTo(DamageSource source) {
+        if(kind.equals("npc"))return true;
         if(super.isInvulnerableTo(source))return true;
         var origin=source.getPosition();var direct=source.getSource();
         var direction=direct instanceof net.minecraft.entity.projectile.ProjectileEntity projectile&&projectile.getVelocity().lengthSquared()>.000001

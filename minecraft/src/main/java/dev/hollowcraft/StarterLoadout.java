@@ -7,6 +7,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 final class StarterLoadout {
     static final String LAYOUT_TAG="hollowcraft_starter_hotbar_v2";
     static final String BEDROCK_TAG="hollowcraft_starter_bedrock_v1";
+    static final String BOAT_TAG="hollowcraft_starter_boat_v1";
     private static final Item[] HOTBAR={Items.IRON_SWORD,Items.BOW,Items.GOLDEN_APPLE,Items.COBBLESTONE,
         Items.WATER_BUCKET,Items.LAVA_BUCKET,Items.TNT,Items.FLINT_AND_STEEL,Items.ENDER_PEARL};
     private static final int[] COUNTS={1,1,64,64,1,1,64,1,16};
@@ -14,15 +15,15 @@ final class StarterLoadout {
         var inventory=player.getInventory();
         for(int slot=0;slot<HOTBAR.length;slot++)inventory.setStack(slot,new ItemStack(HOTBAR[slot],COUNTS[slot]));
         Item[] reserve={Items.COOKED_BEEF,Items.OAK_LOG,Items.IRON_AXE,Items.IRON_PICKAXE,Items.ARROW,
-            Items.ENDER_PEARL,Items.COBBLESTONE,Items.TORCH,Items.IRON_INGOT,Items.TOTEM_OF_UNDYING,Items.BEDROCK};
-        int[] counts={64,64,1,1,64,48,128,64,64,2,64};
+            Items.ENDER_PEARL,Items.COBBLESTONE,Items.TORCH,Items.IRON_INGOT,Items.TOTEM_OF_UNDYING,Items.BEDROCK,Items.OAK_BOAT};
+        int[] counts={64,64,1,1,64,48,128,64,64,2,64,1};
         int slot=9;
         for(int i=0;i<reserve.length;i++)for(int remaining=counts[i];remaining>0;) {
             int count=Math.min(remaining,reserve[i].getMaxCount());remaining-=count;
             inventory.setStack(slot++,new ItemStack(reserve[i],count));
         }
         inventory.selectedSlot=0;
-        player.addCommandTag(LAYOUT_TAG);player.addCommandTag(BEDROCK_TAG);
+        player.addCommandTag(LAYOUT_TAG);player.addCommandTag(BEDROCK_TAG);player.addCommandTag(BOAT_TAG);
     }
     static void arrangeExisting(ServerPlayerEntity player) {
         if(player.getCommandTags().contains(LAYOUT_TAG))return;

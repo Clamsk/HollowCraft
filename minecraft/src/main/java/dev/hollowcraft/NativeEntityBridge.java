@@ -41,7 +41,7 @@ public final class NativeEntityBridge {
         latest=new State(scene,campaign,offset,list.stream().limit(MAX).map(Pose::new).toList());
     }
     static void clear() {latest=null;}
-    private static boolean supported(Entity e) {return !e.isRemoved()&&(e instanceof ProjectileEntity||e instanceof ItemEntity||e instanceof TntEntity||e instanceof FallingBlockEntity);}
+    private static boolean supported(Entity e) {return !e.isRemoved()&&!(e instanceof NativeProxy)&&(e instanceof ProjectileEntity||e instanceof ItemEntity||e instanceof TntEntity||e instanceof FallingBlockEntity||e instanceof net.minecraft.entity.vehicle.BoatEntity||e instanceof net.minecraft.entity.mob.MobEntity||e instanceof ExperienceOrbEntity);}
     public static void render(MinecraftClient client,float delta) {
         var state=latest;var input=PlayerRenderState.controls;
         if(!RenderSystem.isOnRenderThread()||!HollowCraftBridge.entityRenderRequested()||client.world==null||client.player==null||state==null||input==null
@@ -77,7 +77,8 @@ public final class NativeEntityBridge {
                 Entity entity=client.world.getEntityById(pose.id);
                 if(entity==null||!entity.getUuid().equals(pose.uuid)||!supported(entity)||Math.abs(pose.x-state.offset-x)>sx/2+3||Math.abs(pose.y-64-y)>sy/2+3)continue;
                 try(var placement=new Placement(entity,pose,partial)) {
-                    dispatcher.render(entity,entity.getX()-state.offset-x,entity.getY()-64-y,entity.getZ()-16,entity.getYaw(),partial,matrices,vertices,dispatcher.getLight(entity,partial));
+                    int light=entity instanceof net.minecraft.entity.mob.MobEntity||entity instanceof net.minecraft.entity.vehicle.BoatEntity?net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE:dispatcher.getLight(entity,partial);
+                    dispatcher.render(entity,entity.getX()-state.offset-x,entity.getY()-64-y,entity.getZ()-16,entity.getYaw(),partial,matrices,vertices,light);
                 }
                 ids.add(pose.id);
             }

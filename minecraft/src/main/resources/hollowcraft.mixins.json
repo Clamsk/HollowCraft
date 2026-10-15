@@ -23,6 +23,12 @@
     ,"CreativeTridentDamageMixin"
     ,"BedrockMiningMixin"
     ,"BedrockExplosionMixin"
+    ,"BoatItemAccess"
+    ,"CreaturePlaneMixin"
+    ,"CreatureTickMixin"
+    ,"CreaturePathMixin"
+    ,"CreatureMoveMixin"
+    ,"BoatDamageMixin"
   ],
   "client": [
     "ItemRendererAccess",

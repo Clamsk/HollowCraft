@@ -68,6 +68,7 @@ namespace HollowCraft
         }
         private static bool Reconcile(Actor actor,bool predict) {
             Vector2 position=actor.Root.position;
+            if(actor.Health.Exists(WorldCreatures.Seated)) {actor.Previous=position;actor.HadBody=false;return false;}
             if(!BoundsOf(actor,out var current)) {actor.Previous=position;actor.HadBody=false;return false;}
             // Hidden/inactive phase teleports have no hurt body to sweep. Re-enabled
             // bodies are checked for overlap before becoming a physical attacker.

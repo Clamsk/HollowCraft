@@ -37,6 +37,7 @@ namespace HollowCraft
         }
         internal static bool TakeJump(HeroController player)
         {
+            if(WorldCreatures.Riding)return true;
             var runtime=HollowCraftRuntime.Instance;
             if(instance==null||!MinecraftControls.Active||runtime==null) return false;
             if(runtime.GameplayBlocked||player.controlReqlinquished)return true;
@@ -95,6 +96,7 @@ namespace HollowCraft
         {
             var runtime=HollowCraftRuntime.Instance;if(hero==null||body==null||runtime==null||!runtime.InGame||runtime.SimulationPaused) return;
             if(runtime.NativeControlLocked) {NativeFallTracker.Reset();ownHorizontal=false;return;}
+            if(WorldCreatures.Riding) {body.linearVelocity=Vector2.zero;NativeFallTracker.Reset();ownHorizontal=false;return;}
             NativeFallTracker.Sample(hero);
             if(runtime.Spectator) {
                 var collider=hero.GetComponent<Collider2D>();

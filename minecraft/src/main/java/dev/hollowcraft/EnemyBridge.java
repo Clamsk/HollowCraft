@@ -41,20 +41,27 @@ final class EnemyBridge {
                 player.getServerWorld().spawnEntity(entity);
             }
             ((NativeProxy)entity).size(data);
+            ((NativeProxy)entity).nativePoint(point);
             ((NativeProxy)entity).guards(data);
             double maximum=data.get("maxHealth").getAsDouble();
             entity.setInvulnerable(false); // Native directional/type guards are checked in damage().
             if(Math.abs(entity.getMaxHealth()-maximum)>.001) {float fraction=entity.getHealth()/entity.getMaxHealth();entity.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(maximum);entity.setHealth((float)maximum*fraction);}
-            positions.put(id,point);entity.setPosition(point);entity.setVelocity(Vec3d.ZERO);
+            positions.put(id,point);
+            if(entity.hasVehicle())entity.getVehicle().updatePassengerPosition(entity);else entity.setPosition(point);
+            entity.setVelocity(Vec3d.ZERO);
         }
         for(int id:new ArrayList<>(enemies.keySet())) if(!present.contains(id)) {enemies.remove(id).discard();positions.remove(id);generations.remove(id);}
     }
     void tick() {
         for(var entry:enemies.entrySet()) {
-            var entity=entry.getValue();entity.setPosition(positions.get(entry.getKey()));entity.setVelocity(Vec3d.ZERO);
+            var entity=entry.getValue();
+            if(!entity.isAlive())entity.stopRiding();
+            if(entity.hasVehicle())entity.getVehicle().updatePassengerPosition(entity);else entity.setPosition(positions.get(entry.getKey()));
+            entity.setVelocity(Vec3d.ZERO);
         }
     }
-    JsonArray snapshot() {
+    java.util.Collection<ZombieEntity> entities() {return enemies.values();}
+    JsonArray snapshot(int offset) {
         JsonArray result=new JsonArray();
         for(var entry:enemies.entrySet()) {
             JsonObject value=new JsonObject();value.addProperty("id",entry.getKey());
@@ -63,6 +70,10 @@ final class EnemyBridge {
             value.addProperty("x",entry.getValue().getX());value.addProperty("y",entry.getValue().getY());value.addProperty("invulnerable",entry.getValue().isInvulnerable());
             value.addProperty("moveFactor",entry.getValue().getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)/.23);value.addProperty("onFire",entry.getValue().isOnFire());
             ((NativeProxy)entry.getValue()).combatState(value);
+            if(entry.getValue().getVehicle() instanceof net.minecraft.entity.vehicle.BoatEntity boat&&entry.getValue().isAlive()) {
+                JsonObject seat=new JsonObject();seat.addProperty("boat",boat.getId());seat.addProperty("uuid",boat.getUuidAsString());
+                seat.addProperty("x",entry.getValue().getX()-offset);seat.addProperty("y",entry.getValue().getY()-64);value.add("seat",seat);
+            }
             var source=entry.getValue().getRecentDamageSource();if(source!=null) value.addProperty("damageKind",source.getName());
         }
         return result;

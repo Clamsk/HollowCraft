@@ -70,7 +70,7 @@ namespace HollowCraft
             var hits=Physics2D.CircleCastAll(start,kind=="minecraft:ender_pearl"?.125f:.08f,delta.normalized,delta.magnitude);
             Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));
             foreach(var hit in hits) {
-                var collider=hit.collider;if(collider==null||collider.GetComponentInParent<HeroController>()!=null)continue;
+                var collider=hit.collider;if(collider==null||collider.GetComponent<CreatureBody>()!=null||collider.GetComponentInParent<HeroController>()!=null)continue;
                 var node=collider.transform;while(node!=null&&!node.name.StartsWith("HollowCraft.Block"))node=node.parent;
                 if(node!=null) {if(!collider.isTrigger)return;continue;}
                 var enemy=EnemySystem.Resolve(collider);

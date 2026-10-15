@@ -1,4 +1,4 @@
-# HollowCraft 0.30.10 试玩版本
+# HollowCraft 0.30.11 试玩版本
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,7 +6,9 @@ Minecraft-style survival and combat in Hollow Knight
 
 在《空洞骑士》的二维场景中使用 Minecraft 的人物、生存、装备、建造和战斗规则。游玩时 Minecraft 与空洞骑士需要同时运行；这是可试玩的桥接原型，完整生存通关尚未验收。
 
-**快速入口：** [下载 Windows 试玩包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.10) · [Boss 录制启动器](docs/BOSS_RECORDING.md) · [安装与配置](release/INSTALL_zh.md) · [源码构建](SOURCE_SETUP.md) · [架构说明](docs/ARCHITECTURE.md) · [敌人检查](docs/ENEMY_AUDIT.md) · [通关适配状态](docs/PLAYTHROUGH.md) · [第三方来源](release/THIRD_PARTY.md)
+**快速入口：** [下载 Windows 试玩包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.11) · [船与 MC 生物](docs/MC_CREATURES.md) · [Boss 录制启动器](docs/BOSS_RECORDING.md) · [安装与配置](release/INSTALL_zh.md) · [源码构建](SOURCE_SETUP.md) · [架构说明](docs/ARCHITECTURE.md) · [敌人检查](docs/ENEMY_AUDIT.md) · [通关适配状态](docs/PLAYTHROUGH.md) · [第三方来源](release/THIRD_PARTY.md)
+
+0.30.11 加入原版模型的船、竹筏、运输船及原生角色自动上船约束，接入生成蛋对应的真实 MC 生物、数值、原版模型和基本 AI。生成蛋只在创造菜单提供；生存背包新增一艘橡木船，旧档一次补发。二维导航与特殊行为仍在适配，逐生物效果待试玩，操作见 [船与生物](docs/MC_CREATURES.md)。
 
 0.30.10 按指定顺序固定初始快捷栏，背包新增 64 基岩；旧存档一次调整现有物品并补发基岩。基岩生存不可挖掘、创造可移除，追加敌人冲刺路径阻挡、接触遮挡与二维爆炸遮挡。两端编译后交给玩家试玩，未启动游戏。
 
@@ -18,7 +20,7 @@ Minecraft-style survival and combat in Hollow Knight
 
 0.30.6 修复进场时人物手持与原版物品栏不同步：切存档、进场和复活主动同步完整背包及选中槽位，人物与 HUD 帧附带进场编号，旧帧不能混入新场景；HUD 等待客户端手持与服务端一致后再绘制。原生受击描述器注册为空闲 FSM，近战、远程伤害和可破坏物共用，修复柱子查找攻击 FSM 报错；MC 接受伤害后清除原生额外闪避计时，将确认的普通敌人致死伤害交给原生 Die 流程，保留特殊死亡与 Boss 阶段回血。新增命中前后血量日志，实际效果待玩家试玩。
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.10.md](试玩说明-0.30.10.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.11.md](试玩说明-0.30.11.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 0.30 接入点燃 TNT 的空洞原生地形碰撞，按玩家要求将普通跳跃上调到约 1.5 格，初始装备增加铁镐，并提供 Windows 安装配置包。保留 0.29 的 HIM 白眼、创造双击空格飞行与脚下放置目标锁定。实际操作效果待玩家试玩。
 
@@ -34,7 +36,7 @@ Minecraft-style survival and combat in Hollow Knight
 
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
-直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.10)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd** 打开启动器。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)；录制操作见 [Boss 录制指南](docs/BOSS_RECORDING.md)。
+直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.11)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd** 打开启动器。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)；录制操作见 [Boss 录制指南](docs/BOSS_RECORDING.md)。
 
 仓库提交只包含源码与脚本；发布包另带自编译 Mod，不包含游戏文件、提取素材、第三方依赖二进制、运行副本、日志或存档。GitHub 的 Source code 压缩包需自行构建，说明见 [SOURCE_SETUP.md](SOURCE_SETUP.md)。
 
@@ -97,7 +99,7 @@ Minecraft 1.20.1 的生存玩家、物品栏、方块、合成与容器接入 St
 
 游戏内背包、工作台、熔炉、箱子和 HUD 使用本机 MC 原版贴图。背包有真实 2×2 合成，工作台有真实 3×3 合成。界面操作调用真实 ScreenHandler，支持拾取、拆分、快速移动、装备及原版配方。熔炉使用真实燃料和烧炼进度。打开界面会阻止常规输入；已开始的鞘翅滑翔继续运行。站立碰撞体为 0.6×1.8 格，下蹲高 1.5 格，滑翔高 0.6 格，切换姿态保留脚底位置。
 
-新世界直接穿全铁套，副手盾牌；提供铁剑、弓、64 支箭、64 牛排、64 末影珍珠（四组，每组 16）、192 圆石、64 橡木原木、打火石、64 TNT、水桶、岩浆桶、铁斧、铁镐、64 火把、64 铁锭、64 普通金苹果及 2 个不死图腾、64 基岩。快捷栏 1–9 为铁剑、弓、金苹果、圆石、水桶、岩浆桶、TNT、打火石、末影珍珠；箭及其余材料放在背包。0.30.10 按存档一次性补发基岩，并交换现有物品以调整快捷栏。旧试玩存档首次迁移装备清单时保留原物品；0.30 另补发一次尚未领取且背包没有的铁镐，0.30.3 另补发一次铁锭，0.30.4 另补发一次两组圆石和金苹果。领取标记按存档保存并跨死亡保留。背包满时多余物品掉落，之后重连不重复发放。0.30.7 按存档一次性补发两个不死图腾，领取标记同样跨死亡保留。每次连接默认回到生存模式。
+新世界直接穿全铁套，副手盾牌；提供铁剑、弓、64 支箭、64 牛排、64 末影珍珠（四组，每组 16）、192 圆石、64 橡木原木、打火石、64 TNT、水桶、岩浆桶、铁斧、铁镐、64 火把、64 铁锭、64 普通金苹果及 2 个不死图腾、64 基岩、一艘橡木船。0.30.11 按存档一次补发橡木船；生成蛋只在创造菜单提供。快捷栏 1–9 为铁剑、弓、金苹果、圆石、水桶、岩浆桶、TNT、打火石、末影珍珠；箭及其余材料放在背包。0.30.10 按存档一次性补发基岩，并交换现有物品以调整快捷栏。旧试玩存档首次迁移装备清单时保留原物品；0.30 另补发一次尚未领取且背包没有的铁镐，0.30.3 另补发一次铁锭，0.30.4 另补发一次两组圆石和金苹果。领取标记按存档保存并跨死亡保留。背包满时多余物品掉落，之后重连不重复发放。0.30.7 按存档一次性补发两个不死图腾，领取标记同样跨死亡保留。每次连接默认回到生存模式。
 
 普通金苹果为 minecraft:golden_apple，使用真实原版食用动作，满饱食度也能吃；提供生命恢复 II（5 秒）与伤害吸收 I（2 分钟、4 点吸收血量），并按 MC 规则恢复饱食度和饱和度。黄色吸收心与状态图标使用原版 HUD，后备 HUD 同样读取实际吸收血量。
 

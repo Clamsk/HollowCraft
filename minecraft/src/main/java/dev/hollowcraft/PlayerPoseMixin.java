@@ -16,6 +16,7 @@ public abstract class PlayerPoseMixin extends BipedEntityModel<LivingEntity> {
         // Vanilla does not reset every body pivot each frame. Previous += offsets
         // accumulated in the shared renderer, separating both skin and armor.
         for(var part:new ModelPart[]{head,hat,body,rightArm,leftArm,rightLeg,leftLeg})part.resetTransform();
+        riding=dev.hollowcraft.PlayerVisualBridge.riding();
     }
     @Inject(method="setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",at=@At("TAIL"))
     private void hollowcraft$landing(LivingEntity entity,float limb,float amount,float age,float yaw,float pitch,CallbackInfo callback) {

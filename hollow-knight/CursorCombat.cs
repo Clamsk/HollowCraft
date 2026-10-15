@@ -82,7 +82,7 @@ namespace HollowCraft
         {
             float range=GameCursor.AttackReach;var eye=GameCursor.Eye(hero);
             foreach(var collider in Physics2D.OverlapCircleAll(mouse,0.25f))
-                if(EnemySystem.Resolve(collider)!=null && Vector2.Distance(eye,collider.ClosestPoint(eye))<=range) return true;
+                if((EnemySystem.Resolve(collider)!=null||collider.GetComponent<CreatureBody>()!=null) && Vector2.Distance(eye,collider.ClosestPoint(eye))<=range) return true;
             return false;
         }
         internal void Request(string scene,HeroController hero,Vector2 mouse,bool queueClick=false)
@@ -123,22 +123,24 @@ namespace HollowCraft
             struck=true;
             float range=(float)Current["range"];
             Vector2 origin=GameCursor.Eye(hero);
+            GameCursor.WorldTarget(hero,out Vector2 pointer,out _);
             var playerCollider=hero.GetComponent<Collider2D>();
             var hit=new HashSet<GameObject>();
             var enemies=new HashSet<int>();bool terrainHit=false;
+            var creatures=new List<object>();
             foreach(var collider in Physics2D.OverlapCircleAll(origin,range))
             {
-                var enemy=EnemySystem.Resolve(collider);
+                var creature=collider.GetComponent<CreatureBody>();var enemy=EnemySystem.Resolve(collider);
                 if(collider.transform.IsChildOf(hero.transform) || collider.name.StartsWith("HollowCraft.Block")) continue;
                 if(enemy==null&&collider.GetComponentInParent<HealthManager>()!=null)continue;
                 var breakable=collider.GetComponentInParent<Breakable>();
-                GameObject target=enemy!=null ? enemy.gameObject : breakable!=null ? breakable.gameObject : collider.gameObject;
+                GameObject target=creature!=null?creature.gameObject:enemy!=null ? enemy.gameObject : breakable!=null ? breakable.gameObject : collider.gameObject;
                 if((enemy!=null && enemy.isDead) || hit.Contains(target)) continue;
                 Vector2 point=collider.ClosestPoint(origin), delta=point-origin;
                 // The swing covers the player's actual shape as well as the chosen side.
                 // A flyer sharing that space must remain hittable from either direction.
                 bool overlapping=false;
-                if(enemy!=null && playerCollider!=null && playerCollider.enabled) {
+                if((enemy!=null||creature!=null) && playerCollider!=null && playerCollider.enabled) {
                     var contact=playerCollider.Distance(collider);
                     overlapping=contact.isValid && (contact.isOverlapped || contact.distance<=0);
                 }
@@ -152,6 +154,12 @@ namespace HollowCraft
                     }
                 }
                 hit.Add(target);
+                if(creature!=null) {
+                    // Preserve directional cleaves against creatures. A boat itself
+                    // must be pointed at, so hitting its passenger does not break it.
+                    if(creature.Health>0&&(!creature.Boat||Vector2.Distance(collider.ClosestPoint(pointer),pointer)<.12f))creatures.Add(creature.Target);
+                    continue;
+                }
                 if(enemy!=null) {enemies.Add(EnemySystem.Register(enemy));continue;}
                 if(breakable!=null) {enemies.Add(EnemySystem.Register(breakable));terrainHit=true;continue;}
                 NativeDamageSource(hero,Math.Max(1,Mathf.RoundToInt((float)Current["damage"])),Mathf.Atan2(Aim.y,Aim.x)*Mathf.Rad2Deg,AttackTypes.Nail);
@@ -172,7 +180,7 @@ namespace HollowCraft
                 }
             }
             var heroBody=hero.GetComponent<Rigidbody2D>();
-            send(new {type="hit",scene=room,attack=(int)Current["attack"],targets=new List<int>(enemies),terrain=terrainHit,
+            send(new {type="hit",scene=room,attack=(int)Current["attack"],targets=new List<int>(enemies),creatures,terrain=terrainHit,
                 playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,grounded=MinecraftControls.Grounded(hero),
                 enemies=EnemySystem.Observe(hero),
                 falling=!MinecraftControls.Grounded(hero) && heroBody!=null && heroBody.linearVelocity.y<-.1f && !MinecraftControls.Sprinting});

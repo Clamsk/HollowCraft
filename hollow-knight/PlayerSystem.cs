@@ -54,6 +54,10 @@ namespace HollowCraft
             var nativeHero=HeroController.instance;
             if(nativeHero!=null)hero=nativeHero;
             if(hero==null)return true;
+            if(hazardType==1&&WorldCreatures.ConstrainSource(source)) {
+                var attack=source.GetComponent<Collider2D>();var victim=hero.GetComponent<Collider2D>();
+                if(attack!=null&&victim!=null&&!attack.bounds.Intersects(victim.bounds))return true;
+            }
             if(hazardType==1&&BedrockBarrier.BlocksContact(source,hero))return true;
             // Preserve native transition/story immunity before replacing mask damage with MC damage.
             if(nativeHero!=null) {

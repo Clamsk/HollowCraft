@@ -18,6 +18,7 @@ final class PlayerBridge {
         boolean cube=false;
         if(stack.getItem() instanceof BlockItem block)try {cube=net.minecraft.block.Block.isShapeFullCube(block.getBlock().getDefaultState().getCollisionShape(net.minecraft.world.EmptyBlockView.INSTANCE,net.minecraft.util.math.BlockPos.ORIGIN));}catch(RuntimeException ignored) { }
         value.addProperty("predictSolid",cube);
+        value.addProperty("entityPlaceable",stack.getItem() instanceof BoatItem||stack.getItem() instanceof SpawnEggItem);
         value.addProperty("name",stack.getName().getString());
         value.addProperty("enchanted",stack.hasEnchantments());
         JsonArray tooltip=new JsonArray();for(var entry:net.minecraft.enchantment.EnchantmentHelper.get(stack).entrySet()) tooltip.add(entry.getKey().getName(entry.getValue()).getString());
@@ -40,6 +41,7 @@ final class PlayerBridge {
         JsonObject value=new JsonObject();value.addProperty("health",player.getHealth());value.addProperty("maxHealth",player.getMaxHealth());
         value.addProperty("food",player.getHungerManager().getFoodLevel());value.addProperty("saturation",player.getHungerManager().getSaturationLevel());
         value.addProperty("mode",player.interactionManager.getGameMode().getName());value.addProperty("hurtTicks",player.hurtTime);
+        value.addProperty("riding",player.hasVehicle());
         value.addProperty("armor",player.getArmor());value.addProperty("dead",player.isDead());
         value.addProperty("absorption",player.getAbsorptionAmount());value.addProperty("toughness",player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
         value.addProperty("level",player.experienceLevel);value.addProperty("xp",player.experienceProgress);

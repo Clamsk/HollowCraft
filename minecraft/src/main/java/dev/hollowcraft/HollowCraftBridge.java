@@ -93,6 +93,7 @@ public final class HollowCraftBridge implements ModInitializer {
         });
     }
     public static boolean isRemotePlayer(net.minecraft.entity.LivingEntity entity) {return instance!=null&&instance.owner==entity&&instance.peer!=null&&!instance.scene.isEmpty();}
+    public static boolean bridgeWorld(net.minecraft.entity.Entity entity) {return instance!=null&&instance.running&&entity.getWorld().getServer()==instance.server;}
     public static void playerHurt(net.minecraft.entity.LivingEntity entity,net.minecraft.entity.damage.DamageSource source) {
         if(!isRemotePlayer(entity)) return;
         JsonObject event=new JsonObject();event.addProperty("type","hurt");event.addProperty("scene",instance.scene);
@@ -232,6 +233,7 @@ public final class HollowCraftBridge implements ModInitializer {
         ServerTickEvents.START_SERVER_TICK.register(this::beginTick);
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerEntityEvents.ENTITY_LOAD.register((entity,world)-> {
+            CreatureBridge.register(entity);
             if(entity instanceof net.minecraft.entity.projectile.ProjectileEntity projectile)projectileEvent(projectile,"spawn",null);
             if(world.getServer()==server && entity.getCommandTags().contains("hollowcraft_proxy") && !enemies.owns(entity)) entity.discard();
             if(world.getServer()==server&&peer!=null&&!scene.isEmpty()&&entity instanceof net.minecraft.entity.ItemEntity dropped&&Math.abs(dropped.getX()-slot*1024)<=400) {trackedDrops.put(dropped.getId(),dropped);dropped.setNoGravity(true);dropped.setPosition(dropped.getX(),dropped.getY(),.5);}
@@ -306,6 +308,7 @@ public final class HollowCraftBridge implements ModInitializer {
         return text.isEmpty() ? null : text.toString();
     }
     private void stop() {
+        CreatureBridge.clear();
         closeGui();
         NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
         collectLandingWater();saveCampaign();
@@ -328,7 +331,7 @@ public final class HollowCraftBridge implements ModInitializer {
     }
     private void beginTick(MinecraftServer current) {
         if(!running||current!=server||peer==null||owner==null)return;
-        try {drainCommands();}catch(Exception error) {LOG.error("Bridge input before world tick failed",error);}
+        try {drainCommands();CreatureBridge.beforeTick();}catch(Exception error) {LOG.error("Bridge input before world tick failed",error);}
     }
     private void tick(MinecraftServer current) {
         if (!running || current != server) return;
@@ -346,7 +349,7 @@ public final class HollowCraftBridge implements ModInitializer {
             NativeEntityBridge.clear();
             NativeBlockBridge.clear();
             NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();
-            if (owner != null) {collectLandingWater();saveCampaign();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear(); owner = null; scene = ""; }
+            if (owner != null) {collectLandingWater();saveCampaign();for(var dropped:trackedDrops.values()) {dropped.setNoGravity(true);dropped.setVelocity(Vec3d.ZERO);}cleanupTerrain();enemies.clear();CreatureBridge.clear(); owner = null; scene = ""; }
             return;
         }
         if (owner == null && !current.getPlayerManager().getPlayerList().isEmpty()) {
@@ -366,11 +369,13 @@ public final class HollowCraftBridge implements ModInitializer {
                 // Local coordinates occupy a one-block-thick plane, far from normal world spawn.
                 Vec3d impulse=owner.getVelocity();
                 if(owner.hurtTime>0&&impulse.lengthSquared()>.0001&&peer!=null) {JsonObject event=new JsonObject();event.addProperty("type","impulse");event.addProperty("scene",scene);event.addProperty("x",impulse.x);event.addProperty("y",impulse.y);peer.event(event);}
-                owner.teleport(owner.getServerWorld(), slot * 1024 + exactX, 64 + exactY, 0.5, owner.getYaw(), owner.getPitch());
+                if(owner.hasVehicle()) {owner.getVehicle().updatePassengerPosition(owner);exactX=owner.getX()-slot*1024;exactY=owner.getY()-64;}
+                else owner.teleport(owner.getServerWorld(), slot * 1024 + exactX, 64 + exactY, 0.5, owner.getYaw(), owner.getPitch());
                 owner.setVelocity(Vec3d.ZERO);
                 owner.setOnGround(wasGrounded);
                 PlayerRenderState.publish(owner,scene,campaigns.id(),slot*1024,sceneVisit);
                 enemies.tick();
+                CreatureBridge.afterTick(enemies);
                 ItemUseBridge.tick(owner,slot*1024,centerX,centerY);
                 if(peer!=null) {
                     JsonObject flight=new JsonObject();flight.addProperty("type","projectiles");flight.addProperty("scene",scene);flight.addProperty("tick",server.getTicks());
@@ -421,6 +426,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private void respawnOwner() {
         var grants=owner.getCommandTags().stream().filter(tag->tag.startsWith("hollowcraft_starter")).toList();
         owner=server.getPlayerManager().respawnPlayer(owner,false);owner.networkHandler.player=owner;
+        CreatureBridge.playerChanged(owner);
         owner.setNoGravity(true);owner.noClip=true;for(var tag:grants)owner.addCommandTag(tag);
         owner.addCommandTag("hollowcraft_starter");owner.addCommandTag("hollowcraft_starter_iron_v1");
         syncSelectedInventory();
@@ -451,6 +457,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(!owner.getCommandTags().contains(StarterLoadout.BEDROCK_TAG)) {
                 give(new ItemStack(Items.BEDROCK,64));owner.addCommandTag(StarterLoadout.BEDROCK_TAG);
             }
+            if(!owner.getCommandTags().contains(StarterLoadout.BOAT_TAG)) {give(new ItemStack(Items.OAK_BOAT));owner.addCommandTag(StarterLoadout.BOAT_TAG);}
             StarterLoadout.arrangeExisting(owner);
             return;
         }
@@ -474,6 +481,7 @@ public final class HollowCraftBridge implements ModInitializer {
         }
         if(!fresh) {
             give(new ItemStack(Items.BEDROCK,64));owner.addCommandTag(StarterLoadout.BEDROCK_TAG);
+            give(new ItemStack(Items.OAK_BOAT));owner.addCommandTag(StarterLoadout.BOAT_TAG);
             StarterLoadout.arrangeExisting(owner);
         }
         EquipmentSlot[] slots={EquipmentSlot.HEAD,EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET,EquipmentSlot.OFFHAND};
@@ -506,6 +514,7 @@ public final class HollowCraftBridge implements ModInitializer {
             if(peer!=null)peer.send(reply.toString());return;
         }
         if (type.equals("scene")) {
+            owner.stopRiding();CreatureBridge.clear();
             towerReplies.clear();
             String name = string(command, "scene", "");
             if (name.isBlank() || name.length() > 120) return;
@@ -534,6 +543,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 Files.move(temp, sceneFile, StandardCopyOption.REPLACE_EXISTING);
             }
             slot = scenes.get(sceneKey);
+            CreatureBridge.configure(owner,slot*1024);
             centerX = integer(command, "x", 0); centerY = integer(command, "y", 0);
             exactX=command.has("exactX")?command.get("exactX").getAsDouble():centerX+0.5;
             exactY=command.has("exactY")?command.get("exactY").getAsDouble():centerY;
@@ -601,7 +611,9 @@ public final class HollowCraftBridge implements ModInitializer {
                     if(entity instanceof net.minecraft.entity.ItemEntity && Math.abs(x-exactX)<20 && Math.abs(y-exactY)<20 && Math.abs(entity.getX()-slot*1024-exactX)<20)
                         entity.setPosition(slot*1024+x,64+y,0.5);
                 }
-                owner.setSneaking(command.has("crouching") && command.get("crouching").getAsBoolean());owner.setSprinting(command.has("sprinting")&&command.get("sprinting").getAsBoolean()&&(creative||owner.getHungerManager().getFoodLevel()>6)); updateTerrain(command);
+                owner.setSneaking(command.has("crouching") && command.get("crouching").getAsBoolean());
+                if(owner.isSneaking()&&owner.hasVehicle())owner.stopRiding();
+                owner.setSprinting(command.has("sprinting")&&command.get("sprinting").getAsBoolean()&&(creative||owner.getHungerManager().getFoodLevel()>6)); updateTerrain(command);
                 FluidBridge.seal(owner.getServerWorld(),pos(centerX,centerY));
                 if(openContainer!=null && (Math.abs(openContainer.getX()-slot*1024-centerX)>6 || Math.abs(openContainer.getY()-64-centerY)>6)) {owner.closeHandledScreen();openContainer=null;}
             }
@@ -737,8 +749,12 @@ public final class HollowCraftBridge implements ModInitializer {
                     }
                     if(command.has("enemies"))enemies.observe(owner,command.getAsJsonArray("enemies"),slot*1024);
                     JsonArray targets=command.has("targets") ? command.getAsJsonArray("targets") : new JsonArray();
+                    int chargedTicks=((dev.hollowcraft.mixin.LivingEntityAccess)owner).hollowcraft$getAttackTicks();
                     enemies.hit(owner,targets,command.has("falling")&&command.get("falling").getAsBoolean(),attackMultiplier);
-                    if(targets.isEmpty()) {owner.resetLastAttackedTicks();if(command.has("terrain")&&command.get("terrain").getAsBoolean()&&!creative) owner.getMainHandStack().damage(1,owner,p->p.sendToolBreakStatus(Hand.MAIN_HAND));}
+                    JsonArray creatures=command.has("creatures")?command.getAsJsonArray("creatures"):new JsonArray();
+                    if(!creatures.isEmpty())((dev.hollowcraft.mixin.LivingEntityAccess)owner).hollowcraft$setAttackTicks(chargedTicks);
+                    CreatureBridge.hit(owner,creatures,command.has("falling")&&command.get("falling").getAsBoolean(),attackMultiplier);
+                    if(targets.isEmpty()&&creatures.isEmpty()) {owner.resetLastAttackedTicks();if(command.has("terrain")&&command.get("terrain").getAsBoolean()&&!creative) owner.getMainHandStack().damage(1,owner,p->p.sendToolBreakStatus(Hand.MAIN_HAND));}
                     activeAttack=0;
                 }
             }
@@ -999,6 +1015,14 @@ public final class HollowCraftBridge implements ModInitializer {
                 for(var hand:Hand.values()) {
                     var stack=owner.getStackInHand(hand);
                     if(!stack.isItemEnabled(world.getEnabledFeatures()))return;
+                    var creatureUse=CreatureBridge.interact(owner,hand,clicked);
+                    if(creatureUse.isAccepted()) {if(owner.currentScreenHandler!=owner.playerScreenHandler)openGui(false,integer(command,"uiRequest",0));if(creatureUse.shouldSwingHand())itemSwing(hand);return;}
+                    if(stack.getItem() instanceof BoatItem||stack.getItem() instanceof SpawnEggItem) {
+                        String itemId=Registries.ITEM.getId(stack.getItem()).toString();
+                        var creaturePlace=CreatureBridge.place(owner,hand,target(placement));
+                        if(creaturePlace.isAccepted()) {status="Placed entity from "+itemId;itemSwing(hand);return;}
+                        if(creaturePlace==ActionResult.FAIL) {status="Entity needs clear space within reach (maximum 160 active creatures/boats)";return;}
+                    }
                     if(clicked!=null) {
                         var result=owner.interactionManager.interactBlock(owner,world,stack,hand,new BlockHitResult(Vec3d.ofCenter(clicked),Direction.UP,clicked,false));
                         if(owner.currentScreenHandler!=owner.playerScreenHandler)openContainer=clicked;
@@ -1218,11 +1242,11 @@ public final class HollowCraftBridge implements ModInitializer {
         Set<BlockPos> next = new HashSet<>();
         NativeTerrainBlock.shapes.clear();
         JsonArray list = command.getAsJsonArray("terrain");
-        for (int i = 0; i < Math.min(512, list.size()); i++) {
+        for (int i = 0; i < Math.min(8192, list.size()); i++) {
             JsonArray cell = list.get(i).getAsJsonArray();
             if (cell.size() != 2 && cell.size()!=6) continue;
             int x = cell.get(0).getAsInt(), y = cell.get(1).getAsInt();
-            if (Math.abs(x-centerX) > 12 || Math.abs(y-centerY) > 12 || y < -60 || y > 240) continue;
+            if (Math.abs(x-centerX) > 32 || Math.abs(y-centerY) > 24 || y < -60 || y > 240) continue;
             BlockPos p = pos(x,y); next.add(p);
             var shape=cell.size()==6?VoxelShapes.cuboid(cell.get(2).getAsDouble(),cell.get(3).getAsDouble(),0,cell.get(4).getAsDouble(),cell.get(5).getAsDouble(),1):VoxelShapes.fullCube();
             NativeTerrainBlock.shapes.merge(p,shape,VoxelShapes::union);
@@ -1239,6 +1263,7 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.getServerWorld().setBlockState(p,Blocks.AIR.getDefaultState(),Block.NOTIFY_LISTENERS);
         }
         terrain.clear(); terrain.addAll(next);
+        CreatureBridge.terrainReady();
     }
     private void cleanupTerrain() {
         if (owner != null) for (BlockPos p : terrain)
@@ -1273,7 +1298,8 @@ public final class HollowCraftBridge implements ModInitializer {
         if(peer!=null&&peer.gui)result.add("gui",NativeGuiBridge.description());
         if(peer!=null&&peer.hud)result.addProperty("hudSession",NativeHudBridge.SESSION);
         result.addProperty("playerX",owner.getX()-slot*1024);result.addProperty("playerY",owner.getY()-64);
-        result.add("enemies",enemies.snapshot());
+        result.add("enemies",enemies.snapshot(slot*1024));result.add("creatures",CreatureBridge.snapshot());
+        if(owner.getVehicle()!=null) {var vehicle=owner.getVehicle();JsonObject rider=new JsonObject();rider.addProperty("entity",vehicle.getId());rider.addProperty("uuid",vehicle.getUuidAsString());rider.addProperty("x",owner.getX()-slot*1024);rider.addProperty("y",owner.getY()-64);result.add("rider",rider);}
         result.add("primed",primedSnapshot());
         result.add("projectiles",ItemUseBridge.snapshot(owner,slot*1024,centerX,centerY));
         result.addProperty("status", status); result.addProperty("creative", creative);

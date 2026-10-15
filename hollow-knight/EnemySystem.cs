@@ -17,7 +17,8 @@ namespace HollowCraft
         // Six points per iron-sword hit: three normal hits for ordinary enemies.
         // Tough enemies and bosses retain extra health above the common 60 native HP band.
         private static float ConvertedHealth(int native) => Math.Min(1024,18+Math.Max(0,native-60)*.6f);
-        internal static void Clear() {enemies.Clear();NativeBattle.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();}
+        internal static void Clear() {enemies.Clear();NativeBattle.Clear();NativeFallTracker.Reset();BedrockBarrier.Clear();WorldCreatures.Clear();}
+        internal static GameObject Actor(int id)=>enemies.TryGetValue(id,out var adapter)?adapter.Enemy!=null?adapter.Enemy.gameObject:adapter.Breakable!=null?adapter.Breakable.gameObject:null:null;
         // Match HitTaker's nearest responder, but never pick a disabled phase component.
         internal static HealthManager Resolve(Collider2D collider) {
             for(var node=collider.transform;node!=null;node=node.parent)
@@ -30,9 +31,10 @@ namespace HollowCraft
         }
         private static object Entry(int id,Adapter adapter,Collider2D body) {
             var enemy=adapter.Enemy;
+            var actor=enemy!=null?enemy.gameObject:adapter.Breakable.gameObject;
             return new {id,maxHealth=adapter.Max,health=adapter.Health,generation=adapter.Generation,
                 kind=adapter.Resource?"resource":enemy.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||enemy.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0?"undead":"arthropod",
-                name=adapter.Resource?adapter.Breakable.name:enemy.name,x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,
+                name=adapter.Resource?adapter.Breakable.name:enemy.name,actor=body.attachedRigidbody!=null?body.attachedRigidbody.transform.GetInstanceID():actor.GetInstanceID(),x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,
                 nailBlock=enemy!=null?BlockMask(enemy,AttackTypes.Nail):0,spellBlock=enemy!=null?BlockMask(enemy,AttackTypes.Spell):0};
         }
         internal static int Register(HealthManager enemy) {
@@ -80,7 +82,12 @@ namespace HollowCraft
                     }
                 }
             }
-            return result.ToArray();
+            foreach(int id in WorldCreatures.Captured) {
+                if(observed.Contains(id)||id==required||!enemies.TryGetValue(id,out var captured)||captured.Enemy==null||captured.Enemy.isDead)continue;
+                var body=captured.Enemy.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&Resolve(c)==captured.Enemy);
+                if(body!=null)result.Add(Entry(id,captured,body));
+            }
+            result.AddRange(WorldCreatures.FriendlyActors(hero));return result.ToArray();
         }
         internal static void Apply(JArray values,HeroController hero) {
             if(values==null || hero==null) return;

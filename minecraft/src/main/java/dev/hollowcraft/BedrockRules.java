@@ -11,7 +11,7 @@ import net.minecraft.world.*;
 /** Bedrock is a two-dimensional barrier; a wide proxy must not expose an imaginary Z flank. */
 public final class BedrockRules {
     private static boolean remote(Entity entity) {
-        return !entity.getWorld().isClient&&(entity instanceof NativeProxy||entity instanceof net.minecraft.entity.LivingEntity living&&HollowCraftBridge.isRemotePlayer(living));
+        return !entity.getWorld().isClient&&(entity instanceof NativeProxy||CreatureBridge.plane(entity)||entity instanceof net.minecraft.entity.LivingEntity living&&HollowCraftBridge.isRemotePlayer(living));
     }
     public static boolean protectedBlock(net.minecraft.server.network.ServerPlayerEntity player,BlockPos pos) {
         return HollowCraftBridge.isRemotePlayer(player)&&!player.isCreative()&&player.getWorld().getBlockState(pos).isOf(Blocks.BEDROCK);
