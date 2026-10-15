@@ -17,6 +17,8 @@ namespace HollowCraft
         internal static HollowCraftRuntime Instance;
         internal CursorCombat Combat;
         internal JumpBuilding JumpBuild;
+        internal LocalChat Chat;
+        internal TerrariaEquipment Terraria;
         internal JObject TowerItem=>PlacementItem is JObject item&&(bool?)item["predictSolid"]==true?item:null;
         internal bool BuildRightHeld=>Input.GetMouseButton(1)||pointerInput.Held(1);
         internal string HeldItem => inventory[selected];
@@ -175,7 +177,7 @@ namespace HollowCraft
         internal readonly GameModeMenu Modes=new GameModeMenu();
         internal void ChangeMode(string mode) {StopMining();Combat.Cancel();CloseInterface();Send(new {type="mode",scene,mode});}
         internal void PrepareRecordingTransition() {paused=false;Time.timeScale=1;CloseInterface();StopMining();Combat.Cancel();}
-        internal bool InterfaceBlocked=>frontendSuspended||cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
+        internal bool InterfaceBlocked=>Chat?.Captured==true||frontendSuspended||cachedManager?.IsInSceneTransition==true||SteveAvatar.LandingActive||Modes.Open||inventoryOpen||CatalogOpen||NativeShop.Visible||NativeChoice.Visible||!string.IsNullOrEmpty(CampaignBridge.DialogueText)||CampaignBridge.Sitting||paused||connectionFrozen||Dead;
         internal bool NativeControlLocked=>!BridgeIntro&&(cachedHero?.controlReqlinquished==true||!NativeEntranceReady||cachedManager?.IsInSceneTransition==true);
         internal bool GameplayBlocked=>InterfaceBlocked||NativeControlLocked;
         internal bool SimulationPaused=>frontendSuspended||paused||connectionFrozen||Dead;
@@ -194,6 +196,7 @@ namespace HollowCraft
             Send(new {type="nativeLanding",scene,landing=serial,x,y,distance,teleport=appliedTeleport});
         }
         private string assets;
+        internal string Assets=>assets;
         private HeroController cachedHero;
         private GameManager cachedManager;
         private float nextHeroLookup;
@@ -229,6 +232,7 @@ namespace HollowCraft
             audio=gameObject.AddComponent<MinecraftAudio>();audio.Initialize(this,assets);
             Application.runInBackground=true;
             ui=new MinecraftUI(this);
+            Chat=new LocalChat(this);Terraria=gameObject.AddComponent<TerrariaEquipment>();Terraria.Initialize(this);
             Gui=new NativeGuiView(this);
             Hud=new NativeHudView(this);
         }
@@ -328,7 +332,7 @@ namespace HollowCraft
             bool connected = bridge.Connected;
             bool newlyConnected = connected && !wasConnected;
             if (!connected && wasConnected) {connectionFrozen=true;Time.timeScale=0;status = "Minecraft disconnected; reconnecting";}
-            if(newlyConnected) {backendPauseSent=null;if(connectionFrozen) {connectionFrozen=false;Time.timeScale=paused?0:1;}}
+            if(newlyConnected) {Terraria.ResetEffects();backendPauseSent=null;if(connectionFrozen) {connectionFrozen=false;Time.timeScale=paused?0:1;}}
             wasConnected = connected;
             while (bridge.TryRead(out JObject message))
             {
@@ -337,6 +341,7 @@ namespace HollowCraft
                 if((string)message["type"]=="mcSound"&&(string)message["scene"]==scene)audio.Receive(message);
                 if((string)message["type"]=="mcSoundStop"&&(string)message["scene"]==scene)audio.StopAll();
                 if((string)message["type"]=="projectiles"&&(string)message["scene"]==scene)ApplyProjectiles(message);
+                if((string)message["type"]=="zenith")Terraria.Apply(message);
                 if((string)message["type"]=="primed"&&(string)message["scene"]==scene)ApplyPrimed(message);
                 if((string)message["type"]=="nativeImpact"&&(string)message["scene"]==scene&&projectiles.TryGetValue((int)message["entity"],out GameObject impact)&&impact!=null)impact.GetComponent<ProjectileView>().Resolve(message);
                 if((string)message["type"]=="projectile"&&(string)message["scene"]==scene) {
@@ -399,6 +404,7 @@ namespace HollowCraft
                 sceneReentry=false;entryRecovery=true;bridge.SceneVisit=++sceneVisit;
                 ClearBlocks(); appliedTeleport=0;scene = name; mineCell = new Vector2Int(int.MinValue, int.MinValue);
                 container=null; inventoryOpen=false;UiRequest=0;Gui.Reset();waterLandingAt=-1000; Combat.Cancel(); PlayerSystem.EnterScene(hero);
+                Chat.Close();Terraria.CancelInput();
                 CatalogOpen=false;usingItem=false;MinecraftEnvironment.SceneChanged();
                 snapshotLogged=false; stableSince=Time.unscaledTime;
                 campaign=CampaignSession.Id;nextPose=0;nextTerrain=0;
@@ -409,17 +415,18 @@ namespace HollowCraft
                 Array.Fill(crafting, -1);
                 if (connected) bridge.Send(new { type = "scene", scene, campaign,legacy=CampaignSession.Legacy,intro=CampaignSession.IntroPending,x = Cell(hero.transform.position.x), y = Cell(hero.transform.position.y),exactX=hero.transform.position.x,exactY=hero.GetComponent<Collider2D>().bounds.min.y });
             }
-            if (!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
+            Chat.Tick();
+            if (!Chat.Captured&&!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
                 bridge.Send(new { type = "mode", scene, mode = creative ? "survival" : "creative" });
-            if(!Automated&&Application.isFocused&&connected) Modes.Tick(this,Input.GetKey(KeyCode.F3),Input.GetKeyDown(KeyCode.F4),Input.GetKeyDown(KeyCode.Escape));
-            if (!Automated && Application.isFocused && building && !NativeControlLocked && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused&&Gui?.Active!=true)) {
+            if(!Chat.Captured&&!Automated&&Application.isFocused&&connected) Modes.Tick(this,Input.GetKey(KeyCode.F3),Input.GetKeyDown(KeyCode.F4),Input.GetKeyDown(KeyCode.Escape));
+            if (!Chat.Captured&&!Automated && Application.isFocused && building && !NativeControlLocked && !NativeShop.Visible && !NativeChoice.Visible && (Input.GetKeyDown(KeyCode.Tab)||Input.GetKeyDown(KeyCode.E)&&!ui.TextInputFocused&&Gui?.Active!=true)) {
                 if(inventoryOpen||CatalogOpen)CloseInterface();
                 else if(creative)OpenCatalog();
                 else {inventoryOpen=true;UiRequest=++uiRequests;bridge.Send(new {type="inventoryOpen",scene,uiRequest=UiRequest});}
             }
-            if(!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.Escape)&&!Modes.ConsumedEscape) {if(NativeShop.Visible) NativeShop.Close();else if(NativeChoice.Visible) NativeChoice.Decide(false);else if(CatalogOpen) CloseInterface();else if(inventoryOpen) CloseInterface();else {paused=!paused;Time.timeScale=paused||connectionFrozen ? 0 : 1;}}
+            if(!Chat.Captured&&!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.Escape)&&!Modes.ConsumedEscape) {if(NativeShop.Visible) NativeShop.Close();else if(NativeChoice.Visible) NativeChoice.Decide(false);else if(CatalogOpen) CloseInterface();else if(inventoryOpen) CloseInterface();else {paused=!paused;Time.timeScale=paused||connectionFrozen ? 0 : 1;}}
             SyncBackendPause();
-            if(!Automated&&Application.isFocused&&!NativeShop.Visible&&Input.GetKeyDown(KeyCode.F11)&&creative) {if(CatalogOpen)CloseInterface();else OpenCatalog();}
+            if(!Chat.Captured&&!Automated&&Application.isFocused&&!NativeShop.Visible&&Input.GetKeyDown(KeyCode.F11)&&creative) {if(CatalogOpen)CloseInterface();else OpenCatalog();}
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.F)) SwapHands();
             if(!Automated && Application.isFocused && !GameplayBlocked && Input.GetKeyDown(KeyCode.Q)) bridge.Send(new {type="drop",scene,all=Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)});
             PlayerSystem.Tick(hero);
@@ -427,8 +434,8 @@ namespace HollowCraft
             CampaignBridge.Tick();
             NativeShop.Tick();
             NativeChoice.Tick();
-            if(!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F9) && creative) bridge.Send(new {type="kit",scene});
-            if(!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F10) && creative) bridge.Send(new {type="adventureKit",scene});
+            if(!Chat.Captured&&!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F9) && creative) bridge.Send(new {type="kit",scene});
+            if(!Chat.Captured&&!Automated && Application.isFocused && building && Input.GetKeyDown(KeyCode.F10) && creative) bridge.Send(new {type="adventureKit",scene});
             // Native story FSMs still need key-release events while they own the hero.
             MinecraftControls.Tick(hero,building,InterfaceBlocked||Automated);
             if(entryRecovery&&LatestSnapshot!=null&&!NativeControlLocked) {entryRecovery=false;NativeLanding.SettleSceneEntry(hero);}
@@ -445,6 +452,8 @@ namespace HollowCraft
                     guiWidth=Mathf.FloorToInt(Screen.width/guiScale),guiHeight=Mathf.FloorToInt(Screen.height/guiScale),guiMouseX=pointer.x/Screen.width,guiMouseY=(Screen.height-pointer.y)/Screen.height,
                     guiMods=NativeGuiView.Modifiers,guiC=Input.GetKey(KeyCode.C),guiX=Input.GetKey(KeyCode.X),
                     crouching=MinecraftControls.Crouching,sprinting=MinecraftControls.Sprinting,grounded=MinecraftControls.Grounded(hero),gliding=MinecraftEnvironment.Gliding,flying=MinecraftEnvironment.Flying,
+                    wingActive=TerrariaEquipment.WingActive,wingPhase=TerrariaEquipment.WingPhase,
+                    zenithSwing=Terraria.Swinging,zenithSerial=Terraria.SwingSerial,
                     pitch=usingItem&&GameCursor.WorldTarget(hero,out Vector2 aimPoint,out _)?-Mathf.Atan2(aimPoint.y-GameCursor.Eye(hero).y,Mathf.Abs(aimPoint.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0,
                     swinging=Combat.Swinging,attackSerial=Combat.AnimationSerial,animation=(string)Combat.Current?["move"]?["animation"]??"",
                     duration=(float?)Combat.Current?["duration"]??.5f,upswing=(float?)Combat.Current?["upswing"]??.3f,
@@ -463,7 +472,7 @@ namespace HollowCraft
             bool hotbarShortcut=HandleHotbarShortcut();
             // Native landing/knockback animation locks must not swallow MC mouse presses.
             pointerInput.Context(building&&connected&&!GameplayBlocked&&Application.isFocused);
-            if (!building || !connected || GameplayBlocked) {queuedTower=null;JumpBuild.Cancel();return;}
+            if (!building || !connected || GameplayBlocked) {queuedTower=null;JumpBuild.Cancel();StopMining();Terraria.CancelInput();return;}
             if(Spectator) {StopMining();return;}
             if(!hotbarShortcut)for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Select(i);
             float scroll = Input.mouseScrollDelta.y;
@@ -481,6 +490,7 @@ namespace HollowCraft
             JumpBuild.Tick(hero);
         }
         internal void HandlePointer(HeroController hero,Vector2 mouse,bool leftDown,bool leftHeld,bool rightDown,bool rightHeld) {
+            if(HeldItem==TerrariaEquipment.Zenith) {StopMining();Combat.Cancel();Terraria.InputAttack(hero,mouse,leftDown,leftHeld);if(!rightDown&&!rightHeld)return;leftDown=leftHeld=false;mouse=GameCursor.ClampWorld(mouse,GameCursor.Eye(hero));}
             if(rightDown)Combat.Cancel();
             if(rightHeld) {MinecraftControls.Facing=mouse.x<hero.transform.position.x?-1:1;MinecraftControls.frontView=false;}
             Vector2Int cell = new Vector2Int(Cell(mouse.x), Cell(mouse.y));
@@ -982,6 +992,7 @@ namespace HollowCraft
             if(!InGame) return;
             ui.Draw(LatestSnapshot,container,inventoryOpen||CatalogOpen,selected,creative,Dead,paused,bridge.Connected,crosshair,mineProgress);
             ui.DrawModes();
+            Chat.Draw();
         }
         internal void Resume() {paused=false;Time.timeScale=connectionFrozen?0:1;SyncBackendPause();}
     }

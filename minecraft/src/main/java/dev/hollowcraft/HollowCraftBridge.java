@@ -213,6 +213,7 @@ public final class HollowCraftBridge implements ModInitializer {
     private String lastWeapon="";
     private BlockPos openContainer;
     private final EnemyBridge enemies=new EnemyBridge();
+    private final TerrariaEasterEgg terraria=new TerrariaEasterEgg();
     private final CreativeCatalog catalog=new CreativeCatalog();
     private BlockPos miningPos;
     private float miningProgress;
@@ -229,6 +230,7 @@ public final class HollowCraftBridge implements ModInitializer {
 
     @Override public void onInitialize() {
         instance=this;
+        TerrariaEasterEgg.register();
         NativeTerrainBlock.register();
         ServerLifecycleEvents.SERVER_STARTED.register(this::start);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> stop());
@@ -310,6 +312,7 @@ public final class HollowCraftBridge implements ModInitializer {
         return text.isEmpty() ? null : text.toString();
     }
     private void stop() {
+        terraria.clear();
         CreatureBridge.clear();
         closeGui();
         NativeProjectileSteps.clear();NativeTntSteps.clear();projectileImpacts.clear();ItemUseBridge.clearAnchors();
@@ -377,11 +380,13 @@ public final class HollowCraftBridge implements ModInitializer {
                 owner.setOnGround(wasGrounded);
                 PlayerRenderState.publish(owner,scene,campaigns.id(),slot*1024,sceneVisit);
                 enemies.tick();
+                terraria.tick(owner);
                 CreatureBridge.afterTick(enemies);
                 ItemUseBridge.tick(owner,slot*1024,centerX,centerY);
                 if(peer!=null) {
                     JsonObject flight=new JsonObject();flight.addProperty("type","projectiles");flight.addProperty("scene",scene);flight.addProperty("tick",server.getTicks());
                     flight.add("projectiles",ItemUseBridge.snapshot(owner,slot*1024,centerX,centerY));peer.event(flight);
+                    var swords=new JsonObject();swords.addProperty("type","zenith");swords.addProperty("scene",scene);swords.addProperty("campaign",campaigns.id());swords.addProperty("visit",sceneVisit);swords.addProperty("tick",server.getTicks());swords.add("swords",terraria.snapshot());peer.event(swords);
                 }
                 for(var tnt:owner.getServerWorld().getEntitiesByClass(TntEntity.class,new Box(slot*1024+centerX-24,64+centerY-24,-8,slot*1024+centerX+24,64+centerY+24,8),e->true)) {
                     tnt.setPosition(tnt.getX(),tnt.getY(),.5);tnt.setVelocity(tnt.getVelocity().multiply(1,1,0));
@@ -550,6 +555,7 @@ public final class HollowCraftBridge implements ModInitializer {
             exactX=command.has("exactX")?command.get("exactX").getAsDouble():centerX+0.5;
             exactY=command.has("exactY")?command.get("exactY").getAsDouble():centerY;
             hadPose=false;fallen=0;lastNativeLanding=0;footstepDistance=0;teleportWaiting=teleportSerial=0;
+            terraria.clear();
             owner.fallDistance=0;owner.clearActiveItem();owner.setVelocity(Vec3d.ZERO);owner.stopFallFlying();
             owner.setPosition(slot*1024+exactX,64+exactY,.5);
             syncSelectedInventory();
@@ -565,6 +571,15 @@ public final class HollowCraftBridge implements ModInitializer {
             default -> false;
         })collectLandingWater();
         switch (type) {
+            case "chat" -> {
+                String text=string(command,"text","").trim();
+                if(text.equals("Clamsk")||text.equals("/Clamsk")) {
+                    if(!owner.isAlive())break;
+                    if(!command.has("assets")||!command.get("assets").getAsBoolean()) {notice("Clamsk: run the installer with Terraria installed / 请安装泰拉瑞亚后重新运行安装配置");break;}
+                    notice(TerrariaEasterEgg.grant(owner));campaigns.save(owner);snapshot();
+                } else notice("Unknown command / 未知口令: "+text.substring(0,Math.min(text.length(),80)));
+            }
+            case "zenithUse" -> terraria.input(owner,command,slot*1024);
             case "audioFile" -> {
                 String key=string(command,"key","");if(peer!=null&&peer.audio&&key.matches("[0-9a-f]{64}")) {
                     if(command.has("ready")&&command.get("ready").getAsBoolean()) {if(peer.audioFiles.size()>=512)peer.audioFiles.clear();peer.audioFiles.add(key);}
@@ -907,6 +922,10 @@ public final class HollowCraftBridge implements ModInitializer {
         if(peer==null)return;JsonObject event=new JsonObject();event.addProperty("type","landing");event.addProperty("scene",scene);event.addProperty("kind",kind);event.addProperty("intro",introLanding);event.addProperty("distance",distance);event.addProperty("x",exactX);event.addProperty("y",exactY);event.addProperty("hand",landingHand==Hand.OFF_HAND?1:0);peer.event(event);
     }
     private void applyLanding(float distance) {
+        if(TerrariaEasterEgg.wings(owner)) {
+            if(introLanding) {introLanding=false;campaigns.introDone=true;landingEvent("plain",distance);saveCampaign();}
+            fallen=0;owner.fallDistance=0;return;
+        }
         fallen=distance;
         boolean waterSave=owner.interactionManager.getGameMode()==GameMode.SURVIVAL&&(distance>=11.999f||introLanding)&&placeLandingWater();
         if(!creative&&!owner.isSpectator()&&!waterSave&&owner.handleFallDamage(distance,1,owner.getDamageSources().fall()))

@@ -14,6 +14,7 @@ final class NativeProxy extends ZombieEntity {
     private boolean pendingPlayer,deathConfirmed,rewarded;
     private int nailBlock,spellBlock,blockSerial;
     private float blockedAngle,damageAngle,candidateAngle;
+    Float zenithAngle;
     private boolean blockedSpell;
     private final int actorId;
     private net.minecraft.util.math.Vec3d previousNative,currentNative;
@@ -60,6 +61,7 @@ final class NativeProxy extends ZombieEntity {
             ?new net.minecraft.util.math.Vec3d(-Math.sin(Math.toRadians(player.getYaw())),0,0)
             :origin==null?net.minecraft.util.math.Vec3d.ZERO:getBoundingBox().getCenter().subtract(origin);
         candidateAngle=(float)Math.toDegrees(Math.atan2(direction.y,direction.x));
+        if(zenithAngle!=null)candidateAngle=zenithAngle;
         // HK's DirectionUtils: right/up/left/down = 0/1/2/3.
         int cardinal=Math.floorMod((int)Math.rint(candidateAngle/90.0),4);
         String name=source.getName();

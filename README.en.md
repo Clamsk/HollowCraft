@@ -1,4 +1,4 @@
-# HollowCraft 0.30.13 — Playtest Build
+# HollowCraft 0.30.14 — Playtest Build
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,9 +6,11 @@ Minecraft-style survival and combat in Hollow Knight.
 
 Use Minecraft's player, survival, equipment, building and combat systems in Hollow Knight's 2D world. **Both games must run at the same time.** This is a playable bridge prototype; a complete survival playthrough has not been verified.
 
-**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.13) · [Boats and mobs](docs/MC_CREATURES.en.md) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
+**Quick links:** [Windows download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.14) · [Boats and mobs](docs/MC_CREATURES.en.md) · [Boss recording launcher](docs/BOSS_RECORDING.en.md) · [Installation and configuration](release/INSTALL_en.md) · [Build from source](SOURCE_SETUP.en.md) · [Architecture](docs/ARCHITECTURE.en.md) · [Enemy audit](docs/ENEMY_AUDIT.en.md) · [Campaign compatibility](docs/PLAYTHROUGH.en.md) · [Third-party sources](release/THIRD_PARTY.en.md)
 
 ## Current release
+
+Version 0.30.14 adds the **Clamsk Easter egg**: press T or /, enter Clamsk, and receive Zenith plus chest-slot Stardust Wings. Sword cycles use original component sprites, colored trails, 190 base damage and local target hit timers; wings provide finite flight, flapping and landing-damage immunity. Terraria assets are imported locally from Steam. See the [Easter egg guide](docs/TERRARIA_EASTER_EGG.en.md). Both bridges compile; gameplay awaits player testing.
 
 Version 0.30.13 gives bridge boats one server-side physics owner, suspends conflicting native player locomotion/collision during riding, and uses explicit Shift dismount input. Native passengers receive corrected seat height, body anchors and render ordering, with state restored on release. Both bridges compile; riding behavior awaits player testing.
 
@@ -22,7 +24,7 @@ Version 0.30.9 repairs Gruz Mother brood-count bookkeeping and replaces pose-sam
 
 The shield, contact melee and vanilla totem effects from 0.30.7 remain included. New campaigns receive two totems; old campaigns receive two once. A totem must be held in the main hand or offhand to activate.
 
-Both bridges were compiled and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.13 playtest notes](PLAYTEST-0.30.13.en.md). Older test records below apply only to their stated versions.
+Both bridges were compiled and package integrity checked, then handed directly to players. **No automated gameplay verification was performed.** See the [0.30.14 playtest notes](PLAYTEST-0.30.14.en.md). Older test records below apply only to their stated versions.
 
 ## Download and start
 
@@ -33,7 +35,7 @@ Requirements:
 - Your own **Minecraft Java 1.20.1** installation. Launch vanilla 1.20.1 once through PCL or another launcher to download its assets and libraries.
 - **64-bit Java 17 or 21**.
 
-Download **HollowCraft-v0.30.11-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.13), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
+Download **HollowCraft-v0.30.14-windows.zip** from [Releases](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.14), extract it fully to a writable folder, run **Install HollowCraft.cmd**, then **Start HollowCraft.cmd** for the GUI. Choose normal play or a boss recording. Wait for Minecraft to enter its separate world and keep it running. Normal play uses the existing campaign; recording creates a separate save and loads a selected fight.
 
 Save Hollow Knight's progress at a bench, then run **Stop HollowCraft.cmd** to save the Minecraft world and inventory and close both recorded processes. If only Hollow Knight was closed, restarting reuses the Minecraft backend of the same build. Stop before upgrading. Older backends without save acknowledgement must be closed normally through their Minecraft window; the script does not forcibly terminate them.
 
@@ -47,6 +49,7 @@ Playtest data lives in `runtime/minecraft` and `runtime/hk-test-saves`. Older au
 
 | Input | Action |
 | --- | --- |
+| T / / | Open local chat; enter Clamsk for Zenith and Stardust Wings |
 | A / D | Move left / right and turn to a side view |
 | Space | Jump approximately 1.5 blocks; double-tap in creative to toggle flight; ascend while flying; press again in mid-air with an elytra equipped to start gliding |
 | Hold B | With a full block such as cobblestone selected, repeatedly jump and place beneath your feet; at most one block per jump, consuming items in survival; disabled while flying or gliding and in adventure or spectator mode |

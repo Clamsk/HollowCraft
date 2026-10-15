@@ -19,6 +19,13 @@ public abstract class PlayerPoseMixin extends BipedEntityModel<LivingEntity> {
         riding=dev.hollowcraft.PlayerVisualBridge.riding();
     }
     @Inject(method="setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",at=@At("TAIL"))
+    private void hollowcraft$wingPose(LivingEntity entity,float limb,float amount,float age,float yaw,float pitch,CallbackInfo callback) {
+        if(!dev.hollowcraft.PlayerVisualBridge.rendering||!dev.hollowcraft.PlayerVisualBridge.isAvatar(entity)||!dev.hollowcraft.PlayerVisualBridge.wingActive())return;
+        rightLeg.pitch=.35f;leftLeg.pitch=-.2f;rightLeg.yaw=leftLeg.yaw=0;
+        if(!entity.isUsingItem()&&handSwingProgress<=0){rightArm.roll=.16f;leftArm.roll=-.16f;}
+        var model=(PlayerEntityModel<?>)(Object)this;model.rightPants.copyTransform(rightLeg);model.leftPants.copyTransform(leftLeg);model.rightSleeve.copyTransform(rightArm);model.leftSleeve.copyTransform(leftArm);
+    }
+    @Inject(method="setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",at=@At("TAIL"))
     private void hollowcraft$landing(LivingEntity entity,float limb,float amount,float age,float yaw,float pitch,CallbackInfo callback) {
         float elapsed=dev.hollowcraft.PlayerVisualBridge.landing();
         if(!dev.hollowcraft.PlayerVisualBridge.rendering||!dev.hollowcraft.PlayerVisualBridge.isAvatar(entity)||elapsed<0)return;

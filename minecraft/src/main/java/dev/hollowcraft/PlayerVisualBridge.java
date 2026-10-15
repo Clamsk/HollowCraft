@@ -39,12 +39,15 @@ public final class PlayerVisualBridge {
     private static int avatarVisit=-1;
     private static int waterSerial=-1,waterPhase=-1;
     private static int itemSwingSerial=-1;
+    private static int zenithSerial=-1;
     private static net.minecraft.entity.LimbAnimator walk;
     private static long lastRender,lastWarning;
     public static boolean rendering;
     public static boolean isAvatar(net.minecraft.entity.Entity entity) {return entity==avatar;}
     public static float landing() {return number(PlayerRenderState.controls,"landing",-1);}
     public static boolean riding() {return PlayerRenderState.latest!=null&&PlayerRenderState.latest.riding;}
+    public static boolean wingActive() {return flag(PlayerRenderState.controls,"wingActive");}
+    public static float wingPhase() {return number(PlayerRenderState.controls,"wingPhase",0);}
 
     static void tick(MinecraftClient client) {
         var state=PlayerRenderState.latest;var input=PlayerRenderState.controls;
@@ -53,7 +56,7 @@ public final class PlayerVisualBridge {
         try {
             if(avatar==null||avatar.clientWorld!=client.world||avatarVisit!=state.visit) {
                 avatar=new VisualPlayer(client.world);attackSerial=-1;
-                avatarVisit=state.visit;waterSerial=waterPhase=itemSwingSerial=-1;
+                avatarVisit=state.visit;waterSerial=waterPhase=itemSwingSerial=zenithSerial=-1;
                 walk=new net.minecraft.entity.LimbAnimator();
                 Class<?> api=Class.forName("net.bettercombat.client.animation.PlayerAttackAnimatable");
                 Class<?> hands=Class.forName("net.bettercombat.logic.AnimatedHand");
@@ -63,6 +66,10 @@ public final class PlayerVisualBridge {
                 mainHand=hands.getField("MAIN_HAND").get(null);twoHands=hands.getField("TWO_HANDED").get(null);
             }
             avatar.tick();
+            if(flag(input,"zenithSwing")&&!state.using) {
+                int serial=(int)number(input,"zenithSerial",0);
+                if(serial!=zenithSerial){avatar.swingHand(net.minecraft.util.Hand.MAIN_HAND);zenithSerial=serial;}
+            }
             avatar.fishHook=client.player==null?null:client.player.fishHook;
             for(var slot:EquipmentSlot.values()) {
                 var item=state.equipment[slot.ordinal()];

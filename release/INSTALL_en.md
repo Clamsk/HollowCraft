@@ -1,8 +1,8 @@
-# HollowCraft 0.30.13 — Installation and Configuration
+# HollowCraft 0.30.14 — Installation and Configuration
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-Version 0.30.13 adds vanilla boat models, native actor boat captures, spawn-egg mobs, basic AI and XY terrain adaptation. Starter backpacks gain an oak boat once; eggs remain creative-only. Stop both games before updating. Individual creature behaviors await gameplay acceptance.
+0.30.14 adds the Clamsk Terraria Easter egg: Zenith and chest-slot Stardust Wings. Install Steam Terraria before running the installer to import original assets locally. Press T or / in gameplay and enter Clamsk. Stop both games before updating; gameplay awaits player testing. See the [Easter egg guide](../docs/TERRARIA_EASTER_EGG.en.md).
 
 This is a **Windows 64-bit playtest package**. It brings items, numerical rules and a 3D player from your local Minecraft installation into Hollow Knight. Both games must run during play. Full survival campaign support is still being adapted; the current build was compiled and handed to players without gameplay acceptance testing.
 
@@ -15,7 +15,7 @@ This is a **Windows 64-bit playtest package**. It brings items, numerical rules 
 
 ## Install and start
 
-1. Download **HollowCraft-v0.30.13-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
+1. Download **HollowCraft-v0.30.14-windows.zip** from [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases). The automatically generated **Source code** archives require a local build.
 2. Extract the entire ZIP into a writable directory such as `D:\Games\HollowCraft`. Do not run files inside the ZIP or install into the original Steam or `.minecraft` directory. Built-in Windows PowerShell is sufficient; Codex, Git and development tools are not needed.
 3. Double-click **Install HollowCraft.cmd**. It searches for Steam's game folder and `.minecraft`; enter the paths if discovery fails. The Minecraft root must contain `versions\1.20.1\1.20.1.jar`, rather than merely the launcher executable.
 4. Wait until downloads, checksums and preparation finish and the installer reports `installed`. Installation prepares files without launching games.

@@ -2,7 +2,7 @@
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
-Windows release packages contain only the two compiled HollowCraft mods, installation scripts and documentation. They do not distribute Minecraft, Hollow Knight, modified original game assemblies, extracted textures/audio/animations, user saves or the dependency binaries listed below.
+Windows release packages contain only the two compiled HollowCraft mods, installation scripts, optional asset-importer source and documentation. They do not distribute Minecraft, Hollow Knight, modified original game assemblies, extracted textures/audio/animations, user saves or the dependency binaries listed below.
 
 The installer downloads fixed versions from official release sources using checksums in [dependencies.lock.json](dependencies.lock.json). Fabric Maven libraries use their official SHA-1 values; Modrinth dependencies use official SHA-512 values; Mono.Cecil uses a locked SHA-512 calculated from the official NuGet package.
 
@@ -17,3 +17,8 @@ The installer downloads fixed versions from official release sources using check
 | ASM | 9.8, matching Fabric Loader | [official project](https://asm.ow2.io/); modules and checksums are listed in the lockfile |
 
 Game assets are extracted locally from the player's own Minecraft 1.20.1 installation and downloaded Better Combat resources, and stay in local runtime directories. Minecraft belongs to Mojang/Microsoft; Hollow Knight belongs to Team Cherry. HollowCraft is unofficial and is not affiliated with or endorsed by these developers.
+
+
+## Terraria import support
+
+Terraria sprites and sounds belong to Re-Logic and are imported only from the player's local installation; none are included in Git or the release ZIP. The optional importer ships as source. Its MonoGame LZX decoder retains the Stuart Caie/Ali Scissons notices and is distributed under the MS-PL option; the stream wrapper uses MonoGame's MS-PL, with one documented exception-type change. See the [source notices](../tools/TerrariaAssetImporter/SOURCE.md) and [complete license](../tools/TerrariaAssetImporter/LICENSE.txt).

@@ -65,8 +65,9 @@ namespace HollowCraft
             // immediate discovery, so a newly spawned brood cannot miss its first hit.
             if(Time.unscaledTime>=nextDiscovery||required!=0||discover) {
                 nextDiscovery=Time.unscaledTime+.15f;nearby.Clear();var filter=new ContactFilter2D().NoFilter();
-                int count=Physics2D.OverlapCircle(hero.transform.position,20,filter,discovery);
-                while(count==discovery.Length&&discovery.Length<4096) {Array.Resize(ref discovery,discovery.Length*2);count=Physics2D.OverlapCircle(hero.transform.position,20,filter,discovery);}
+                float radius=HollowCraftRuntime.Instance?.HeldItem==TerrariaEquipment.Zenith?48:20;
+                int count=Physics2D.OverlapCircle(hero.transform.position,radius,filter,discovery);
+                while(count==discovery.Length&&discovery.Length<4096) {Array.Resize(ref discovery,discovery.Length*2);count=Physics2D.OverlapCircle(hero.transform.position,radius,filter,discovery);}
                 for(int i=0;i<count;i++) {
                     var collider=discovery[i];if(collider==null)continue;
                     var enemy=Resolve(collider);

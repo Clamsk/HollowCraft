@@ -1,4 +1,4 @@
-param([string]$Version='0.30.13')
+param([string]$Version='0.30.14')
 $ErrorActionPreference='Stop'
 $rootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $rootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -22,6 +22,10 @@ $filesTask=@(
     'scripts\start-hollowcraft.ps1','scripts\stop-hollowcraft.ps1',
     'scripts\launcher.ps1',
     'scripts\audit-hk-enemies.py',
+    'scripts\prepare-terraria-assets.ps1',
+    'tools\TerrariaAssetImporter\Importer.cs','tools\TerrariaAssetImporter\LzxDecoder.cs',
+    'tools\TerrariaAssetImporter\LzxDecoderStream.cs','tools\TerrariaAssetImporter\LICENSE.txt',
+    'tools\TerrariaAssetImporter\SOURCE.md',
     'release\dependencies.lock.json','release\hollowcraft.example.json',
     'release\bosses.json',
     'release\creatures.json',
@@ -33,6 +37,7 @@ $filesTask=@(
     'docs\BOSS_RECORDING.md','docs\BOSS_RECORDING.en.md',
     'docs\MC_CREATURES.md','docs\MC_CREATURES.en.md',
     'docs\PERFORMANCE.md','docs\PERFORMANCE.en.md',
+    'docs\TERRARIA_EASTER_EGG.md','docs\TERRARIA_EASTER_EGG.en.md',
     'docs\ENEMY_AUDIT.md','docs\ENEMY_AUDIT.en.md','docs\enemy-coverage-0.30.8.csv',
     'artifacts\HollowCraft\HollowCraft.dll',
     'minecraft\build\libs\hollowcraft-minecraft-0.1.0.jar'

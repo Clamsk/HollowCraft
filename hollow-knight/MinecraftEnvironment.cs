@@ -20,15 +20,16 @@ namespace HollowCraft
         private readonly RaycastHit2D[] wallHits=new RaycastHit2D[16];
         private Collider2D movementCollider;
         private bool ownGravity;
+        private bool wingControl;private float wingX,wingY;
         private float nextJump,lastJump;
         private float lastSpacePress=-1000,flightY,flightPhase,flightMoveY;
         private bool spectatorBody;private bool previousTrigger;private RigidbodyType2D previousBodyType;
         private int Effect(string id) {var effects=HollowCraftRuntime.Instance?.Stats?["effects"] as JArray;var effect=effects?.FirstOrDefault(e=>(string)e["id"]=="minecraft:"+id);return effect==null?-1:(int)effect["amplifier"];}
         private void Awake() {instance=this;}
         internal static void SetVerticalImpulse(float velocity) {if(instance!=null) {instance.motionY=velocity;instance.lastAppliedY=velocity*20;instance.normalPhase=0;instance.ownGravity=true;instance.fluidActive=false;}}
-        internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;Flying=false;JumpOriginFeet=null;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;instance.lastSpacePress=-1000;instance.flightY=instance.flightPhase=0;instance.motionX=instance.walkPhase=instance.walkVelocity=instance.lastAppliedX=0;instance.fluidActive=false;}}
-        internal static float? HorizontalSpeed=>instance!=null&&instance.ownHorizontal?instance.lastAppliedX:(float?)null;
-        internal static void SceneChanged() {StopMotion();if(instance!=null) {instance.ownGravity=false;instance.ownHorizontal=false;}}
+        internal static void StopMotion() {SetVerticalImpulse(0);Gliding=false;Flying=false;JumpOriginFeet=null;FlightVelocity=Vector2.zero;if(instance!=null) {instance.step=0;instance.nextJump=0;instance.lastSpacePress=-1000;instance.flightY=instance.flightPhase=0;instance.wingControl=false;TerrariaEquipment.WingActive=false;instance.motionX=instance.walkPhase=instance.walkVelocity=instance.lastAppliedX=0;instance.fluidActive=false;}}
+        internal static float? HorizontalSpeed=>instance!=null&&(instance.ownHorizontal||instance.wingControl)?instance.lastAppliedX:(float?)null;
+        internal static void SceneChanged() {StopMotion();TerrariaEquipment.WingActive=false;TerrariaEquipment.WingPhase=0;TerrariaEquipment.FlightRemaining=3;if(instance!=null) {instance.ownGravity=false;instance.ownHorizontal=false;instance.wingControl=false;}}
         internal static void VehicleChanged() {SceneChanged();NativeFallTracker.Reset();}
         internal static void SuspendNativeMotion() {
             if(instance==null)return;
@@ -110,6 +111,9 @@ namespace HollowCraft
             PlayerSystem.DecayKnockback(Time.fixedDeltaTime,MinecraftControls.Grounded(hero));
             bool water=(bool?)runtime.Stats?["water"] ?? false,lava=(bool?)runtime.Stats?["lava"]??false,climbing=(bool?)runtime.Stats?["climbing"] ?? false;
             int levitation=Effect("levitation");
+            if(!Flying&&!Gliding&&levitation<0&&!climbing&&!lava&&WingStep(runtime,water))return;
+            if(wingControl) {wingControl=false;ownGravity=ownHorizontal=false;}
+            TerrariaEquipment.WingActive=false;
             HorizontalStep(runtime,water,lava);
             if(Flying) {
                 Gliding=false;fluidActive=false;body.gravityScale=0;
@@ -167,6 +171,35 @@ namespace HollowCraft
                 }
                 body.gravityScale=0;lastAppliedY=displacement/Time.fixedDeltaTime;body.linearVelocity=new Vector2(body.linearVelocity.x,lastAppliedY);step=0;
             }
+        }
+        private bool WingStep(HollowCraftRuntime runtime,bool water) {
+            if(!TerrariaEquipment.WingEquipped) {TerrariaEquipment.FlightRemaining=3;return false;}
+            bool grounded=MinecraftControls.Grounded(hero);
+            if(grounded) {TerrariaEquipment.FlightRemaining=3;TerrariaEquipment.WingActive=false;wingControl=false;ownGravity=ownHorizontal=false;return false;}
+            bool input=Application.isFocused&&!runtime.GameplayBlocked,space=input&&Input.GetKey(KeyCode.Space);
+            if(!wingControl&&!space)return false;
+            if(!wingControl) {wingX=body.linearVelocity.x;wingY=body.linearVelocity.y;wingControl=true;ownGravity=ownHorizontal=false;}
+            float dt=Time.fixedDeltaTime;
+            bool powered=space&&TerrariaEquipment.FlightRemaining>0;
+            TerrariaEquipment.WingActive=powered;
+            if(powered) {TerrariaEquipment.FlightRemaining=Mathf.Max(0,TerrariaEquipment.FlightRemaining-dt);TerrariaEquipment.WingPhase+=dt*10;}
+            float horizontal=input?(Input.GetKey(KeyCode.A)?-1:0)+(Input.GetKey(KeyCode.D)?1:0):0;
+            float speed=20.25f*(water?.5f:1);
+            wingX=Mathf.MoveTowards(wingX,horizontal*speed,(horizontal==0?35:27)*dt);
+            if(PlayerSystem.KnockbackActive)wingX=PlayerSystem.KnockbackX;
+            // Original Stardust ascent: .135 sustained, .85 braking a fall,
+            // .15 below jump speed, capped at 3 * 5.01 pixels per Terraria tick.
+            if(powered)wingY=Mathf.Min(33.8175f*(water?.5f:1),wingY+(18.225f+(wingY<0?114.75f:wingY<11.2725f?20.25f:0))*dt);
+            else {wingY-=(space?18:54)*dt;wingY=Mathf.Max(wingY,space?-7.5f:-22.5f);}
+            if(wingY>0&&TouchingCeiling())wingY=0;
+            float safe=MinecraftControls.SafeHorizontalSpeed(wingX);
+            if(movementCollider!=null&&Math.Abs(safe)>.01f) {
+                var filter=new ContactFilter2D();filter.SetLayerMask(LayerMask.GetMask("Terrain","Default"));filter.useTriggers=false;
+                int count=movementCollider.Cast(Vector2.right*Math.Sign(safe),filter,wallHits,.025f);
+                for(int i=0;i<count;i++)if(wallHits[i].collider!=null&&wallHits[i].collider.GetComponentInParent<HeroController>()==null&&wallHits[i].normal.x*Math.Sign(safe)<-.5f){safe=0;break;}
+            }
+            body.gravityScale=0;body.linearVelocity=new Vector2(safe,wingY);lastAppliedX=safe;lastAppliedY=wingY;motionY=wingY/20;normalPhase=0;
+            NativeFallTracker.Reset();JumpOriginFeet=null;return true;
         }
         private void HorizontalStep(HollowCraftRuntime runtime,bool water,bool lava) {
             if(Gliding) {ownHorizontal=false;return;}

@@ -2,7 +2,7 @@
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
-Windows 发布包仅包含 HollowCraft 自编译的两端 Mod、安装脚本和文档。Minecraft、空洞骑士、修改后的原游戏程序集、提取的纹理/音频/动画、用户存档以及下列依赖二进制不随发布包分发。
+Windows 发布包仅包含 HollowCraft 自编译的两端 Mod、安装脚本、素材导入工具和文档。Minecraft、空洞骑士、修改后的原游戏程序集、提取的纹理/音频/动画、用户存档以及下列依赖二进制不随发布包分发。
 
 安装器按 `dependencies.lock.json` 的固定版本与哈希值，从官方发布源获取依赖。Fabric Maven 的运行库使用其官方 SHA-1；Modrinth 依赖使用官方 SHA-512；Mono.Cecil 使用从官方 NuGet 包计算并锁定的 SHA-512。
 
@@ -17,3 +17,8 @@ Windows 发布包仅包含 HollowCraft 自编译的两端 Mod、安装脚本和�
 | ASM | Fabric Loader 配套 9.8 | [官方项目](https://asm.ow2.io/)，具体模块与校验值见锁定清单 |
 
 游戏素材由安装器从玩家自己的 MC 1.20.1 与已下载 Better Combat 中提取，仅留在本地运行目录。Minecraft 属于 Mojang/Microsoft；空洞骑士属于 Team Cherry。HollowCraft 是非官方项目，与上述开发者没有隶属或背书关系。
+
+
+## 泰拉瑞亚素材导入
+
+泰拉瑞亚贴图与音效属于 Re-Logic，只从玩家自己的安装目录导入，不随 Git 或发布包分发。可选导入工具以源码随包提供；其中 MonoGame LZX 解码器保留 Stuart Caie / Ali Scissons 原始声明并采用 MS-PL 许可选项，流封装使用 MonoGame 的 MS-PL，仅替换一处异常类型以独立编译。见 [代码来源](../tools/TerrariaAssetImporter/SOURCE.md) 与 [完整许可](../tools/TerrariaAssetImporter/LICENSE.txt)。

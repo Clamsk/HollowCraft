@@ -1,0 +1,40 @@
+# Clamsk Easter egg: Zenith and Stardust Wings
+
+[简体中文](TERRARIA_EASTER_EGG.md) | [English](TERRARIA_EASTER_EGG.en.md)
+
+Version 0.30.14 adds two optional items. Press **T** or **/** in gameplay, type **Clamsk** and press Enter. `/Clamsk` also works. Keep two backpack slots empty; each successful command grants one of each item. They are absent from the survival starter kit and ordinary creative categories. Esc closes chat; gameplay shortcuts are blocked while typing, and the world keeps running.
+
+## Zenith
+
+Select Zenith and click to cast one three-sword cycle, or hold left click to repeat. Aim across the visible screen, within a protocol limit of 48 blocks. Ordinary melee and placement retain their existing reach. Flying sword sprites and colored trails follow the same trajectory used for hit detection; the held item remains attached to the vanilla MC player arm.
+
+| Original parameter or behavior | Port |
+| --- | --- |
+| 190 base damage, 14% critical chance | Server-authoritative individual hits, double critical damage, then existing MC armor/native HP conversion |
+| Three swords per 30 Terraria ticks | One cycle per 0.5 seconds; releasing a click finishes the active cycle |
+| Final Fractal motion, component swords and colored afterimages | Original trajectory parameters with 120 Hz substeps and interpolated native effects, without full-screen frame transfers |
+| Unlimited penetration, no tile collision, local NPC hit timer | Separate timer per sword and target; ordinary walls do not block swords; no direct screen-wide HP subtraction |
+
+Body-range aiming compresses the minimum loop so that small enemies overlapping Steve remain reachable.
+
+Native enemies retain directional guards, invulnerable phases, phase changes, hit reactions and death handling. NPCs and story triggers remain protected. For Radiance footage, select the appropriate fight in the recording launcher and enter the command after arriving.
+
+## Stardust Wings
+
+Place the wings in the **chest slot**, or hold them and right-click to equip. They replace the chestplate and add no armor. Original four-frame textures form two wings attached to the MC torso, with flapping and blue stardust particles.
+
+- Hold Space in the air to fly for a cumulative **3 seconds**. Landing restores the budget; releasing Space does not refill it.
+- Release Space to descend; hold it after exhaustion to slow descent. A / D steer with acceleration, deceleration and terrain collision.
+- Equipped wings prevent landing damage. The existing ender-pearl teleport cost remains.
+- Original horizontal speed is 9 pixels/tick with a 2.5 acceleration multiplier; ascent uses the Stardust .135 / .85 / 3 / 1 / .15 parameters. The projection uses 0.0375 MC blocks per Terraria pixel, giving a horizontal limit of about 20.25 blocks/second.
+- These wings do not provide Vortex-style hovering. Creative flight, boats and native story control keep their separate movement paths.
+
+This is a 2D port between different games. Native collision, the MC damage pipeline and Terraria's complete engine differ; frame-perfect equivalence is not claimed. This build is compiled and delivered for player testing without launching a boss fight.
+
+## Local original assets
+
+The installer detects Steam Terraria and imports the Zenith/component-sword sprites, Stardust inventory/wing textures and Zenith swing sound from local XNB files. Import completed with local **1.4.5.8** content. Terraria does not need to run. Extracted files remain in private `artifacts` and `runtime` directories; neither Git nor the release ZIP contains original game images/audio.
+
+Install Terraria, then run the new **Install HollowCraft.cmd**. A development checkout can run `scripts/prepare-terraria-assets.ps1`; use `-TerrariaRoot` for a custom directory containing `Content`. Restart both games after importing. The private MC profile enables the `HollowCraft-Terraria` resource pack. Normal HollowCraft remains available without Terraria; the Easter egg command requests asset import first.
+
+Original references: [Zenith](https://terraria.wiki.gg/wiki/Zenith), [Stardust Wings](https://terraria.wiki.gg/wiki/Stardust_Wings). The importer uses MonoGame's LZX decoder; see [third-party notices](../release/THIRD_PARTY.en.md).

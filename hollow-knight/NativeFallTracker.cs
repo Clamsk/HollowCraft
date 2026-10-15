@@ -16,7 +16,7 @@ namespace HollowCraft
             if(value==null||runtime==null||!runtime.InGame||runtime.NativeControlLocked||WorldCreatures.Riding) {Reset();return;}
             float feet=value.GetComponent<Collider2D>().bounds.min.y;
             if(hero!=value||!initialized) {hero=value;previousY=feet;initialized=true;}
-            if(runtime.Spectator||MinecraftEnvironment.Flying||MinecraftEnvironment.Gliding||(bool?)runtime.Stats?["water"]==true||(bool?)runtime.Stats?["climbing"]==true) {
+            if(TerrariaEquipment.WingEquipped||runtime.Spectator||MinecraftEnvironment.Flying||MinecraftEnvironment.Gliding||(bool?)runtime.Stats?["water"]==true||(bool?)runtime.Stats?["climbing"]==true) {
                 distance=0;airborne=false;previousY=feet;return;
             }
             bool grounded=MinecraftControls.Grounded(value);

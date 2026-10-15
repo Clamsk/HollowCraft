@@ -71,7 +71,7 @@ namespace HollowCraft
                     if(Input.GetKeyDown(KeyCode.S)||Input.GetKeyDown(KeyCode.DownArrow)) frontView=true;
                     if(Input.GetKey(KeyCode.A)||Input.GetKey(KeyCode.D)) {frontView=false;Facing=Input.GetKey(KeyCode.A) ? -1 : 1;}
                 }
-                SetCrouch(!MinecraftEnvironment.Flying&&HollowCraftRuntime.Instance?.Spectator!=true&&(TestCrouch??(Application.isFocused && (Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)))));
+                SetCrouch(!InterfaceOpen&&!MinecraftEnvironment.Flying&&HollowCraftRuntime.Instance?.Spectator!=true&&(TestCrouch??(Application.isFocused && (Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)))));
             }
         }
         private static void Bind(PlayerAction action,params Key[] keys)

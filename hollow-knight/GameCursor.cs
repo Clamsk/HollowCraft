@@ -72,7 +72,7 @@ namespace HollowCraft
             var camera=GameCamera();target=hero.transform.position;gui=new Vector2(Screen.width/2,Screen.height/2);
             if(camera==null) return false;
             Vector3 raw=camera.ScreenToWorldPoint(new Vector3(screen.x,screen.y,hero.transform.position.z-camera.transform.position.z));
-            target=ClampWorld(raw,Eye(hero));
+            target=HollowCraftRuntime.Instance?.HeldItem==TerrariaEquipment.Zenith?(Vector2)raw:ClampWorld(raw,Eye(hero));
             Vector3 result=camera.WorldToScreenPoint(new Vector3(target.x,target.y,hero.transform.position.z));
             gui=new Vector2(result.x,Screen.height-result.y);return true;
         }

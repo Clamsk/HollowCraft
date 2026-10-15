@@ -1,4 +1,4 @@
-# HollowCraft 0.30.13 试玩版本
+# HollowCraft 0.30.14 试玩版本
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -6,7 +6,9 @@ Minecraft-style survival and combat in Hollow Knight
 
 在《空洞骑士》的二维场景中使用 Minecraft 的人物、生存、装备、建造和战斗规则。游玩时 Minecraft 与空洞骑士需要同时运行；这是可试玩的桥接原型，完整生存通关尚未验收。
 
-**快速入口：** [下载 Windows 试玩包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.13) · [船与 MC 生物](docs/MC_CREATURES.md) · [Boss 录制启动器](docs/BOSS_RECORDING.md) · [安装与配置](release/INSTALL_zh.md) · [源码构建](SOURCE_SETUP.md) · [架构说明](docs/ARCHITECTURE.md) · [敌人检查](docs/ENEMY_AUDIT.md) · [通关适配状态](docs/PLAYTHROUGH.md) · [第三方来源](release/THIRD_PARTY.md)
+**快速入口：** [下载 Windows 试玩包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.14) · [船与 MC 生物](docs/MC_CREATURES.md) · [Boss 录制启动器](docs/BOSS_RECORDING.md) · [安装与配置](release/INSTALL_zh.md) · [源码构建](SOURCE_SETUP.md) · [架构说明](docs/ARCHITECTURE.md) · [敌人检查](docs/ENEMY_AUDIT.md) · [通关适配状态](docs/PLAYTHROUGH.md) · [第三方来源](release/THIRD_PARTY.md)
+
+0.30.14 加入 **Clamsk 彩蛋**：按 T 或 / 输入 Clamsk，获得天顶剑和胸甲栏星尘之翼。天顶剑提供合成剑回旋、彩色拖尾、190 基础伤害及独立命中间隔；翅膀支持有限飞行、振翅和免落差伤害。原版素材从本机 Steam 泰拉瑞亚导入，见 [彩蛋指南](docs/TERRARIA_EASTER_EGG.md)。两端编译后直接交付，实机效果待玩家试玩。
 
 0.30.13 修正玩家乘船时客户端与服务端争抢船物理、空洞角色碰撞船体后被反复拉回座位的问题。骑乘时暂停本地移动、重力与跳跃，使用明确的 Shift 下船输入；空洞乘客修正僵尸代理的座位偏移、原生身体锚点和显示层级，下船或船毁时恢复状态。两端编译后交付，具体骑乘效果待玩家试玩。
 
@@ -24,7 +26,7 @@ Minecraft-style survival and combat in Hollow Knight
 
 0.30.6 修复进场时人物手持与原版物品栏不同步：切存档、进场和复活主动同步完整背包及选中槽位，人物与 HUD 帧附带进场编号，旧帧不能混入新场景；HUD 等待客户端手持与服务端一致后再绘制。原生受击描述器注册为空闲 FSM，近战、远程伤害和可破坏物共用，修复柱子查找攻击 FSM 报错；MC 接受伤害后清除原生额外闪避计时，将确认的普通敌人致死伤害交给原生 Die 流程，保留特殊死亡与 Boss 阶段回血。新增命中前后血量日志，实际效果待玩家试玩。
 
-本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.13.md](试玩说明-0.30.13.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
+本版编译后直接交付玩家试玩，不执行自动实机验证。最新改动见 [试玩说明-0.30.14.md](试玩说明-0.30.14.md)。后文已有测试记录仅对应其注明的旧版本。运行职责与独立 Mod 路线见 [架构说明](docs/ARCHITECTURE.md)，通关适配待办见 [PLAYTHROUGH.md](docs/PLAYTHROUGH.md)。
 
 0.30 接入点燃 TNT 的空洞原生地形碰撞，按玩家要求将普通跳跃上调到约 1.5 格，初始装备增加铁镐，并提供 Windows 安装配置包。保留 0.29 的 HIM 白眼、创造双击空格飞行与脚下放置目标锁定。实际操作效果待玩家试玩。
 
@@ -40,7 +42,7 @@ Minecraft-style survival and combat in Hollow Knight
 
 GitHub 中的 `v0.8.0` 是后续修复前的源码基线。0.9 针对玩家反馈的进食、原生地形投射物碰撞、创造目录、跳搭和攻击漏响应修改实现，实际效果待玩家试玩。下文的功能描述不代表新版本已通过实机验收。
 
-直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.13)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd** 打开启动器。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)；录制操作见 [Boss 录制指南](docs/BOSS_RECORDING.md)。
+直接体验请在 [Releases 下载 Windows 安装包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.14)，完整解压后运行 **Install HollowCraft.cmd**，再运行 **Start HollowCraft.cmd** 打开启动器。需要自己的 Steam 空洞 1.5.12620、MC Java 1.20.1、64 位 Java 17/21。详细步骤、配置与升级见 [安装说明](release/INSTALL_zh.md)；录制操作见 [Boss 录制指南](docs/BOSS_RECORDING.md)。
 
 仓库提交只包含源码与脚本；发布包另带自编译 Mod，不包含游戏文件、提取素材、第三方依赖二进制、运行副本、日志或存档。GitHub 的 Source code 压缩包需自行构建，说明见 [SOURCE_SETUP.md](SOURCE_SETUP.md)。
 
@@ -60,6 +62,7 @@ Minecraft 1.20.1 的生存玩家、物品栏、方块、合成与容器接入 St
 
 | 按键 | 功能 |
 | --- | --- |
+| T / / | 打开聊天栏，输入 Clamsk 获得天顶剑与星尘之翼 |
 | A / D | 左右移动，显示侧面 |
 | 空格 | 约 1.5 格跳跃；创造模式双击切换飞行，飞行时上升，Shift 下降；装备鞘翅后在空中再次按下开始滑翔 |
 | B（按住） | 手持圆石等完整方块时，辅助连续跳跃并在脚下垫高；每次起跳最多放一块，生存正常消耗物品；飞行、滑翔、冒险与旁观不启用 |

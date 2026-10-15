@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "hollowcraft_bridge:item/zenith"
+  }
+}

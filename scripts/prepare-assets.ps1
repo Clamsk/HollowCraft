@@ -61,3 +61,4 @@ try {
     }
 } finally {$combatJarTask.Dispose()}
 Write-Output "Extracted textures from your local Minecraft installation: $assetsTask"
+& (Join-Path $PSScriptRoot 'prepare-terraria-assets.ps1') -AssetsRoot $assetsTask

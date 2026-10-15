@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "hollowcraft_bridge:item/stardust_wings"
+  }
+}

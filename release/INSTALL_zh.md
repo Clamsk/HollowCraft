@@ -1,8 +1,8 @@
-# HollowCraft 0.30.13 安装与配置
+# HollowCraft 0.30.14 安装与配置
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-0.30.13 加入 MC 原版模型船、原生角色自动上船及生成蛋生物、基本 AI 和二维地形适配。生存背包新增橡木船，旧档一次补发；生成蛋只在创造菜单提供。请先 Stop 再更新两端；逐生物行为尚未实机验收。
+0.30.14 加入 Clamsk 泰拉瑞亚彩蛋：天顶剑与胸甲栏星尘之翼。先安装 Steam 泰拉瑞亚，再运行安装器导入本机原版素材；进入游戏按 T 或 / 输入 Clamsk 获取。更新前先停止两端，本版未执行实机验证，操作见 [彩蛋指南](../docs/TERRARIA_EASTER_EGG.md)。
 
 这是 Windows 64 位试玩包。它把本机 Minecraft 的物品、数值与三维人物接入空洞骑士；游玩时两端都需要运行。完整生存通关仍在适配，本版编译后交给玩家试玩，未进行实机验收。
 
@@ -15,7 +15,7 @@
 
 ## 安装
 
-1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.13-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
+1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.14-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
 2. 完整解压到自己的可写目录，例如 `D:\Games\HollowCraft`。不要直接从 ZIP 内运行，也不要放进 Steam 或 `.minecraft` 原目录。Windows 内置 PowerShell 即可，无需 Codex、Git 或开发工具。
 3. 双击 **Install HollowCraft.cmd**。它寻找 Steam 游戏目录和 `.minecraft`；未找到时按提示输入目录。Minecraft 目录必须包含 `versions\1.20.1\1.20.1.jar`，不是启动器 EXE 所在目录。
 4. 等待下载、校验和准备结束，看到 `installed`。安装器只准备文件，不启动游戏。

@@ -14,11 +14,11 @@ HollowCraft 当前是 Minecraft 与空洞骑士的本地桥接原型，运行时
 
 ## 构建入口
 
-1. 直接体验请使用 [Windows 发布包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.13) 与 [安装说明](release/INSTALL_zh.md)，不需要自行构建。源码开发者阅读 scripts/prepare-assets.ps1、prepare-hk-test.ps1 和 prepare-mc-test.ps1，配置本机游戏及依赖目录；`hollowcraft.local.json` 可覆盖默认开发路径。
+1. 直接体验请使用 [Windows 发布包](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.14) 与 [安装说明](release/INSTALL_zh.md)，不需要自行构建。源码开发者阅读 scripts/prepare-assets.ps1、prepare-hk-test.ps1 和 prepare-mc-test.ps1，配置本机游戏及依赖目录；`hollowcraft.local.json` 可覆盖默认开发路径。
 2. 运行 scripts/build-hollow-knight.ps1 构建 C# 模块和私有注入程序集。hollow-knight/HollowCraft.csproj 中 GameManaged 指向本机空洞托管程序集。
 3. 运行 scripts/build-minecraft.ps1 -Gradle <本机 gradle.bat 路径> -JavaHome <JDK 目录> 构建 Fabric 模组。脚本也可从 PATH、用户的 Gradle 8.10 缓存和 JAVA_HOME 查找依赖；minecraft/build.gradle 可复用本机 PCL libraries 中的两项依赖。
 4. 运行两个 prepare 脚本生成 runtime 内的私有试玩副本及素材缓存，再使用 Start HollowCraft.cmd 启动。
-5. 发布前运行 `scripts/package-release.ps1 -Version 0.30.13`，它校验两端版本并按明确文件清单生成 ZIP 与 SHA256；仅打包自编译 Mod、脚本及文档，不打包原游戏或本地素材。安装器的 `-UsePrebuilt` 路线用 Mono.Cecil 在玩家电脑上生成补丁，不需要 .NET SDK。
+5. 发布前运行 `scripts/package-release.ps1 -Version 0.30.14`，它校验两端版本并按明确文件清单生成 ZIP 与 SHA256；仅打包自编译 Mod、脚本及文档，不打包原游戏或本地素材。安装器的 `-UsePrebuilt` 路线用 Mono.Cecil 在玩家电脑上生成补丁，不需要 .NET SDK。
 
 不要将 dependencies、artifacts 或 runtime 提交到 Git。私有副本中的硬链接及目录联接可能指向只读原始资源，不应编辑它们。不要将自己的游戏存档替换为试玩存档。
 
@@ -27,3 +27,6 @@ scripts 中的 validate、inspect 脚本和 *Smoke.cs 是旧版本开发工具�
 ## 第三方资源
 
 Minecraft 与空洞骑士程序、贴图和音效归各自权利人所有，需由用户自己的安装生成缓存。Better Combat 的上游源码与许可见 README 链接；本项目不在源码仓库中重新分发该模组或其动画资源。当前仓库没有授予额外的开源许可。
+
+
+可选泰拉瑞亚素材由准备阶段的 `scripts/prepare-terraria-assets.ps1` 从本机导入；导入器源码与 MS-PL 解码器随包提供，原版素材仅留本地。见 [彩蛋指南](docs/TERRARIA_EASTER_EGG.md)。

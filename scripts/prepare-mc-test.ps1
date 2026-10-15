@@ -98,3 +98,4 @@ if ($encodingTask.GetString($argumentBytesTask) -cne $argumentTextTask) { throw 
 [IO.File]::WriteAllBytes((Join-Path $profileTask 'launch.args'),$argumentBytesTask)
 Write-Output "Java argument file encoding: $encodingTaskName (round-trip verified)"
 Write-Output "Isolated Minecraft profile prepared: $profileTask"
+if(-not $Smoke) {& (Join-Path $PSScriptRoot 'prepare-terraria-assets.ps1')}
