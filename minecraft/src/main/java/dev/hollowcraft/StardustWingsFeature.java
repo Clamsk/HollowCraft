@@ -50,16 +50,18 @@ public final class StardustWingsFeature extends FeatureRenderer<AbstractClientPl
             }
             mount=TexturedModelData.of(data,16,16).createModel().getChild("back");
             left=mount.getChild("left");right=mount.getChild("right");leftFan=left.getChild("fan");rightFan=right.getChild("fan");
+            left.xScale=left.yScale=left.zScale=right.xScale=right.yScale=right.zScale=1.45f;
         }
         void pose(ModelPart body,float spread,float fold,float flap) {
             mount.copyTransform(body);
             // Model-space +Z is the back. Mirrored wings extend along opposite X
             // axes, so the left hinge needs POSITIVE yaw to fold toward +Z.
             // Keep the full flight stroke behind the shoulders as well.
-            left.yaw=1.1f*(1-spread)+.6f+flap*.55f;right.yaw=-left.yaw;
-            left.roll=-.25f+fold*.65f;right.roll=-left.roll;
-            left.pitch=right.pitch=-.12f+fold*.2f;
-            leftFan.yaw=fold*.4f+flap*.15f;rightFan.yaw=-leftFan.yaw;
+            left.yaw=.3f+fold*.65f+flap*.22f;right.yaw=-left.yaw;
+            // Fold down along the back rather than into a short shoulder-level fan.
+            left.roll=.28f-fold*1.35f;right.roll=-left.roll;
+            left.pitch=right.pitch=.1f-fold*.18f;
+            leftFan.yaw=fold*.2f+flap*.12f;rightFan.yaw=-leftFan.yaw;
             leftFan.roll=fold*.55f;rightFan.roll=-leftFan.roll;
         }
         private static ModelPartBuilder box(int sign,float x,float y,float z,float width,float height,float depth,boolean glow) {

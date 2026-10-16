@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 /** Actual MC player renderer, feature layers and mod animation stack, with transparent depth. */
 public final class PlayerVisualBridge {
-    private static final int SIZE=256,SCALE=64;
+    private static final int SIZE=256,WING_SIZE=384,SCALE=64;
     private static SimpleFramebuffer framebuffer;
     private static VisualPlayer avatar;
     private static ByteBuffer pixels;
@@ -129,24 +129,26 @@ public final class PlayerVisualBridge {
         float yaw=180+number(input,"viewYaw",0);
         avatar.bodyYaw=avatar.prevBodyYaw=avatar.headYaw=avatar.prevHeadYaw=yaw;avatar.setYaw(yaw);avatar.prevYaw=yaw;
         avatar.setPitch(number(input,"pitch",0));avatar.prevPitch=avatar.getPitch();
+        int size=TerrariaEasterEgg.wings(avatar)?WING_SIZE:SIZE;
         try {
-            if(framebuffer==null) {
-                framebuffer=new SimpleFramebuffer(SIZE,SIZE,true,MinecraftClient.IS_SYSTEM_MAC);
-                pixels=ByteBuffer.allocateDirect(SIZE*SIZE*4);transfer=new byte[32+SIZE*SIZE*4];
+            if(framebuffer==null||framebuffer.textureWidth!=size) {
+                if(framebuffer!=null)framebuffer.delete();
+                framebuffer=new SimpleFramebuffer(size,size,true,MinecraftClient.IS_SYSTEM_MAC);
+                pixels=ByteBuffer.allocateDirect(size*size*4);transfer=new byte[32+size*size*4];
             }
             framebuffer.setClearColor(0,0,0,0);framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);framebuffer.beginWrite(true);
             RenderSystem.enableDepthTest();
-            RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0,SIZE,SIZE,0,1000,21000),VertexSorter.BY_Z);
+            RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0,size,size,0,1000,21000),VertexSorter.BY_Z);
             view.loadIdentity();view.translate(0,0,-11000);RenderSystem.applyModelViewMatrix();
             rendering=true;
             DrawContext draw=new DrawContext(client,client.getBufferBuilders().getEntityVertexConsumers());
-            InventoryScreen.drawEntity(draw,SIZE/2,208,SCALE,new Quaternionf().rotateZ((float)Math.PI),new Quaternionf(),avatar);
+            InventoryScreen.drawEntity(draw,size/2,size-48,SCALE,new Quaternionf().rotateZ((float)Math.PI),new Quaternionf(),avatar);
             draw.draw();
-            pixels.clear();GL11.glReadPixels(0,0,SIZE,SIZE,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,pixels);
+            pixels.clear();GL11.glReadPixels(0,0,size,size,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,pixels);
             ByteBuffer header=ByteBuffer.wrap(transfer).order(ByteOrder.LITTLE_ENDIAN);
-            header.putInt(0x48435039).putInt(++sequence).putInt(SIZE).putInt(SIZE).putLong(FRAME_SESSION).putInt((state.scene+"|"+state.campaign+"|"+state.visit).hashCode());
-            pixels.get(transfer,28,SIZE*SIZE*4);
-            header.putInt(28+SIZE*SIZE*4,sequence);
+            header.putInt(0x48435039).putInt(++sequence).putInt(size).putInt(size).putLong(FRAME_SESSION).putInt((state.scene+"|"+state.campaign+"|"+state.visit).hashCode());
+            pixels.get(transfer,28,size*size*4);
+            header.putInt(28+size*size*4,sequence);
             Path directory=Path.of(root).getParent().resolve("player_frames");Files.createDirectories(directory);
             // Windows/Unity can deny rename even with a delete-shared reader. Rotate
             // three writable files; readers reject incomplete or mixed-sequence frames.

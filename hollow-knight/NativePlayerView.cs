@@ -27,17 +27,21 @@ namespace HollowCraft
                     try {
                         if(!File.Exists(file)||File.GetLastWriteTimeUtc(file)<started)continue;
                         using(var stream=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new BinaryReader(stream)) {
-                            if(stream.Length!=32+256*256*4||reader.ReadInt32()!=0x48435039)continue;
+                            if(stream.Length<32||reader.ReadInt32()!=0x48435039)continue;
                             int serial=reader.ReadInt32(),w=reader.ReadInt32(),h=reader.ReadInt32();long frameSession=reader.ReadInt64();int sceneHash=reader.ReadInt32();
-                            if(w!=256||h!=256||sceneHash!=SceneHash(expected)||frameSession<session||frameSession==session&&serial<=sequence)continue;
-                            if(rgba==null)rgba=new byte[w*h*4];int at=0;
+                            if(w!=h||(w!=256&&w!=384)||stream.Length!=32+w*h*4||sceneHash!=SceneHash(expected)||frameSession<session||frameSession==session&&serial<=sequence)continue;
+                            if(rgba==null||rgba.Length!=w*h*4)rgba=new byte[w*h*4];int at=0;
                             while(at<rgba.Length){int n=stream.Read(rgba,at,rgba.Length-at);if(n<=0)break;at+=n;}
                             if(at!=rgba.Length||reader.ReadInt32()!=serial)continue;
                             stream.Position=4;if(reader.ReadInt32()!=serial)continue;
-                            if(Texture==null) {
-                                Texture=new Texture2D(w,h,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};
+                            if(root==null) {
                                 root=new GameObject("HollowCraft.MinecraftPlayerRenderer");UnityEngine.Object.DontDestroyOnLoad(root);renderer=root.AddComponent<SpriteRenderer>();
-                                renderer.sprite=Sprite.Create(Texture,new Rect(0,0,w,h),new Vector2(.5f,48f/256),64,0,SpriteMeshType.FullRect);
+                            }
+                            if(Texture==null||Texture.width!=w||Texture.height!=h) {
+                                if(renderer.sprite!=null)UnityEngine.Object.Destroy(renderer.sprite);
+                                if(Texture!=null)UnityEngine.Object.Destroy(Texture);
+                                Texture=new Texture2D(w,h,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};
+                                renderer.sprite=Sprite.Create(Texture,new Rect(0,0,w,h),new Vector2(.5f,48f/h),64,0,SpriteMeshType.FullRect);
                             }
                             Texture.LoadRawTextureData(rgba);Texture.Apply(false,false);sequence=serial;session=frameSession;ready=true;break;
                         }
@@ -50,6 +54,6 @@ namespace HollowCraft
         }
         private static int SceneHash(string value) {unchecked {int result=0;foreach(char c in value)result=result*31+c;return result;}}
         internal void Hide(){if(root!=null)root.SetActive(false);}
-        public void Dispose(){if(root!=null)UnityEngine.Object.Destroy(root);if(Texture!=null)UnityEngine.Object.Destroy(Texture);}
+        public void Dispose(){if(renderer!=null&&renderer.sprite!=null)UnityEngine.Object.Destroy(renderer.sprite);if(root!=null)UnityEngine.Object.Destroy(root);if(Texture!=null)UnityEngine.Object.Destroy(Texture);}
     }
 }

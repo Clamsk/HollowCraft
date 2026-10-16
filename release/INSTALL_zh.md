@@ -1,8 +1,8 @@
-# HollowCraft 0.30.17 安装与配置
+# HollowCraft 0.30.18 安装与配置
 
 [简体中文](INSTALL_zh.md) | [English](INSTALL_en.md)
 
-0.30.17 修正翅膀收拢方向，翼根移到背甲外侧；为原生受击代理保留所在区块并禁止保存成普通僵尸，避免远距离或转阶段时失去受击目标。辐光收尾时等待的原版攻击事件接入 MC 左键，保留高伤害阶段保护和天顶剑数值。两端编译后交付试玩，未启动游戏验证。停止旧版本后更新两端，已卡住的战斗请 F5 重开或重新进入。见 [彩蛋指南](../docs/TERRARIA_EASTER_EGG.md)。
+0.30.18 修正高伤害在阶段等待期间提前扣血、随后卡在边界的问题：原版控制器等待转场时保留当前血量，就绪后再接受受击，补回必要的阶段血量检查。接入辐光收尾的真实剑刃接触事件，修正剧情场景别名与 F5 重打。翅膀放大 45%，沿背部向下收拢，扩大渲染留白并保留人物尺寸。两端编译后交付试玩，未启动游戏验证。 关闭旧版本后同时更新两端，再按 F5 重打或重新进场。见 [彩蛋指南](../docs/TERRARIA_EASTER_EGG.md)。
 
 这是 Windows 64 位试玩包。它把本机 Minecraft 的物品、数值与三维人物接入空洞骑士；游玩时两端都需要运行。完整生存通关仍在适配，本版编译后交给玩家试玩，未进行实机验收。
 
@@ -15,7 +15,7 @@
 
 ## 安装
 
-1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.17-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
+1. 在 [GitHub Releases](https://github.com/Clamsk/HollowCraft/releases) 下载 **HollowCraft-v0.30.18-windows.zip**。GitHub 自动生成的 Source code 压缩包是源码，需要自行构建。
 2. 完整解压到自己的可写目录，例如 `D:\Games\HollowCraft`。不要直接从 ZIP 内运行，也不要放进 Steam 或 `.minecraft` 原目录。Windows 内置 PowerShell 即可，无需 Codex、Git 或开发工具。
 3. 双击 **Install HollowCraft.cmd**。它寻找 Steam 游戏目录和 `.minecraft`；未找到时按提示输入目录。Minecraft 目录必须包含 `versions\1.20.1\1.20.1.jar`，不是启动器 EXE 所在目录。
 4. 等待下载、校验和准备结束，看到 `installed`。安装器只准备文件，不启动游戏。

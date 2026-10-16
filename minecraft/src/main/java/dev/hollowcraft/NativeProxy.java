@@ -16,6 +16,10 @@ final class NativeProxy extends ZombieEntity {
     private float blockedAngle,damageAngle,candidateAngle;
     Float zenithAngle;
     private float phaseFloor;private boolean applyingDamage;
+    private int nativeHurtTicks,contactSerial;
+    private long nextNativeHit;
+    private float contactAngle;
+    private boolean nativeContact;
     private boolean blockedSpell;
     private final int actorId;
     private net.minecraft.util.math.Vec3d previousNative,currentNative;
@@ -33,6 +37,8 @@ final class NativeProxy extends ZombieEntity {
         nailBlock=data.has("nailBlock")?data.get("nailBlock").getAsInt():data.has("invulnerable")&&data.get("invulnerable").getAsBoolean()?15:0;
         spellBlock=data.has("spellBlock")?data.get("spellBlock").getAsInt():nailBlock;
         phaseFloor=data.has("phaseFloor")?Math.max(0,Math.min(getMaxHealth(),data.get("phaseFloor").getAsFloat())):0;
+        nativeHurtTicks=data.has("nativeHurtTicks")?Math.max(0,Math.min(20,data.get("nativeHurtTicks").getAsInt())):0;
+        nativeContact=data.has("nativeContact")&&data.get("nativeContact").getAsBoolean();
     }
     boolean resource() {return kind.equals("resource");}
     int actorId() {return actorId;}
@@ -47,6 +53,7 @@ final class NativeProxy extends ZombieEntity {
     void combatState(JsonObject value) {
         value.addProperty("blockSerial",blockSerial);value.addProperty("blockedAngle",blockedAngle);
         value.addProperty("blockedSpell",blockedSpell);value.addProperty("damageAngle",damageAngle);
+        value.addProperty("contactSerial",contactSerial);value.addProperty("contactAngle",contactAngle);
     }
     @Override public void checkDespawn() {} // Only the native scene owns this entity's lifetime.
     @Override public boolean shouldSave() {return false;} // Rebuilt from HK, never reloaded as a vanilla zombie.
@@ -78,10 +85,17 @@ final class NativeProxy extends ZombieEntity {
         return true;
     }
     @Override public boolean damage(DamageSource source,float amount) {
+        // Radiance's final native nail trigger accepts a real weapon contact even
+        // while its HP is protected. Zenith reaches here only after a swept hit.
+        if(nativeContact&&isAlive()&&amount>0&&source.getSource() instanceof net.minecraft.entity.player.PlayerEntity player&&source.getName().equals("player")) {
+            contactSerial++;
+            contactAngle=zenithAngle!=null?zenithAngle:Math.sin(Math.toRadians(player.getYaw()))>0?180:0;
+        }
         if(phaseFloor>0&&getHealth()<=phaseFloor+.0001f)return false;
+        if(nativeHurtTicks>0&&getWorld().getTime()<nextNativeHit)return false;
         boolean accepted;applyingDamage=true;
         try {accepted=super.damage(source,amount);}finally{applyingDamage=false;}
-        if(accepted)damageAngle=candidateAngle;
+        if(accepted) {damageAngle=candidateAngle;nextNativeHit=getWorld().getTime()+nativeHurtTicks;}
         return accepted;
     }
     String bridgeName() {return name;}

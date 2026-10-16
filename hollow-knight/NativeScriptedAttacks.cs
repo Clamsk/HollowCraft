@@ -15,14 +15,28 @@ namespace HollowCraft
         private static string room;
         private static float nextScan;
         internal static void Clear() {listeners.Clear();room=null;nextScan=0;}
+        internal static bool IsArena(string scene)=>scene=="Dream_Final"||scene=="Dream_Final_Boss"||scene=="GG_Radiance";
+        internal static bool NeedsNailContact(HealthManager enemy) {
+            if(!NativeBossPhases.Radiance(enemy)||enemy.isDead||!enemy.gameObject.activeInHierarchy)return false;
+            return enemy.GetComponents<PlayMakerFSM>().Any(fsm=>fsm.enabled&&fsm.Fsm.ActiveState?.Actions!=null&&fsm.Fsm.ActiveState.Actions.OfType<Trigger2dEvent>().Any(action=>action.Enabled&&action.collideTag?.Value=="Nail Attack"&&action.trigger.ToString().IndexOf("Enter",StringComparison.OrdinalIgnoreCase)>=0));
+        }
+        internal static void NailContact(HealthManager enemy,HeroController hero,float angle) {
+            if(!NeedsNailContact(enemy))return;
+            var source=HollowCraftRuntime.Instance.Combat.NativeDamageSource(hero,1,angle,AttackTypes.Nail);
+            Debug.Log("[HollowCraft] Native final nail contact actor="+enemy.name+" HP="+enemy.hp);
+            // The server verified the real melee / swept Zenith hitbox. Let the
+            // original Trigger2dEvent filter and process its Nail Attack collider.
+            enemy.gameObject.SendMessage("OnTriggerEnter2D",source.GetComponent<Collider2D>(),SendMessageOptions.DontRequireReceiver);
+        }
         internal static void Input(string scene) {
-            if(scene!="Dream_Final_Boss"&&scene!="GG_Radiance") {if(room!=null)Clear();return;}
+            string activeScene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if(!IsArena(scene)&&!IsArena(activeScene)) {if(room!=null)Clear();return;}
             bool down=UnityEngine.Input.GetMouseButtonDown(0),held=UnityEngine.Input.GetMouseButton(0),up=UnityEngine.Input.GetMouseButtonUp(0);
             if(!down&&!held&&!up)return;
-            if(scene!=room||Time.unscaledTime>=nextScan) {
-                room=scene;nextScan=Time.unscaledTime+.5f;listeners.Clear();
+            if(activeScene!=room||Time.unscaledTime>=nextScan) {
+                room=activeScene;nextScan=Time.unscaledTime+.5f;listeners.Clear();
                 foreach(var fsm in PlayMakerFSM.FsmList)
-                    if(fsm!=null&&fsm.gameObject.scene.name==scene&&fsm.Fsm.States.Any(state=>state.Actions!=null&&state.Actions.Any(action=>action is ListenForAttack)))listeners.Add(fsm);
+                    if(fsm!=null&&fsm.gameObject.scene.name==activeScene&&fsm.Fsm.States.Any(state=>state.Actions!=null&&state.Actions.Any(action=>action is ListenForAttack)))listeners.Add(fsm);
             }
             foreach(var fsm in listeners) {
                 if(fsm==null||!fsm.enabled||!fsm.gameObject.activeInHierarchy)continue;

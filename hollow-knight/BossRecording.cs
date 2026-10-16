@@ -67,7 +67,7 @@ namespace HollowCraft
                 }
                 // Reload through the workshop so Unity/native FSMs also restart when
                 // the same boss is selected twice. No old actor/phase is reused.
-                if(room!="GG_Workshop"&&(room.StartsWith("GG_")&&BossSceneController.Instance!=null||room=="Room_Final_Boss_Core"||room=="Dream_Final_Boss")) {
+                if(room!="GG_Workshop"&&(room.StartsWith("GG_")&&BossSceneController.Instance!=null||room=="Room_Final_Boss_Core"||NativeScriptedAttacks.IsArena(room))) {
                     manager.playerData.bossRushMode=true;Transition("GG_Workshop","left1");Status("loading","Resetting the previous arena");return;
                 }
                 StartFight(manager);pending=false;
