@@ -184,6 +184,7 @@ namespace HollowCraft
         internal bool SimulationPaused=>frontendSuspended||paused||connectionFrozen||Dead;
         internal bool AudioPaused=>frontendSuspended||paused||connectionFrozen;
         internal bool CatalogOpen;
+        internal bool InventoryVisible=>inventoryOpen;
         internal JArray Catalog;
         internal JArray CatalogGroups;
         internal int SelectedSlot=>selected;

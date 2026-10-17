@@ -8,13 +8,15 @@ namespace HollowCraft.Standalone
     {
         private JObject rider;private int dismountUntil;
         private bool PlaceCreature(NativeStack item,int bx,int by) {
-            string kind=item.Id.EndsWith("_spawn_egg",StringComparison.Ordinal)?item.Id.Substring(0,item.Id.Length-10):item.Id;
+            string kind=item.Definition.Entity??(item.Id.EndsWith("_spawn_egg",StringComparison.Ordinal)?item.Id.Substring(0,item.Id.Length-10):item.Id);
             bool boat=kind.EndsWith("_boat",StringComparison.Ordinal)||kind.EndsWith("_raft",StringComparison.Ordinal);
             if(!boat&&!item.Id.EndsWith("_spawn_egg",StringComparison.Ordinal))return false;
+            if(!boat&&!NativeCatalog.CreatureSupported(kind)){Notice("Native creature model/AI pending: "+kind);return true;}
             if(!Creative&&!boat){Notice("Spawn eggs are creative-only");return true;}
             if(Room.Creatures.Count>=128){Notice("Native room creature limit: 128");return true;}
             double height=boat?.5625:kind=="minecraft:chicken"?.7:kind=="minecraft:spider"?.9:kind=="minecraft:cow"||kind=="minecraft:pig"||kind=="minecraft:sheep"?1.3:1.95,width=boat?1.375:kind=="minecraft:spider"?1.4:.6;
             var value=new JObject{["entity"]=++serial,["uuid"]=Guid.NewGuid().ToString("N"),["kind"]=kind,["boat"]=boat,["x"]=bx+.5,["y"]=by+.01,["width"]=width,["height"]=height,["health"]=boat?6:kind=="minecraft:chicken"?4:kind=="minecraft:pig"||kind=="minecraft:cow"||kind=="minecraft:sheep"?10:20,["vx"]=0,["vy"]=0,["facing"]=1,["nextAttack"]=0};
+            if(!boat&&NativeData.Entities.TryGetValue(kind,out var definition)){value["width"]=definition["width"].DeepClone();value["height"]=definition["height"].DeepClone();if(definition["health"]!=null)value["health"]=definition["health"].DeepClone();}
             Room.Creatures.Add(value);if(!Creative){item.Count--;item.Normalize();}return true;
         }
         private IEnumerable<double[]> CollisionBoxes(double px,double py) {

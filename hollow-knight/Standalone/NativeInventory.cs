@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using Newtonsoft.Json.Linq;
 
 namespace HollowCraft.Standalone
@@ -44,22 +45,27 @@ namespace HollowCraft.Standalone
             Offhand=NativeStack.Read(data["offhand"]);Carried=NativeStack.Read(data["carried"]);Selected=Math.Max(0,Math.Min(8,(int?)data["selected"]??0));
         }
         private static void LoadArray(JToken token,NativeStack[] target) {if(!(token is JArray array)||array.Count!=target.Length)throw new InvalidOperationException("Invalid native inventory length");for(int i=0;i<target.Length;i++)target[i]=NativeStack.Read(array[i]);}
-        internal void Wear(NativeStack item,int amount,bool creative) {if(creative||item.Empty||item.Definition.Durability<=0)return;item.Damage+=amount;if(item.Damage>=item.Definition.Durability){item.Count--;item.Damage=0;item.Normalize();}}
+        private readonly Random random=new Random();
+        internal void Wear(NativeStack item,int amount,bool creative) {if(creative||item.Empty||item.Definition.Durability<=0)return;int unbreaking=NativeData.Enchantment(item,"unbreaking"),wear=0;for(int i=0;i<amount;i++)if(unbreaking==0||item.Definition.Armor>0&&random.NextDouble()<.6||random.Next(unbreaking+1)==0)wear++;item.Damage+=wear;if(item.Damage>=item.Definition.Durability){item.Count--;item.Damage=0;item.Normalize();}}
     }
     internal sealed class NativeContainer
     {
-        internal string Id;internal NativeStack[] Slots;internal int Burn,BurnMax,Cook;internal int Sync;
+        internal string Id;internal NativeStack[] Slots;internal int Burn,BurnMax,Cook,Brew,BrewFuel;internal int Sync;internal string CookingItem="",BrewKey="";
         internal NativeContainer(string id,int count) {Id=id;Slots=NativeInventory.Empty(count);}
-        internal JObject Save()=>new JObject{["id"]=Id,["slots"]=new JArray(Slots.Select(s=>s.Json())),["burn"]=Burn,["burnMax"]=BurnMax,["cook"]=Cook};
-        internal static NativeContainer Read(JObject data) {var slots=(JArray)data["slots"];if(slots==null||slots.Count>54)throw new InvalidOperationException("Invalid native container");var box=new NativeContainer((string)data["id"],slots.Count){Burn=Math.Max(0,(int?)data["burn"]??0),BurnMax=Math.Max(0,(int?)data["burnMax"]??0),Cook=Math.Max(0,(int?)data["cook"]??0)};for(int i=0;i<slots.Count;i++)box.Slots[i]=NativeStack.Read(slots[i]);return box;}
+        internal JObject Save()=>new JObject{["id"]=Id,["slots"]=new JArray(Slots.Select(s=>s.Json())),["burn"]=Burn,["burnMax"]=BurnMax,["cook"]=Cook,["cookingItem"]=CookingItem,["brew"]=Brew,["brewFuel"]=BrewFuel,["brewKey"]=BrewKey};
+        internal static NativeContainer Read(JObject data) {
+            var slots=(JArray)data["slots"];if(slots==null||slots.Count>54)throw new InvalidOperationException("Invalid native container");
+            var box=new NativeContainer((string)data["id"],slots.Count){Burn=Math.Max(0,(int?)data["burn"]??0),BurnMax=Math.Max(0,(int?)data["burnMax"]??0),Cook=Math.Max(0,(int?)data["cook"]??0),CookingItem=(string)data["cookingItem"]??"",Brew=Math.Max(0,Math.Min(400,(int?)data["brew"]??0)),BrewFuel=Math.Max(0,Math.Min(20,(int?)data["brewFuel"]??0)),BrewKey=(string)data["brewKey"]??""};
+            for(int i=0;i<slots.Count;i++)box.Slots[i]=NativeStack.Read(slots[i]);return box;
+        }
     }
     internal sealed class NativeRecipe
     {
-        internal string[] Pattern;internal string Output;internal int Count=1;internal Dictionary<char,string[]> Keys;internal string[] Loose;
+        internal string[] Pattern;internal string Output;internal int Count=1;internal Dictionary<char,string[]> Keys;internal string[][] Loose;
         internal NativeStack Match(NativeStack[] grid,int width) {
             if(Loose!=null) {
                 var remaining=grid.Where(s=>!s.Empty).Select(s=>s.Id).ToList();if(remaining.Count!=Loose.Length)return null;
-                foreach(string ingredient in Loose) {int at=remaining.FindIndex(id=>Ingredient(ingredient,id));if(at<0)return null;remaining.RemoveAt(at);}return NativeStack.New(Output,Count);
+                return LooseMatch(remaining,0,new bool[remaining.Count])?NativeStack.New(Output,Count):null;
             }
             int minX=width,minY=width,maxX=-1,maxY=-1;
             for(int i=0;i<grid.Length;i++)if(!grid[i].Empty){minX=Math.Min(minX,i%width);minY=Math.Min(minY,i/width);maxX=Math.Max(maxX,i%width);maxY=Math.Max(maxY,i/width);}
@@ -74,7 +80,8 @@ namespace HollowCraft.Standalone
             }
             return null;
         }
-        private static bool Ingredient(string ingredient,string id)=>ingredient=="#planks"?id.EndsWith("_planks",StringComparison.Ordinal):ingredient=="#logs"?id.EndsWith("_log",StringComparison.Ordinal):NativeCatalog.Id(ingredient)==id;
+        private bool LooseMatch(List<string> remaining,int at,bool[] used) {if(at==Loose.Length)return true;for(int i=0;i<remaining.Count;i++)if(!used[i]&&Loose[at].Any(key=>Ingredient(key,remaining[i]))){used[i]=true;if(LooseMatch(remaining,at+1,used))return true;used[i]=false;}return false;}
+        private static bool Ingredient(string ingredient,string id)=>NativeData.Ingredient(ingredient,id);
     }
     internal static class NativeRecipes
     {
@@ -96,10 +103,30 @@ namespace HollowCraft.Standalone
                 string m="M="+material.Item2,p=material.Item1;
                 Shape(p+"_helmet",1,"MMM/M M",m);Shape(p+"_chestplate",1,"M M/MMM/MMM",m);Shape(p+"_leggings",1,"MMM/M M/M M",m);Shape(p+"_boots",1,"M M/M M",m);
             }
-            All.Add(new NativeRecipe{Output="flint_and_steel",Loose=new[]{"flint","iron_ingot"}});
+            All.Add(new NativeRecipe{Output="flint_and_steel",Loose=new[]{new[]{"flint"},new[]{"iron_ingot"}}});
         }
-        internal static NativeStack Result(NativeStack[] grid,int width) {foreach(var recipe in All){var result=recipe.Match(grid,width);if(result!=null)return result;}return new NativeStack();}
+        internal sealed class Cooking {internal string Output;internal int Ticks=200;internal double Experience;}
+        private static readonly Dictionary<string,Cooking> cooking=new Dictionary<string,Cooking>();
+        internal static int ImportedCrafting,ImportedCooking;
+        private static string[] Ingredients(JToken token) {if(token is JArray choices)return choices.SelectMany(Ingredients).Distinct().ToArray();if(token?["item"]!=null)return new[]{NativeCatalog.Id((string)token["item"])};if(token?["tag"]!=null)return new[]{"#"+NativeCatalog.Id((string)token["tag"])};return new string[0];}
+        internal static void Load(string root) {
+            string directory=Path.Combine(root,"vanilla","recipes");if(!Directory.Exists(directory))return;
+            var recipes=new List<NativeRecipe>();cooking.Clear();ImportedCooking=0;
+            foreach(string file in Directory.GetFiles(directory,"*.json",SearchOption.AllDirectories).OrderBy(p=>p,StringComparer.Ordinal)) {
+                var data=JObject.Parse(File.ReadAllText(file));string type=((string)data["type"]??"").Split(':').Last();var result=data["result"];string output=result?.Type==JTokenType.String?(string)result:(string)result?["item"];if(output==null||!NativeCatalog.Items.ContainsKey(NativeCatalog.Id(output)))continue;
+                if(type=="crafting_shaped") {var keys=new Dictionary<char,string[]>();foreach(var key in (JObject)data["key"])keys[key.Key[0]]=Ingredients(key.Value);var pattern=((JArray)data["pattern"]).Select(p=>(string)p).ToArray();recipes.Add(new NativeRecipe{Output=output,Count=(int?)result?["count"]??1,Pattern=pattern,Keys=keys});}
+                else if(type=="crafting_shapeless")recipes.Add(new NativeRecipe{Output=output,Count=(int?)result?["count"]??1,Loose=((JArray)data["ingredients"]).Select(Ingredients).ToArray()});
+                else if(type=="smelting"||type=="blasting"||type=="smoking"||type=="campfire_cooking") {var ingredients=Ingredients(data["ingredient"]);var cook=new Cooking{Output=NativeCatalog.Id(output),Ticks=(int?)data["cookingtime"]??200,Experience=(double?)data["experience"]??0};foreach(string item in NativeCatalog.Items.Keys)if(ingredients.Any(i=>NativeData.Ingredient(i,item)))cooking[type+":"+item]=cook;ImportedCooking++;}
+            }
+            if(recipes.Count>0){All.Clear();All.AddRange(recipes);}ImportedCrafting=recipes.Count;
+        }
+        internal static Cooking Cook(string id,string station="minecraft:furnace") {
+            string type=station=="minecraft:blast_furnace"?"blasting":station=="minecraft:smoker"?"smoking":station.Contains("campfire")?"campfire_cooking":"smelting";
+            if(cooking.Count>0)return cooking.TryGetValue(type+":"+id,out var value)?value:null;
+            string output=Smelt(id);return output==null?null:new Cooking{Output=NativeCatalog.Id(output),Ticks=station=="minecraft:furnace"?200:100};
+        }
+        internal static NativeStack Result(NativeStack[] grid,int width) {if(grid.All(item=>item.Empty))return new NativeStack();foreach(var recipe in All){var result=recipe.Match(grid,width);if(result!=null)return result;}return new NativeStack();}
         internal static string Smelt(string id) {switch(id){case "minecraft:raw_iron":case "minecraft:iron_ore":return "iron_ingot";case "minecraft:raw_gold":case "minecraft:gold_ore":return "gold_ingot";case "minecraft:raw_copper":return "copper_ingot";case "minecraft:cobblestone":return "stone";case "minecraft:sand":case "minecraft:red_sand":return "glass";default:return id.EndsWith("_log",StringComparison.Ordinal)?"charcoal":null;}}
-        internal static int Fuel(NativeStack item)=>item.Id=="minecraft:coal"||item.Id=="minecraft:charcoal"?1600:item.Id=="minecraft:lava_bucket"?20000:item.Id.EndsWith("_log",StringComparison.Ordinal)||item.Id.EndsWith("_planks",StringComparison.Ordinal)?300:item.Id=="minecraft:stick"?100:0;
+        internal static int Fuel(NativeStack item)=>NativeCatalog.RegistryLoaded?item.Definition.Fuel:item.Id=="minecraft:coal"||item.Id=="minecraft:charcoal"?1600:item.Id=="minecraft:lava_bucket"?20000:item.Id.EndsWith("_log",StringComparison.Ordinal)||item.Id.EndsWith("_planks",StringComparison.Ordinal)?300:item.Id=="minecraft:stick"?100:0;
     }
 }

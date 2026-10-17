@@ -7,14 +7,18 @@ namespace HollowCraft.Standalone
 {
     internal sealed class NativeItem
     {
-        internal string Id,Tool="",Equipment="",Group="items";
+        internal string Id,Tool="",Equipment="",Group="items",Remainder,Entity;
         internal int Maximum=64,Durability,Armor,Food,Harvest;
         internal double Attack=1,Speed=4,Hardness=.8,Saturation,MiningSpeed=1;
-        internal bool Block,Solid=true;
+        internal bool Block,Solid=true,AlwaysEdible,FastFood,RequiresTool;internal int Fuel;internal double Toughness;internal JArray Collision,FoodEffects;
     }
     internal static class NativeCatalog
     {
         internal static readonly Dictionary<string,NativeItem> Items=new Dictionary<string,NativeItem>(StringComparer.Ordinal);
+        internal static bool RegistryLoaded;
+        private static readonly HashSet<string> vanillaItems=new HashSet<string>();
+        internal static bool CreatureSupported(string kind)=>new[]{"minecraft:zombie","minecraft:skeleton","minecraft:creeper","minecraft:spider","minecraft:pig","minecraft:cow","minecraft:sheep","minecraft:chicken","minecraft:villager"}.Contains(kind);
+        internal static bool Visible(string id)=>(!RegistryLoaded||vanillaItems.Contains(id)||!id.StartsWith("minecraft:",StringComparison.Ordinal))&&(Get(id).Entity==null||CreatureSupported(Get(id).Entity));
         internal static string Id(string id)=>string.IsNullOrEmpty(id)?"minecraft:air":id.Contains(":")?id:"minecraft:"+id;
         internal static NativeItem Get(string id)=>Items.TryGetValue(Id(id),out var value)?value:Items["minecraft:air"];
         private static NativeItem Add(string id,int max=64) {var value=new NativeItem{Id=Id(id),Maximum=max};Items[value.Id]=value;return value;}
@@ -47,6 +51,20 @@ namespace HollowCraft.Standalone
             Get("bow").Durability=384;Get("crossbow").Durability=465;Get("shield").Durability=336;Get("trident").Durability=250;Get("trident").Attack=9;Get("trident").Speed=1.1;Get("elytra").Durability=432;Get("elytra").Equipment=Get("hollowcraft_bridge:stardust_wings").Equipment="chestplate";Get("hollowcraft_bridge:zenith").Attack=190;Get("hollowcraft_bridge:zenith").Speed=2;Get("flint_and_steel").Durability=64;Get("shears").Durability=238;
             foreach(string id in new[]{"torch","redstone_torch","soul_torch","redstone","lever","repeater","comparator"}) {Get(id).Block=true;Get(id).Solid=false;Get(id).Group="redstone";Get(id).Hardness=0;}
         }
+        internal static void Import(JObject data) {
+            foreach(JObject entry in (JArray)data["items"]) {
+                string id=(string)entry["id"];vanillaItems.Add(id);if(!Items.TryGetValue(id,out var item))item=Add(id);
+                item.Maximum=(int)entry["maxCount"];item.Durability=(int)entry["durability"];item.Food=(int?)entry["food"]??0;item.Saturation=(double?)entry["saturation"]??0;item.AlwaysEdible=(bool?)entry["alwaysEdible"]??false;item.FastFood=(bool?)entry["fastFood"]??false;
+                item.Remainder=(string)entry["remainder"];item.Entity=(string)entry["entity"];item.Fuel=(int?)entry["fuel"]??0;item.Armor=(int?)entry["armor"]??0;item.Toughness=(double?)entry["toughness"]??0;
+                item.FoodEffects=entry["foodEffects"] as JArray;
+                if(entry["tool"]!=null)item.Tool=(string)entry["tool"];item.RequiresTool=(bool?)entry["requiresTool"]??false;
+                item.Attack=(double?)entry["attack"]??item.Attack;item.Speed=(double?)entry["speed"]??item.Speed;item.Harvest=(int?)entry["harvest"]??item.Harvest;item.MiningSpeed=(double?)entry["miningSpeed"]??item.MiningSpeed;
+                string slot=(string)entry["equipment"];if(slot!=null)item.Equipment=slot=="head"?"helmet":slot=="chest"?"chestplate":slot=="legs"?"leggings":"boots";
+                if((bool?)entry["block"]==true){item.Block=true;item.Hardness=(double?)entry["hardness"]??item.Hardness;item.Collision=entry["collision"] as JArray;item.Solid=item.Collision==null||item.Collision.Count>0;item.Group="blocks";}
+                else if(item.Food>0)item.Group="food";else if(item.Entity!=null)item.Group="creatures";else if(item.Durability>0)item.Group="equipment";
+            }
+            RegistryLoaded=true;
+        }
         internal static string Label(string id)=>Get(id).Id.Split(':').Last().Replace('_',' ');
     }
     internal sealed class NativeStack
@@ -57,7 +75,7 @@ namespace HollowCraft.Standalone
         internal NativeStack Copy(int count=-1)=>new NativeStack{Id=Id,Count=count<0?Count:count,Damage=Damage,Data=(JObject)Data.DeepClone()};
         internal bool Matches(NativeStack other)=>!Empty&&!other.Empty&&Id==other.Id&&Damage==other.Damage&&JToken.DeepEquals(Data,other.Data);
         internal void Normalize() {if(Count<=0){Id="minecraft:air";Count=Damage=0;Data=new JObject();}}
-        internal JObject Json()=>new JObject{["id"]=Empty?"minecraft:air":Id,["count"]=Empty?0:Count,["name"]=NativeCatalog.Label(Id),["render"]=Id,["block"]=Definition.Block,["predictSolid"]=Definition.Block&&Definition.Solid,["maxCount"]=Definition.Maximum,["damage"]=Damage,["maxDamage"]=Definition.Durability,["food"]=Definition.Food>0,["nbt"]=Data.DeepClone()};
+        internal JObject Json()=>new JObject{["id"]=Empty?"minecraft:air":Id,["count"]=Empty?0:Count,["name"]=(Data["Potion"]!=null?((string)Data["Potion"]).Split(':').Last().Replace('_',' ')+" ":"")+NativeCatalog.Label(Id),["render"]=Id,["block"]=Definition.Block,["predictSolid"]=Definition.Block&&Definition.Solid,["maxCount"]=Definition.Maximum,["damage"]=Damage,["maxDamage"]=Definition.Durability,["food"]=Definition.Food>0,["nbt"]=Data.DeepClone()};
         internal static NativeStack Read(JToken token) {
             var value=new NativeStack{Id=NativeCatalog.Id((string)token?["id"]),Count=Math.Max(0,(int?)token?["count"]??0),Damage=Math.Max(0,(int?)token?["damage"]??0),Data=token?["nbt"] is JObject data?(JObject)data.DeepClone():new JObject()};
             if(!NativeCatalog.Items.ContainsKey(value.Id))throw new InvalidOperationException("Unknown native item in save: "+value.Id);

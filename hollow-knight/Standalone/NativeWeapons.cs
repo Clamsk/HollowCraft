@@ -25,7 +25,8 @@ namespace HollowCraft.Standalone
             usingOffhand=false;var hand=Inventory.Hand;
             if(!CanUse(hand)){usingOffhand=true;hand=Inventory.Offhand;}
             if(hand.Empty)return;
-            if(hand.Definition.Food>0){if(food<20||hand.Id.EndsWith("golden_apple",StringComparison.Ordinal)){usingItem=true;usingTicks=0;}return;}
+            if(hand.Definition.Food>0){if(food<20||hand.Definition.AlwaysEdible||hand.Id.EndsWith("golden_apple",StringComparison.Ordinal)){usingItem=true;usingTicks=0;}return;}
+            if(hand.Id=="minecraft:crossbow"&&(bool?)hand.Data["Charged"]==true){var ammo=NativeStack.Read(hand.Data["HollowCraftLoadedArrow"]);SpawnProjectile("minecraft:arrow",Number(packet,"aimX",1),Number(packet,"aimY"),3.15,7,ammo);hand.Data.Remove("Charged");hand.Data.Remove("HollowCraftLoadedArrow");Inventory.Wear(hand,1,Creative);return;}
             if(new[]{"minecraft:shield","minecraft:bow","minecraft:crossbow","minecraft:trident","minecraft:potion","minecraft:milk_bucket"}.Contains(hand.Id)){if(!usingItem){usingItem=true;usingTicks=0;}return;}
             int bx=(int)Number(packet,"x"),by=(int)Number(packet,"y");if(!Reach(bx,by,Creative?5:4.5))return;
             if(PlaceCreature(hand,bx,by))return;
@@ -42,10 +43,16 @@ namespace HollowCraft.Standalone
         private static bool CanUse(NativeStack item)=>!item.Empty&&(item.Definition.Food>0||!string.IsNullOrEmpty(item.Definition.Equipment)||item.Id.EndsWith("_spawn_egg",StringComparison.Ordinal)||item.Id.EndsWith("_boat",StringComparison.Ordinal)||item.Id.EndsWith("_raft",StringComparison.Ordinal)||new[]{"minecraft:shield","minecraft:bow","minecraft:crossbow","minecraft:trident","minecraft:potion","minecraft:splash_potion","minecraft:lingering_potion","minecraft:bucket","minecraft:water_bucket","minecraft:lava_bucket","minecraft:milk_bucket","minecraft:ender_pearl","minecraft:snowball","minecraft:egg","minecraft:firework_rocket","minecraft:flint_and_steel"}.Contains(item.Id));
         private void ReleaseWeapon(JObject packet) {
             var hand=Active;if(hand.Empty)return;
-            if(hand.Id=="minecraft:bow"||hand.Id=="minecraft:crossbow") {
-                double charge=Math.Min(1,((usingTicks/20.0)*(usingTicks/20.0)+usingTicks/10.0)/3);if(charge<.1||!Creative&&!Inventory.Consume("arrow"))return;
-                SpawnProjectile("minecraft:arrow",Number(packet,"aimX",1),Number(packet,"aimY"),3*charge,Math.Ceiling(6*charge),null);Inventory.Wear(hand,1,Creative);
+            if(hand.Id=="minecraft:crossbow") {
+                if(usingTicks<Math.Max(1,25-5*NativeData.Enchantment(hand,"quick_charge")))return;var arrow=TakeArrow(false);if(arrow==null)return;hand.Data["Charged"]=true;hand.Data["HollowCraftLoadedArrow"]=arrow.Json();
+            }else if(hand.Id=="minecraft:bow") {
+                double charge=Math.Min(1,((usingTicks/20.0)*(usingTicks/20.0)+usingTicks/10.0)/3);if(charge<.1)return;var arrow=TakeArrow(NativeData.Enchantment(hand,"infinity")>0);if(arrow==null)return;
+                int power=NativeData.Enchantment(hand,"power");SpawnProjectile("minecraft:arrow",Number(packet,"aimX",1),Number(packet,"aimY"),3*charge,Math.Ceiling((2+(power>0?.5*power+.5:0))*3*charge),arrow);Inventory.Wear(hand,1,Creative);
             }else if(hand.Id=="minecraft:trident"&&usingTicks>=10) {var thrown=hand.Copy(1);SpawnProjectile("minecraft:trident",Number(packet,"aimX",1),Number(packet,"aimY"),2.5,Number(hand.Data,"attack",8),thrown);if(!Creative){hand.Count--;hand.Normalize();}}
+        }
+        private NativeStack TakeArrow(bool infinity) {
+            var ammo=new[]{Inventory.Offhand}.Concat(Inventory.Slots).FirstOrDefault(s=>!s.Empty&&(s.Id=="minecraft:arrow"||s.Id=="minecraft:tipped_arrow"||s.Id=="minecraft:spectral_arrow"));
+            if(ammo==null)return Creative?NativeStack.New("arrow"):null;var result=ammo.Copy(1);if(!Creative&&!(infinity&&ammo.Id=="minecraft:arrow")){ammo.Count--;ammo.Normalize();}return result;
         }
         private void SpawnProjectile(string kind,double dx,double dy,double speed,double damage,NativeStack stack) {
             double length=Math.Sqrt(dx*dx+dy*dy);if(length<.001){dx=1;dy=0;length=1;}
@@ -67,9 +74,9 @@ namespace HollowCraft.Standalone
             if(!projectiles.TryGetValue(id,out var value)||(string)value["uuid"]!=identity)return;
             Observe(packet);string kind=(string)value["kind"];int target=(int?)packet["target"]??0;bool pass=(bool?)packet["passThrough"]==true,removed=false;
             double angle=Math.Atan2(Number(value,"vy"),Number(value,"vx"))*180/Math.PI;
-            if(target!=0&&enemies.TryGetValue(target,out var enemy))HitEnemy(enemy,pass?999:Math.Max(1,Number(value,"damage")),kind=="minecraft:trident"?"trident":"arrow",angle);
+            if(target!=0&&enemies.TryGetValue(target,out var enemy)&&(kind=="minecraft:trident"||kind=="minecraft:arrow")){HitEnemy(enemy,pass?999:Math.Max(1,Number(value,"damage")),kind=="minecraft:trident"?"trident":"arrow",angle);if(kind=="minecraft:arrow"&&value["stack"] is JObject carried){var ammo=NativeStack.Read(carried);if(ammo.Id=="minecraft:tipped_arrow")ApplyPotionEnemy(enemy,ammo,.125);}}
             if(kind=="minecraft:ender_pearl") {x=Number(packet,"landingX",Number(packet,"x"));y=Number(packet,"landingY",Number(packet,"y"));teleport++;hurtTicks=0;Damage(3,"pearl",x,y);Emit(new JObject{["type"]="teleport",["x"]=x,["y"]=y,["normalX"]=Number(packet,"normalX"),["normalY"]=Number(packet,"normalY",1),["teleport"]=teleport});removed=true;}
-            else if(kind.Contains("potion")){foreach(var enemy2 in enemies.Values)if(Math.Pow(Number(enemy2,"x")-Number(packet,"x"),2)+Math.Pow(Number(enemy2,"y")-Number(packet,"y"),2)<16)HitEnemy(enemy2,6,"magic",angle);removed=true;}
+            else if(kind.Contains("potion")){var potion=NativeStack.Read(value["stack"]);double px=Number(packet,"x"),py=Number(packet,"y");foreach(var enemy2 in enemies.Values){double distance=Math.Sqrt(Math.Pow(Number(enemy2,"x")-px,2)+Math.Pow(Number(enemy2,"y")-py,2));if(distance<4)ApplyPotionEnemy(enemy2,potion,(int)enemy2["id"]==target?1:1-distance/4);}double playerDistance=Math.Sqrt((x-px)*(x-px)+(y-py)*(y-py));if(playerDistance<4)ApplyPotion(potion,1-playerDistance/4);removed=true;}
             else if(kind=="minecraft:trident"){var stack=NativeStack.Read(value["stack"]);Inventory.Wear(stack,1,Creative);if(!Creative){Inventory.Insert(stack);if(!stack.Empty)DropAt(stack,Number(packet,"x"),Number(packet,"y"));}removed=true;}
             else if(kind=="minecraft:snowball"||kind=="minecraft:egg")removed=true;
             else if(!pass){value["x"]=Number(packet,"x");value["y"]=Number(packet,"y");value["vx"]=value["vy"]=0;value["grounded"]=true;value["stepRequired"]=false;}

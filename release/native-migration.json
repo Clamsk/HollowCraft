@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.2",
+  "version": "0.40.0-alpha.3",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -34,9 +34,9 @@
       "id": "inventory-equipment-durability",
       "status": "partial",
       "remaining": [
-        "full item catalog",
+        "special item behaviors",
         "full NBT",
-        "enchantments"
+        "remaining enchantments"
       ]
     },
     {
@@ -51,8 +51,9 @@
       "id": "crafting-containers",
       "status": "partial",
       "remaining": [
-        "full recipes",
-        "brewing",
+        "dynamic special crafting recipes",
+        "smithing",
+        "stonecutting",
         "enchanting",
         "anvil",
         "advanced workstation gestures"
@@ -70,9 +71,10 @@
       "id": "ranged-weapons",
       "status": "partial",
       "remaining": [
-        "crossbow loading state",
         "animated loyalty return",
-        "tipped arrow effects"
+        "lingering potion clouds",
+        "multishot and remaining projectile/enchantment details",
+        "complete potion immunities and visual effects"
       ]
     },
     {
@@ -118,16 +120,17 @@
       "id": "creative-menu",
       "status": "partial",
       "remaining": [
-        "full catalog",
-        "all item variants"
+        "remaining behavior/model support for catalog entries",
+        "remaining item variants"
       ]
     },
     {
       "id": "player-rendering",
       "status": "partial",
       "remaining": [
-        "original model/animation fidelity",
-        "transparent surface intersection cases"
+        "Bendy limb deformation",
+        "remaining vanilla use pose details",
+        "gameplay visual/performance acceptance"
       ]
     },
     {
@@ -144,7 +147,17 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 40,
+    "ruleChecksPassed": 76,
     "launcherChecksPassed": 12
+  },
+  "dataCoverage": {
+    "craftingRecipes": 822,
+    "brewingConversions": 251,
+    "vanillaItems": 1255,
+    "potionTypes": 43,
+    "cookingRecipes": 112,
+    "metadataDoesNotImplyBehaviorParity": true,
+    "enchantmentMetadata": 39,
+    "entityMetadata": 124
   }
 }

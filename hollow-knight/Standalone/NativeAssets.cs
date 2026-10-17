@@ -46,7 +46,7 @@ namespace HollowCraft.Standalone
             rect(16,16,24,16,new Color(.05f,.58f,.62f));rect(40,16,16,6,new Color(.05f,.58f,.62f));rect(32,48,16,6,new Color(.05f,.58f,.62f));rect(0,16,16,16,new Color(.23f,.25f,.61f));rect(16,48,16,16,new Color(.23f,.25f,.61f));skin.SetPixels(colors);skin.Apply(false,false);textures[key]=skin;return skin;
         }
         internal static Material Cutout(UnityEngine.Texture texture) {if(materials.TryGetValue(texture,out var value))return value;value=new Material(Shader.Find("Unlit/Transparent Cutout")??Shader.Find("Sprites/Default")){mainTexture=texture};if(value.HasProperty("_Cutoff"))value.SetFloat("_Cutoff",.1f);materials[texture]=value;return value;}
-        private static Mesh Extruded(Texture2D texture) {
+        internal static Mesh Extruded(Texture2D texture) {
             string key=texture.GetInstanceID().ToString();if(generatedMeshes.TryGetValue(key,out var cached))return cached;
             var points=new List<Vector3>();var coords=new List<Vector2>();var triangles=new List<int>();var shades=new List<Color>();var pixels=texture.GetPixels32();int width=texture.width,height=texture.height;
             Func<int,int,bool> opaque=(x,y)=>x>=0&&y>=0&&x<width&&y<height&&pixels[y*width+x].a>25;
@@ -71,7 +71,7 @@ namespace HollowCraft.Standalone
             output.SetPixels(pixels);output.Apply(false,false);textures[key]=output;return output;
         }
         internal static bool Item(Transform holder,string id,int layer,int order,bool leftHand) {
-            foreach(Transform child in holder)UnityEngine.Object.Destroy(child.gameObject);if(string.IsNullOrEmpty(id)||id=="minecraft:air"){holder.gameObject.SetActive(false);return true;}holder.gameObject.SetActive(true);
+            foreach(Transform child in holder){child.gameObject.SetActive(false);UnityEngine.Object.Destroy(child.gameObject);}if(string.IsNullOrEmpty(id)||id=="minecraft:air"){holder.gameObject.SetActive(false);return true;}holder.gameObject.SetActive(true);
             var root=new GameObject("Native item "+id);root.transform.SetParent(holder,false);bool grip=holder.name.Contains("HeldItem")||holder.name.Contains("Offhand");if(grip)root.transform.localPosition=new Vector3(leftHand?-.0625f:.0625f,-.6f,-.1f);Texture2D texture=Texture(id);
             if(!NativeCatalog.Get(id).Block&&!id.Contains("shield")&&!id.Contains("trident")&&!id.Contains("arrow")){
                 if(grip){root.transform.localRotation=Quaternion.Euler(0,leftHand?90:-90,leftHand?-55:55);root.transform.localScale=Vector3.one*.85f;root.transform.localPosition+=new Vector3(0,.22f,0);}

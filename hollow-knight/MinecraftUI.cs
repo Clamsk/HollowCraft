@@ -440,6 +440,7 @@ namespace HollowCraft
         private void Portrait(float x=26,float y=8,float width=51,float height=70)
         {
             if(SteveAvatar.NativeTexture!=null) {GUI.DrawTextureWithTexCoords(new Rect(left+x*scale,top+y*scale,width*scale,height*scale),SteveAvatar.NativeTexture,new Rect(.25f,.14f,.5f,.65f));return;}
+            if(SteveAvatar.NativePortraitTexture!=null) {GUI.DrawTexture(new Rect(left+x*scale,top+y*scale,width*scale,height*scale),SteveAvatar.NativePortraitTexture,ScaleMode.ScaleToFit);return;}
             if(SteveAvatar.PortraitTexture!=null) {GUI.DrawTexture(new Rect(left+x*scale,top+y*scale,width*scale,height*scale),SteveAvatar.PortraitTexture,ScaleMode.ScaleToFit);return;}
             if(width!=51) {Tile("steve_skin",x+width*.35f,y+2,width*.3f,height*.3f,8,8,8,8);Tile("steve_skin",x+width*.35f,y+height*.35f,width*.3f,height*.5f,20,20,8,12);return;}
             Tile("steve_skin",45,13,16,16,8,8,8,8);Tile("steve_skin",45,29,16,24,20,20,8,12);

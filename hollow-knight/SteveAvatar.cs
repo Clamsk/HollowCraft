@@ -24,11 +24,15 @@ namespace HollowCraft
         private Transform leftWing,rightWing;
         private GameObject playerFlame;
         private readonly Dictionary<string,JObject> animations=new Dictionary<string,JObject>();
+        private readonly Dictionary<string,Standalone.NativeAnimationClip> nativeAnimations=new Dictionary<string,Standalone.NativeAnimationClip>();
+        private Transform animationRoot;
         private readonly Dictionary<Transform,Tuple<string,GameObject>> armor=new Dictionary<Transform,Tuple<string,GameObject>>();
+        private readonly Dictionary<string,Tuple<string,GameObject>> nativeArmor=new Dictionary<string,Tuple<string,GameObject>>();
         private float nextLookup,walk,nextItem,limbSpeed,limbStep;
         private string heldId,offhandId,assets;
         private int layer,order;
         internal static RenderTexture PortraitTexture;
+        internal static Texture2D NativePortraitTexture;
         private Camera portraitCamera;
         private GameObject portrait;
         private float nextPortrait;
@@ -66,6 +70,7 @@ namespace HollowCraft
             if(swing&&Math.Abs(combat.Aim.x)>.1f&&!front) facing=combat.Aim.x<0?-1:1;
             avatar.transform.localRotation=Quaternion.Euler(0,front?0:-facing*75,MinecraftEnvironment.Gliding?-facing*75:0);
             avatar.transform.localScale=Vector3.one*.9f;
+            if(animationRoot!=null){animationRoot.localPosition=Vector3.zero;animationRoot.localRotation=Quaternion.identity;}
             // Vanilla BipedEntityModel pivots and radians; Better Combat overlays these
             // same shoulder/body pivots rather than rotating cuboids around their centers.
             float phase=(walk-limbSpeed*(1-limbStep/.05f))*.6662f;
@@ -83,13 +88,15 @@ namespace HollowCraft
             leftArm.localRotation=Quaternion.Euler((-leftPitch+bob)*Mathf.Rad2Deg,0,roll*Mathf.Rad2Deg);rightArm.localRotation=Quaternion.Euler((-rightPitch-bob)*Mathf.Rad2Deg,0,-roll*Mathf.Rad2Deg);
             leftLeg.localRotation=Quaternion.Euler(-Mathf.Cos(phase+Mathf.PI)*1.4f*limbSpeed*Mathf.Rad2Deg,0,0);rightLeg.localRotation=Quaternion.Euler(-Mathf.Cos(phase)*1.4f*limbSpeed*Mathf.Rad2Deg,0,0);
             foreach(var renderer in avatar.GetComponentsInChildren<MeshRenderer>()) {
-                tint.SetColor("_Color",PlayerSystem.Hurt&&renderer.name=="Model geometry"?new Color(1,.35f,.35f,1):Color.white);renderer.SetPropertyBlock(tint);
+                tint.SetColor("_Color",PlayerSystem.Hurt&&(renderer.name=="Model geometry"||renderer.name=="Skin outer layer")?new Color(1,.35f,.35f,1):Color.white);renderer.SetPropertyBlock(tint);
             }
-            if(Time.unscaledTime>=nextItem) {
+            if(GameplayBackend.Standalone||Time.unscaledTime>=nextItem) {
                 nextItem=Time.unscaledTime+.25f;
                 int slot=(int?)runtime?.LatestSnapshot?["selected"] ?? 0;
                 string main=(string)runtime?.LatestSnapshot?["inventory"]?[slot]?["render"] ?? runtime?.HeldItem,second=(string)runtime?.Stats?["offhand"]?["render"] ?? (string)runtime?.Stats?["offhand"]?["id"];
                 if(runtime?.HeldItem=="minecraft:bow"&&(bool?)runtime.Stats?["using"]==true) main="minecraft:bow_pulling_"+Mathf.Clamp(((int?)runtime.Stats?["useTicks"] ?? 0)/7,0,2);
+                if(GameplayBackend.Standalone){bool active=(bool?)runtime?.Stats?["using"]==true,off=(string)runtime?.Stats?["activeHand"]=="offhand";int ticks=(int?)runtime?.Stats?["useTicks"]??0;
+                    main=NativeHandModel(main,runtime?.LatestSnapshot?["inventory"]?[slot],active&&!off,ticks);second=NativeHandModel(second,runtime?.Stats?["offhand"],active&&off,ticks);}
                 if((bool?)runtime?.Stats?["blocking"]==true) {if((string)runtime.Stats["activeHand"]=="offhand"&&second=="minecraft:shield")second="minecraft:shield_blocking";else if(main=="minecraft:shield")main="minecraft:shield_blocking";}
                 if(main!=heldId && MinecraftMeshes.Item(held,main,assets,layer,order+8)) heldId=main;
                 if(second!=offhandId && MinecraftMeshes.Item(offhand,second,assets,layer,order+7,true)) offhandId=second;
@@ -99,7 +106,10 @@ namespace HollowCraft
                 if(wings!=null) wings.SetActive((string)runtime?.Stats?["equipment"]?[1]?["id"]=="minecraft:elytra");
             }
             if(leftWing!=null) {leftWing.localRotation=Quaternion.Euler(15,-20,MinecraftEnvironment.Gliding?-70:-15);rightWing.localRotation=Quaternion.Euler(15,20,MinecraftEnvironment.Gliding?70:15);}
-            if(swing) {
+            if(GameplayBackend.Standalone&&combat?.Current!=null&&combat.AnimationAge<1.6f&&(bool?)runtime?.Stats?["using"]!=true) {
+                ApplyNativeAttack(combat);
+            }
+            else if(swing) {
                 JObject clip=Animation((string)combat.Current["move"]?["animation"]);
                 if(GameplayBackend.Standalone&&clip==null)rightArm.localRotation=Quaternion.Euler(-Mathf.Sin(combat.Progress*Mathf.PI)*110,Mathf.Sin(combat.Progress*Mathf.PI*2)*25,0);
                 float aim=Mathf.Atan2(combat.Aim.y,Math.Abs(combat.Aim.x))*Mathf.Rad2Deg;
@@ -111,19 +121,21 @@ namespace HollowCraft
             }
             else if((bool?)runtime?.Stats?["using"]==true) {
                 string action=(string)runtime.Stats["useAction"];
-                if(action=="BOW"||action=="CROSSBOW") {rightArm.localRotation=Quaternion.Euler(-90,0,0);leftArm.localRotation=Quaternion.Euler(-95,-25,0);}
-                else if(action=="BLOCK") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(-65,0,arm==leftArm?-20:20);}
-                else if(action=="SPEAR") rightArm.localRotation=Quaternion.Euler(-145,0,0);
-                else if(action=="DRINK"||action=="EAT") rightArm.localRotation=Quaternion.Euler(-115+Mathf.Sin(Time.time*12)*5,0,0);
+                float aim=GameCursor.WorldTarget(hero,out Vector2 target,out _)?Mathf.Atan2(target.y-GameCursor.Eye(hero).y,Math.Abs(target.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0;
+                if(action=="BOW"||action=="CROSSBOW") {rightArm.localRotation=Quaternion.Euler(90+aim,5.7f,0);leftArm.localRotation=Quaternion.Euler(90+aim,-28.6f,0);}
+                else if(action=="BLOCK") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(60,arm==leftArm?-30:30,0);}
+                else if(action=="SPEAR") rightArm.localRotation=Quaternion.Euler(162+aim,0,0);
+                else if(action=="DRINK"||action=="EAT") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(75+Mathf.Sin(Time.time*12)*5,arm==leftArm?25:-25,0);}
             }
             ApplyLandingPose();
             nativeWings?.Pose((string)runtime?.Stats?["equipment"]?[1]?["id"]);
             if(!GameplayBackend.Standalone)foreach(var renderer in avatar.GetComponentsInChildren<MeshRenderer>()) MinecraftMeshes.SortFaces(renderer);
-            if(Time.unscaledTime>=nextPortrait) {nextPortrait=Time.unscaledTime+.1f;DrawPortrait();}
+            if(Time.unscaledTime>=nextPortrait&&(!GameplayBackend.Standalone||NativePortraitTexture==null||runtime?.InventoryVisible==true)) {nextPortrait=Time.unscaledTime+.1f;DrawPortrait();}
             if(GameplayBackend.Standalone)localView.Draw(avatar,position,layer,order,(string)runtime?.Stats?["equipment"]?[1]?["id"]==TerrariaEquipment.Wings);
         }
         private void DrawPortrait()
         {
+            if(GameplayBackend.Standalone){localView.DrawPortrait(avatar);NativePortraitTexture=localView.Portrait;return;}
             if(portraitCamera==null) {
                 PortraitTexture=new RenderTexture(128,160,24,RenderTextureFormat.ARGB32){filterMode=FilterMode.Point};PortraitTexture.Create();
                 var go=new GameObject("HollowCraft.InventoryPortraitCamera");DontDestroyOnLoad(go);portraitCamera=go.AddComponent<Camera>();portraitCamera.enabled=false;portraitCamera.orthographic=true;portraitCamera.orthographicSize=1.08f;portraitCamera.clearFlags=CameraClearFlags.SolidColor;portraitCamera.backgroundColor=Color.clear;portraitCamera.cullingMask=1<<31;portraitCamera.targetTexture=PortraitTexture;portraitCamera.nearClipPlane=.1f;portraitCamera.farClipPlane=10;
@@ -138,8 +150,13 @@ namespace HollowCraft
             }
             portrait.SetActive(true);foreach(var renderer in portrait.GetComponentsInChildren<MeshRenderer>()) MinecraftMeshes.SortFaces(renderer,portraitCamera);portraitCamera.Render();
         }
+        private static string NativeHandModel(string id,JToken item,bool active,int ticks) {
+            string original=(string)item?["id"]??id;if(original=="minecraft:bow")return active?"minecraft:bow_pulling_"+Mathf.Clamp(ticks/7,0,2):original;
+            if(original=="minecraft:crossbow"){if((bool?)item?["nbt"]?["Charged"]==true)return "minecraft:crossbow_arrow";if(active)return "minecraft:crossbow_pulling_"+Mathf.Clamp(ticks/8,0,2);}return id;
+        }
         private void Armor(Transform part,int slot,int w,int h,int d,int u,int v,bool pivot)
         {
+            if(GameplayBackend.Standalone){NativeArmor(part,slot,w,h,d,u,v,pivot);if(part==torso)NativeArmor(part,2,w,h,d,u,v,pivot);if(part==leftLeg||part==rightLeg)NativeArmor(part,3,w,h,d,u,v,pivot);return;}
             var equipment=HollowCraftRuntime.Instance?.Stats?["equipment"] as JArray;string id=(string)equipment?[slot]?["id"];
             if(slot==1&&(id==TerrariaEquipment.Wings||id=="minecraft:elytra"))id="minecraft:air";
             if(slot==2&&(id==null||id=="minecraft:air")) {slot=3;id=(string)equipment?[slot]?["id"];}
@@ -152,6 +169,41 @@ namespace HollowCraft
             go.transform.localPosition=ModelOffset(part);
             MinecraftMeshes.Renderer(go,MinecraftMeshes.Cuboid(w,h,d,u,v,pivot,texture,.018f),texture,layer,order+6);
             armor[part]=Tuple.Create(id,go);
+        }
+        private void NativeArmor(Transform part,int slot,int w,int h,int d,int u,int v,bool pivot) {
+            string id=(string)HollowCraftRuntime.Instance?.Stats?["equipment"]?[slot]?["id"]??"minecraft:air",key=part.name+"/"+slot;
+            if(slot==1&&(id==TerrariaEquipment.Wings||id=="minecraft:elytra"))id="minecraft:air";
+            if(nativeArmor.TryGetValue(key,out var previous)&&previous.Item1==id)return;
+            if(previous!=null){previous.Item2.SetActive(false);Destroy(previous.Item2);nativeArmor.Remove(key);}if(id=="minecraft:air")return;
+            string name=id.Replace("minecraft:","").Split('_')[0];if(name=="golden")name="gold";
+            var texture=Standalone.NativeAssets.Texture("armor_"+name+"_layer_"+(slot==2?2:1),assets);if(texture==null)return;
+            var go=new GameObject("Native joint armor "+id);go.transform.SetParent(part,false);go.transform.localPosition=ModelOffset(part);
+            MinecraftMeshes.Renderer(go,MinecraftMeshes.Cuboid(w,h,d,u,v,pivot,texture,slot==2?.03125f:.0625f),texture,layer,order+6);nativeArmor[key]=Tuple.Create(id,go);
+        }
+        private Standalone.NativeAnimationClip NativeAnimation(string id) {
+            if(string.IsNullOrEmpty(id))return null;string name=id.Split(':').Last();if(name.Any(c=>!char.IsLetterOrDigit(c)&&c!='_'))return null;
+            if(nativeAnimations.TryGetValue(name,out var cached))return cached;string path=Path.Combine(assets,"bettercombat",name+".json");cached=File.Exists(path)?new Standalone.NativeAnimationClip(JObject.Parse(File.ReadAllText(path))):null;nativeAnimations[name]=cached;return cached;
+        }
+        private static Quaternion NativeRotation(Standalone.NativeAnimationClip clip,string bone,float tick,Quaternion baseline) {
+            var angles=baseline.eulerAngles;float factor=clip.Degrees;
+            float pitch=-Mathf.DeltaAngle(0,angles.x)/factor,yaw=-Mathf.DeltaAngle(0,angles.y)/factor,roll=Mathf.DeltaAngle(0,angles.z)/factor;
+            if(bone!="head")pitch=clip.Sample(bone,"pitch",tick,pitch);yaw=clip.Sample(bone,"yaw",tick,yaw);roll=clip.Sample(bone,"roll",tick,roll);
+            return Quaternion.AngleAxis(roll*factor,Vector3.forward)*Quaternion.AngleAxis(-yaw*factor,Vector3.up)*Quaternion.AngleAxis(-pitch*factor,Vector3.right);
+        }
+        private static void NativeBone(Standalone.NativeAnimationClip clip,string name,Transform bone,float tick,float fade) {
+            var current=bone.localPosition;
+            var position=new Vector3(-clip.Sample(name,"x",tick,-current.x*16)/16,1.5f-clip.Sample(name,"y",tick,(1.5f-current.y)*16)/16,clip.Sample(name,"z",tick,current.z*16)/16);
+            bone.localPosition=Vector3.Lerp(current,position,fade);bone.localRotation=Quaternion.Slerp(bone.localRotation,NativeRotation(clip,name,tick,bone.localRotation),fade);
+        }
+        private void ApplyNativeAttack(CursorCombat combat) {
+            var clip=NativeAnimation((string)combat.Current["move"]?["animation"]);
+            if(clip==null){if(combat.AnimationAge<1)rightArm.localRotation=Quaternion.Euler(-Mathf.Sin(combat.AnimationAge*Mathf.PI)*110,Mathf.Sin(combat.AnimationAge*Mathf.PI*2)*25,0);return;}
+            float tick=combat.AnimationAge*clip.End;if(tick>=clip.Stop)return;float fade=clip.Fade(tick);
+            NativeBone(clip,"torso",torso,tick,fade);NativeBone(clip,"head",head,tick,fade);NativeBone(clip,"rightArm",rightArm,tick,fade);NativeBone(clip,"leftArm",leftArm,tick,fade);
+            if(!WorldCreatures.Riding){NativeBone(clip,"rightLeg",rightLeg,tick,fade);NativeBone(clip,"leftLeg",leftLeg,tick,fade);}
+            var rotation=Quaternion.Slerp(Quaternion.identity,NativeRotation(clip,"body",tick,Quaternion.identity),fade);
+            var offset=new Vector3(-clip.Sample("body","x",tick),clip.Sample("body","y",tick),clip.Sample("body","z",tick))*fade;
+            var pivot=new Vector3(0,.7f,0);animationRoot.localRotation=rotation;animationRoot.localPosition=offset+pivot-rotation*pivot;
         }
         private JObject Animation(string id)
         {
@@ -185,17 +237,19 @@ namespace HollowCraft
         }
         private void CreateAvatar()
         {
-            if(avatar!=null) Destroy(avatar);armor.Clear();heldId=offhandId=null;playerFlame=null;
+            if(GameplayBackend.Standalone)localView.ResetSources();
+            if(avatar!=null) Destroy(avatar);armor.Clear();nativeArmor.Clear();heldId=offhandId=null;playerFlame=null;
             assets=Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),"HollowCraftAssets");string path=Path.Combine(assets,"steve_skin.png");if(!File.Exists(path)&&!GameplayBackend.Standalone) return;
             if(File.Exists(path)){skin=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};skin.LoadImage(File.ReadAllBytes(path));}else skin=Standalone.NativeAssets.Skin();
             knightRenderer=hero.GetComponent<Renderer>()??hero.GetComponentInChildren<Renderer>();layer=knightRenderer!=null?knightRenderer.sortingLayerID:0;order=knightRenderer!=null?knightRenderer.sortingOrder:0;
             avatar=new GameObject("HollowCraft.Steve3D");DontDestroyOnLoad(avatar);
+            animationRoot=new GameObject("PlayerAnimator body root").transform;animationRoot.SetParent(avatar.transform,false);
             head=Part("Head",8,8,8,0,0,false);torso=Part("Torso",8,12,4,16,16,false);
             leftArm=Part("Left arm",4,12,4,32,48,true);rightArm=Part("Right arm",4,12,4,40,16,true);
             leftLeg=Part("Left leg",4,12,4,16,48,true);rightLeg=Part("Right leg",4,12,4,0,16,true);
             whiteEyes=new GameObject("HollowCraft.HerobrineEyes");whiteEyes.transform.SetParent(head,false);
             foreach(float x in new[]{-.125f,.125f}) {
-                var eye=new GameObject("Herobrine eye");eye.transform.SetParent(whiteEyes.transform,false);eye.transform.localPosition=new Vector3(x,.21875f,-.252f);
+                var eye=new GameObject("Herobrine eye");eye.transform.SetParent(whiteEyes.transform,false);eye.transform.localPosition=new Vector3(x,.21875f,GameplayBackend.Standalone?-.284f:-.252f);
                 MinecraftMeshes.Renderer(eye,MinecraftMeshes.Cuboid(2,1,.08f,0,0,false,Texture2D.whiteTexture),Texture2D.whiteTexture,layer,order+3);
             }
             held=new GameObject("HollowCraft.HeldItem3D").transform;held.SetParent(rightArm,false);
@@ -214,10 +268,12 @@ namespace HollowCraft
         }
         private Transform Part(string name,int w,int h,int d,int u,int v,bool pivot)
         {
-            var part=new GameObject("HollowCraft.Steve3D."+name);part.transform.SetParent(avatar.transform,false);
+            var part=new GameObject("HollowCraft.Steve3D."+name);part.transform.SetParent(animationRoot??avatar.transform,false);
             var geometry=new GameObject("Model geometry");geometry.transform.SetParent(part.transform,false);
             geometry.transform.localPosition=name=="Head"?new Vector3(0,.25f,0):name=="Torso"?new Vector3(0,-.375f,0):name=="Right arm"?new Vector3(.0625f,.125f,0):name=="Left arm"?new Vector3(-.0625f,.125f,0):Vector3.zero;
-            MinecraftMeshes.Renderer(geometry,MinecraftMeshes.Cuboid(w,h,d,u,v,pivot,skin),skin,layer,order+2);return part.transform;
+            MinecraftMeshes.Renderer(geometry,MinecraftMeshes.Cuboid(w,h,d,u,v,pivot,skin),skin,layer,order+2);
+            if(GameplayBackend.Standalone&&skin.height>=64){int outerU=name=="Head"?32:name=="Torso"?16:name=="Left arm"?48:name=="Right arm"?40:0,outerV=name=="Head"?0:name=="Left arm"||name=="Left leg"?48:32;var outer=new GameObject("Skin outer layer");outer.transform.SetParent(part.transform,false);outer.transform.localPosition=geometry.transform.localPosition;MinecraftMeshes.Renderer(outer,MinecraftMeshes.Cuboid(w,h,d,outerU,outerV,pivot,skin,name=="Head"?.03125f:.015625f),skin,layer,order+3);}
+            return part.transform;
         }
         private void ApplyLandingPose() {
             if(!LandingActive){landingCaptured=false;return;}
@@ -241,6 +297,6 @@ namespace HollowCraft
             }
         }
         private Vector3 ModelOffset(Transform part) => part==head?new Vector3(0,.25f,0):part==torso?new Vector3(0,-.375f,0):part==rightArm?new Vector3(.0625f,.125f,0):part==leftArm?new Vector3(-.0625f,.125f,0):Vector3.zero;
-        private void OnDestroy() {localView.Dispose();nativeView.Dispose();NativeTexture=null;if(knightRenderer!=null) knightRenderer.enabled=true;if(avatar!=null) Destroy(avatar);if(skin!=null) Destroy(skin);if(portrait!=null) Destroy(portrait);if(portraitCamera!=null) Destroy(portraitCamera.gameObject);if(PortraitTexture!=null) {PortraitTexture.Release();Destroy(PortraitTexture);PortraitTexture=null;}}
+        private void OnDestroy() {localView.Dispose();nativeView.Dispose();NativeTexture=null;NativePortraitTexture=null;if(knightRenderer!=null) knightRenderer.enabled=true;if(avatar!=null) Destroy(avatar);if(skin!=null) Destroy(skin);if(portrait!=null) Destroy(portrait);if(portraitCamera!=null) Destroy(portraitCamera.gameObject);if(PortraitTexture!=null) {PortraitTexture.Release();Destroy(PortraitTexture);PortraitTexture=null;}}
     }
 }

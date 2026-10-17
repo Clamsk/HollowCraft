@@ -1,8 +1,8 @@
 # HollowCraft Native · Standalone migration
 
-0.40.0-alpha.2 fixes hidden game windows, repeated-click errors and cascading launcher dialogs. [Fix notes](docs/NATIVE_LAUNCHER_FIX.md).
+0.40.0-alpha.3 corrects player depth, armor and vanilla hand transforms, adds Better Combat combos/recovery, and migrates more recipes, brewing and crossbow rules. [Release details](docs/NATIVE_RENDERING.en.md). Previous launcher fixes are retained.
 
-The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.2 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
+The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.3 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
 
 - [Native installation, launch and migration checklist](docs/NATIVE_MIGRATION.en.md)
 - **Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@ The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.2 i
 
 The following documents the legacy bridge. Its two-game requirements do not apply to Native.
 
-- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.2)
+- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.3)
 
 ---
 

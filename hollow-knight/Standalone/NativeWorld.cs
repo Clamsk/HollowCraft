@@ -19,7 +19,7 @@ namespace HollowCraft.Standalone
                 var value=(JObject)cell.DeepClone();string id=(string)value["id"];var item=NativeCatalog.Get(id);bool fluid=id=="minecraft:water"||id=="minecraft:lava",open=(bool?)value["open"]==true;
                 bool solid=item.Solid&&!fluid&&!open;double height=id.EndsWith("_slab",StringComparison.Ordinal)?.5:1;
                 value["solid"]=solid;value["fluid"]=fluid;value["height"]=fluid?Math.Max(.125,1-((int?)value["level"]??0)/8.0):height;value["state"]=id+":"+open+":"+(int?)value["power"]+":"+(bool?)value["lit"];
-                value["collision"]=solid?new JArray(new JArray(0,0,1,height)):new JArray();value["breakTicks"]=item.Hardness<0?int.MaxValue:Math.Max(1,(int)Math.Ceiling(item.Hardness*30));result.Add(value);
+                value["collision"]=!solid?new JArray():item.Collision!=null?new JArray(item.Collision.Cast<JArray>().Select(b=>new JArray(b[0].DeepClone(),b[1].DeepClone(),b[3].DeepClone(),b[4].DeepClone()))):new JArray(new JArray(0,0,1,height));value["breakTicks"]=item.Hardness<0?int.MaxValue:Math.Max(1,(int)Math.Ceiling(item.Hardness*30));result.Add(value);
             }return result;
         }
         internal JObject Save() {var boxes=new JObject();foreach(var pair in Containers)boxes[pair.Key]=pair.Value.Save();return new JObject{["blocks"]=new JArray(Blocks.Values.Select(v=>v.DeepClone())),["containers"]=boxes,["drops"]=new JArray(Drops.Select(v=>v.DeepClone())),["creatures"]=new JArray(Creatures.Select(v=>v.DeepClone())),["projectiles"]=new JArray(Projectiles.Select(v=>v.DeepClone())),["primed"]=new JArray(Primed.Select(v=>v.DeepClone()))};}
@@ -57,8 +57,8 @@ namespace HollowCraft.Standalone
             int bx=(int)Number(mining,"x"),by=(int)Number(mining,"y");string key=NativeRoom.Key(bx,by);
             if(Spectator||mode=="adventure"||health<=0||!Reach(bx,by,Creative?6:4.5)||!Room.Blocks.TryGetValue(key,out var cell)){mining=null;return;}
             var definition=NativeCatalog.Get((string)cell["id"]);if(definition.Hardness<0&&!Creative){mining=null;return;}
-            var tool=Inventory.Hand.Definition;bool harvest=definition.Tool!="pickaxe"||tool.Tool=="pickaxe"&&tool.Harvest>=definition.Harvest;
-            double speed=definition.Tool==tool.Tool?tool.MiningSpeed:1;if(!grounded)speed/=5;if(InFluid("water"))speed/=5;
+            var tool=Inventory.Hand.Definition;bool harvest=NativeCatalog.RegistryLoaded?!definition.RequiresTool||tool.Tool==definition.Tool&&tool.Harvest>=definition.Harvest:definition.Tool!="pickaxe"||tool.Tool=="pickaxe"&&tool.Harvest>=definition.Harvest;
+            double speed=definition.Tool==tool.Tool?tool.MiningSpeed:1;int efficiency=NativeData.Enchantment(Inventory.Hand,"efficiency");if(speed>1&&efficiency>0)speed+=efficiency*efficiency+1;if(!grounded)speed/=5;if(InFluid("water")&&NativeData.Enchantment(Inventory.Armor[0],"aqua_affinity")==0)speed/=5;
             if(effects.TryGetValue("haste",out var haste))speed*=1+.2*(haste.Item2+1);
             double delta=Creative||definition.Hardness<=0?1:speed/definition.Hardness/(harvest?30:100);
             mining["progress"]=Number(mining,"progress")+delta;
@@ -73,11 +73,11 @@ namespace HollowCraft.Standalone
             if(landingWater!=null&&tick>=collectWater){string key=NativeRoom.Key((int)landingWater["x"],(int)landingWater["y"]);if(Room.Blocks.TryGetValue(key,out var value)&&(string)value["id"]=="minecraft:water")Room.Blocks.Remove(key);landingWater=null;Emit(new JObject{["type"]="waterCollected",["recovered"]=true,["hand"]=0});}
             foreach(var drop in Room.Drops.ToArray())if(health>0&&tick>=((int?)drop["ready"]??0)&&Math.Pow(Number(drop,"x")-x,2)+Math.Pow(Number(drop,"y")-y-.8,2)<2.25){var stack=NativeStack.Read(drop);Inventory.Insert(stack);if(stack.Empty)Room.Drops.Remove(drop);else drop["count"]=stack.Count;}
             foreach(var entry in Room.Containers) {
-                var box=entry.Value;if(!box.Id.Contains("furnace")&&box.Id!="minecraft:smoker")continue;
-                if(box.Burn>0)box.Burn--;string output=NativeRecipes.Smelt(box.Slots[0].Id);
+                var box=entry.Value;if(box.Id=="minecraft:brewing_stand"){TickBrew(box);continue;}if(!box.Id.Contains("furnace")&&box.Id!="minecraft:smoker")continue;
+                if(box.Burn>0)box.Burn--;var recipe=NativeRecipes.Cook(box.Slots[0].Id,box.Id);string output=recipe?.Output;if(box.CookingItem!=box.Slots[0].Id){box.Cook=0;box.CookingItem=box.Slots[0].Id;}
                 bool can=!box.Slots[0].Empty&&output!=null&&(box.Slots[2].Empty||box.Slots[2].Id==NativeCatalog.Id(output)&&box.Slots[2].Count<64);
-                if(can&&box.Burn==0&&NativeRecipes.Fuel(box.Slots[1])>0){box.Burn=box.BurnMax=NativeRecipes.Fuel(box.Slots[1]);if(box.Slots[1].Id=="minecraft:lava_bucket")box.Slots[1]=NativeStack.New("bucket");else {box.Slots[1].Count--;box.Slots[1].Normalize();}}
-                if(can&&box.Burn>0){box.Cook++;if(box.Cook>=(box.Id=="minecraft:furnace"?200:100)){box.Cook=0;box.Slots[0].Count--;box.Slots[0].Normalize();if(box.Slots[2].Empty)box.Slots[2]=NativeStack.New(output);else box.Slots[2].Count++;}}else box.Cook=0;
+                if(can&&box.Burn==0&&NativeRecipes.Fuel(box.Slots[1])>0){box.Burn=box.BurnMax=NativeRecipes.Fuel(box.Slots[1])/(box.Id=="minecraft:furnace"?1:2);if(box.Slots[1].Id=="minecraft:lava_bucket")box.Slots[1]=NativeStack.New("bucket");else {box.Slots[1].Count--;box.Slots[1].Normalize();}}
+                if(can&&box.Burn>0){box.Cook++;if(box.Cook>=recipe.Ticks){box.Cook=0;box.Slots[0].Count--;box.Slots[0].Normalize();if(box.Slots[2].Empty)box.Slots[2]=NativeStack.New(output);else box.Slots[2].Count++;}}else box.Cook=Math.Max(0,box.Cook-2);
                 if(Room.Blocks.TryGetValue(entry.Key,out var cell))cell["lit"]=box.Burn>0;
             }
             TickCreatures();if(tick%4==0)FluidStep();if(tick%2==0)RedstoneStep();
@@ -120,7 +120,7 @@ namespace HollowCraft.Standalone
                 int bx=(int)Math.Floor(x),by=(int)Math.Floor(y+.01);string key=NativeRoom.Key(bx,by);if(!Room.Blocks.ContainsKey(key)){landingWater=NativeRoom.Cell(bx,by,"water");Room.Blocks[key]=landingWater;collectWater=tick+30;kind="water";}
             }
             bool wings=Inventory.Armor[1].Id=="hollowcraft_bridge:stardust_wings";
-            if(kind=="normal"&&!wings&&!InFluid("water")&&distance>3)Damage(Math.Ceiling(distance-3),"fall",x,y);
+            int safe=3+(effects.TryGetValue("jump_boost",out var boost)?boost.Item2+1:0);if(kind=="normal"&&!wings&&!effects.ContainsKey("slow_falling")&&!effects.ContainsKey("levitation")&&!InFluid("water")&&distance>safe)Damage(Math.Ceiling(distance-safe),"fall",x,y);
             Emit(new JObject{["type"]="landing",["kind"]=kind,["intro"]=intro,["distance"]=distance,["hand"]=0});
             if(intro){introLanding=false;introDone=true;Save();}
         }

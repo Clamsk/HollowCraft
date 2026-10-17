@@ -56,6 +56,7 @@ namespace HollowCraft
         internal static bool Item(Transform holder,string id,string assets,int layer,int order,bool leftHand=false)
         {
             if(string.IsNullOrEmpty(id)||id=="minecraft:air") {holder.gameObject.SetActive(false);return true;}
+            if(GameplayBackend.Standalone&&Standalone.NativeItemModels.Draw(holder,id,layer,order,leftHand))return true;
             string[] parts=id.Split(':');if(parts.Length!=2||parts.Any(p=>p.Any(c=>!char.IsLetterOrDigit(c)&&c!='_'&&c!='/'))) return false;
             bool grip=holder.name=="HollowCraft.HeldItem3D"||holder.name=="HollowCraft.Offhand3D";
             string folder=grip?"scene_models_v2":"scene_models";
@@ -64,7 +65,7 @@ namespace HollowCraft
             holder.gameObject.SetActive(true);
             var data=JObject.Parse(File.ReadAllText(file));var quads=(JArray)data["quads"];
             if(quads.Count==0) return Builtin(holder,id,assets,layer,order,grip?data["builtinMatrix"] as JArray:null);
-            foreach(Transform child in holder) UnityEngine.Object.Destroy(child.gameObject);
+            foreach(Transform child in holder){child.gameObject.SetActive(false);UnityEngine.Object.Destroy(child.gameObject);}
             foreach(var group in quads.OfType<JObject>().GroupBy(q=>(string)q["atlas"])) {
                 string atlasFile=Path.Combine(assets,folder,group.Key+".png");if(!File.Exists(atlasFile)) return false;
                 if(!atlases.TryGetValue(atlasFile,out Texture2D texture)) {texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};texture.LoadImage(File.ReadAllBytes(atlasFile));atlases[atlasFile]=texture;}
@@ -110,7 +111,7 @@ namespace HollowCraft
             if(asset==null) {holder.gameObject.SetActive(false);return true;}
             string file=Path.Combine(assets,asset+".png");if(!File.Exists(file)) return false;
             if(!atlases.TryGetValue(file,out Texture2D texture)) {texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};texture.LoadImage(File.ReadAllBytes(file));atlases[file]=texture;}
-            foreach(Transform child in holder) UnityEngine.Object.Destroy(child.gameObject);
+            foreach(Transform child in holder){child.gameObject.SetActive(false);UnityEngine.Object.Destroy(child.gameObject);}
             var matrix=Matrix4x4.identity;
             if(grip?.Count==16)for(int r=0;r<4;r++)for(int c=0;c<4;c++)matrix[r,c]=(float)grip[c*4+r];
             Action<string,int,int,int,int,int,Vector3> part=(name,w,h,d,u,v,position)=> {

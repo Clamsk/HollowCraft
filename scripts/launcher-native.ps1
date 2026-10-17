@@ -14,7 +14,7 @@ $formTask.BackColor=[Drawing.Color]::FromArgb(23,29,39);$formTask.ForeColor=[Dra
 function NativeLabelTask([string]$Text,[int]$Y,[int]$Height=30) {
     $labelTask=New-Object Windows.Forms.Label;$labelTask.Text=$Text;$labelTask.Location=New-Object Drawing.Point(24,$Y);$labelTask.Size=New-Object Drawing.Size(652,$Height);$formTask.Controls.Add($labelTask);return $labelTask
 }
-$null=NativeLabelTask 'HollowCraft Native · 0.40.0 alpha 2' 20 35
+$null=NativeLabelTask 'HollowCraft Native · 0.40.0 alpha 3' 20 35
 $null=NativeLabelTask '只启动空洞 / Hollow Knight only · 迁移预览，功能尚未齐全' 58 30
 $normalTask=New-Object Windows.Forms.Button;$normalTask.Text='继续冒险 / Play';$normalTask.Location=New-Object Drawing.Point(24,100);$normalTask.Size=New-Object Drawing.Size(315,44)
 $installTask=New-Object Windows.Forms.Button;$installTask.Text='安装 / 更新 / Install';$installTask.Location=New-Object Drawing.Point(361,100);$installTask.Size=New-Object Drawing.Size(315,44)

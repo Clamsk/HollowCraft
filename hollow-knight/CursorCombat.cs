@@ -12,6 +12,7 @@ namespace HollowCraft
         internal JObject Profile;
         internal JObject Current {get;private set;}
         internal float Progress => Current==null ? 1 : Mathf.Clamp01((Time.time-started)/(float)Current["duration"]);
+        internal float AnimationAge=>Current==null?100:Mathf.Max(0,(Time.time-started)/(float)Current["duration"]);
         internal Vector2 Aim {get;private set;}=Vector2.right;
         internal bool Swinging => Current!=null && Progress<1;
         internal int AnimationSerial {get;private set;}

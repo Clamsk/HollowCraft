@@ -1,4 +1,4 @@
-# HollowCraft Native 0.40.0-alpha.2
+# HollowCraft Native 0.40.0-alpha.3
 
 [简体中文](NATIVE_MIGRATION.md) | English
 
@@ -30,21 +30,21 @@ Implemented means a local implementation exists, not exact vanilla fidelity or g
 | Single-process backend and storage | Implemented; old MC world import pending |
 | Hollow Knight scenes, story and Boss phases | Existing native adapters retained; complete playthrough unverified |
 | Controls, cursor combat, tower building, creative flight, F3+F4 | Existing native controllers retained; feel needs player review |
-| Inventory, offhand, starter equipment, durability and modes | Implemented; complete catalog, NBT and enchantments pending |
+| Inventory, offhand, starter equipment, durability and modes | Implemented with 1255 vanilla item records; special behaviors, complex NBT and complete enchantments pending |
 | Health, armor, hunger, regeneration, absorption, pearl damage | Implemented; full damage/enchantment parity pending |
 | Food, golden apples, shields, totems | Local rules and totem presentation; sound parity pending |
-| Crafting, table, furnace, chest, inventory gestures | Basic implementation; full recipes, brewing, enchanting and anvil pending |
+| Crafting, table, furnace/blast furnace/smoker, chest, brewing | 822 regular crafting recipes, 112 cooking recipes and 251 brewing conversions; dynamic special recipes, smithing, stonecutting, enchanting and anvil pending |
 | Blocks, mining, bedrock and TNT | Implemented; special collision shapes and exact explosion algorithm pending |
-| Arrows, pearls and tridents | Implemented; crossbow uses bow-style charging, loyalty returns directly to inventory |
+| Arrows, pearls, tridents and crossbows | Separate crossbow loading/firing, selected tipped-arrow and enchantment rules; Loyalty returns directly to inventory, Multishot and other details pending |
 | Fluids, landing water, swimming and drowning | Simplified 2D implementation; not the full vanilla fluid algorithm |
 | Redstone | Power, wire, lamp, doors and TNT; pistons, observers and advanced timing pending |
 | Elytra, rockets, Zenith and Stardust Wings | Local implementations; visual and audio parity pending |
 | Boats and mobs | Boats and 9 basic species; not complete vanilla models, AI or loot tables |
-| Creative menu | Local registered items only |
-| Player and equipment rendering | Unity joints and hand attachments, combined posed mesh, local GPU render target; not Minecraft's PlayerEntityRenderer |
+| Creative menu | Static vanilla catalog and potion/arrow variants; special behavior gaps remain, unported creature eggs are not advertised |
+| Player and equipment rendering | Joint attachments, per-pixel depth, vanilla third-person transforms and Better Combat combos; independent C# implementation, Bendy/pose details and gameplay appearance review pending |
 | Textures, UI and sound | Static vanilla textures, authored fallbacks and optional local model import; visual/audio parity is incomplete |
 
-See [native-migration.json](../release/native-migration.json) for the machine-readable checklist. Unimplemented entries are not counted as completed features.
+See [alpha.3 details](NATIVE_RENDERING.en.md) and [native-migration.json](../release/native-migration.json). Static registry coverage is not complete behavior coverage.
 
 ## Optional local resources
 
@@ -69,3 +69,5 @@ The standalone rule check tool uses .NET 9 SDK and launches no games. The actual
 Checks cover save separation, corrupt-save protection, item conservation, idempotent attacks and placement, iron-sword damage, shields, totems, furnace progress, landing water and TNT room persistence. Rendering, collision feel and full Boss/story progression still require player testing.
 
 Remaining work proceeds through rendering fidelity, combat/playthrough fixes, complete items/recipes/workstations, entity models and AI, then sound, particles, redstone and fluid details. Full parity will not be claimed until migration and player acceptance are complete.
+
+Alpha.3 passed 76 pure rule checks including imported local data and 12 launcher checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.

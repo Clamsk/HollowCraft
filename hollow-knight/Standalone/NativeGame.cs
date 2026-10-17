@@ -36,7 +36,8 @@ namespace HollowCraft.Standalone
         private NativeStack Active=>usingOffhand?Inventory.Offhand:Inventory.Hand;
         private bool Creative=>mode=="creative";
         private bool Spectator=>mode=="spectator";
-        internal NativeGame(string path) {root=Path.GetFullPath(path);Directory.CreateDirectory(root);}
+        private readonly NativeCombatProfiles combatProfiles;private int combo,lastComboTick=-100;private string comboItem="";
+        internal NativeGame(string path,string resourceRoot=null) {NativeData.Load(resourceRoot);combatProfiles=new NativeCombatProfiles(resourceRoot);root=Path.GetFullPath(path);Directory.CreateDirectory(root);}
         internal void Enqueue(JObject packet) {if(closed)return;if(commands.Count>=4096)throw new InvalidOperationException("Native command queue overflow");commands.Enqueue((JObject)packet.DeepClone());}
         internal bool TryRead(out JObject packet) {if(events.Count>0){packet=events.Dequeue();return true;}packet=snapshot;snapshot=null;return packet!=null;}
         internal void Pump(double elapsed) {
@@ -128,19 +129,19 @@ namespace HollowCraft.Standalone
         private void Swing(JObject p) {
             int request=(int?)p["request"]??0;if(attackReplies.TryGetValue(request,out var repeated)){Emit((JObject)repeated.DeepClone());return;}
             if(health<=0||Spectator)return;
-            var profile=Profile();var moves=(JArray)profile["weapon"]["attacks"];var move=(JObject)moves[attackSerial%moves.Count];
-            var reply=new JObject{["type"]="attack",["request"]=request,["attack"]=++attackSerial,["duration"]=1/Math.Max(.2,Inventory.Hand.Definition.Speed),["upswing"]=.3,["range"]=Creative?6:3,["damage"]=Number(profile,"damage"),["aimX"]=Number(p,"aimX",1),["aimY"]=0,["move"]=move.DeepClone()};
+            var profile=Profile();var moves=(JArray)profile["weapon"]["attacks"];if(comboItem!=Inventory.Hand.Id||tick-lastComboTick>30)combo=0;var move=(JObject)moves[combo++%moves.Count];comboItem=Inventory.Hand.Id;lastComboTick=tick;
+            var reply=new JObject{["type"]="attack",["request"]=request,["attack"]=++attackSerial,["duration"]=1/Math.Max(.2,Inventory.Hand.Definition.Speed),["upswing"]=Number(move,"upswing",.5),["range"]=Creative?6:3,["damage"]=Number(profile,"damage")*Number(move,"damage_multiplier",1),["speed"]=Inventory.Hand.Definition.Speed,["item"]=Inventory.Hand.Id,["aimX"]=Number(p,"aimX",1),["aimY"]=0,["move"]=move.DeepClone()};
             attackReplies[request]=reply;while(attackReplies.Count>32)attackReplies.Remove(attackReplies.Keys.Min());Emit((JObject)reply.DeepClone());
         }
         private JObject Profile() {
-            var hand=Inventory.Hand;var attacks=new JArray();foreach(string side in new[]{"right","left"})attacks.Add(new JObject{["damage_multiplier"]=1,["angle"]=90,["upswing"]=.3,["animation"]="bettercombat:one_handed_slash_horizontal_"+side,["hitbox"]="HORIZONTAL_PLANE"});return new JObject{["item"]=hand.Empty?"minecraft:air":hand.Id,["damage"]=Number(hand.Data,"attack",hand.Definition.Attack),["speed"]=hand.Definition.Speed,["source"]="HollowCraft native C#",["weapon"]=new JObject{["attack_range"]=3,["attacks"]=attacks}};
+            var hand=Inventory.Hand;var weapon=combatProfiles.Weapon(hand);weapon["attack_range"]=Creative?6:3;return new JObject{["item"]=hand.Empty?"minecraft:air":hand.Id,["damage"]=Number(hand.Data,"attack",hand.Definition.Attack),["speed"]=hand.Definition.Speed,["source"]="HollowCraft native C# / static Better Combat profiles",["weapon"]=weapon};
         }
         private void Melee(JObject p) {
-            Observe(p);if(health<=0||Spectator||!attackReplies.Values.Any(a=>(int?)a["attack"]==(int?)p["attack"]))return;
+            Observe(p);var attack=attackReplies.Values.FirstOrDefault(a=>(int?)a["attack"]==(int?)p["attack"]);if(health<=0||Spectator||attack==null)return;
             if(!spentAttacks.Add((int)p["attack"]))return;
             if(spentAttacks.Count>64)spentAttacks.Remove(spentAttacks.Min());
-            double cooldown=Math.Max(0,Math.Min(1,(tick-lastSwing)/Math.Max(1,20/Inventory.Hand.Definition.Speed)));lastSwing=tick;
-            double amount=Number(Inventory.Hand.Data,"attack",Inventory.Hand.Definition.Attack)*(.2+.8*cooldown*cooldown);if((bool?)p["falling"]==true&&cooldown>.9)amount*=1.5;
+            double cooldown=Math.Max(0,Math.Min(1,(tick-lastSwing)/Math.Max(1,20/Number(attack,"speed",4))));lastSwing=tick;
+            double amount=Number(attack,"damage")*(.2+.8*cooldown*cooldown);int sharp=NativeData.Enchantment(Inventory.Hand,"sharpness");if(sharp>0)amount+=(.5*sharp+.5)*cooldown;if(effects.TryGetValue("strength",out var strength))amount+=3*(strength.Item2+1);if(effects.TryGetValue("weakness",out var weakness))amount=Math.Max(0,amount-4*(weakness.Item2+1));if((bool?)p["falling"]==true&&cooldown>.9)amount*=1.5;
             bool hit=false;foreach(var value in p["targets"] as JArray??new JArray())if(enemies.TryGetValue((int)value,out var enemy)) {
                 double closestX=Math.Max(Number(enemy,"x")-Number(enemy,"width",.6)/2,Math.Min(x,Number(enemy,"x")+Number(enemy,"width",.6)/2)),closestY=Math.Max(Number(enemy,"y"),Math.Min(y+1.62,Number(enemy,"y")+Number(enemy,"height",1.8)));
                 if((closestX-x)*(closestX-x)+(closestY-y-1.62)*(closestY-y-1.62)>Math.Pow(Creative?6:3,2)+.01)continue;
@@ -159,6 +160,7 @@ namespace HollowCraft.Standalone
             enemyHurt[(int)enemy["id"]]=tick+Math.Max(0,(int?)enemy["nativeHurtTicks"]??0);return true;
         }
         private void TickPlayer() {
+            TickEnemyEffects();
             if(hurtTicks>0)hurtTicks--;
             foreach(string id in effects.Keys.ToArray()){var value=effects[id];if(value.Item1<=1){effects.Remove(id);if(id=="absorption")absorption=0;}else effects[id]=Tuple.Create(value.Item1-1,value.Item2);}
             if(effects.TryGetValue("regeneration",out var regen)&&tick%Math.Max(1,50>>regen.Item2)==0&&health>0)health=Math.Min(20,health+1);
@@ -168,7 +170,7 @@ namespace HollowCraft.Standalone
             if(Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+1.62)),out var head)&&(string)head["id"]=="minecraft:water"&&!effects.ContainsKey("water_breathing")&&!Creative&&!Spectator){if(--air<=-20){air=0;Damage(2,"drown",x,y);}}else air=Math.Min(300,air+4);
             if(effects.TryGetValue("poison",out var poison)&&health>1&&tick%Math.Max(1,25>>poison.Item2)==0)Damage(Math.Min(1,health-1),"magic",x,y);
             if(effects.TryGetValue("wither",out var wither)&&tick%Math.Max(1,40>>wither.Item2)==0)Damage(1,"wither",x,y);
-            if(usingItem){usingTicks++;if(Active.Definition.Food>0&&usingTicks>=32)FinishFood();else if(Active.Id=="minecraft:milk_bucket"&&usingTicks>=32){effects.Clear();absorption=0;Active.Id="minecraft:bucket";usingItem=false;}else if(Active.Id=="minecraft:potion"&&usingTicks>=32)FinishPotion();}
+            if(usingItem){usingTicks++;if(Active.Definition.Food>0&&usingTicks>=(Active.Definition.FastFood?16:32))FinishFood();else if(Active.Id=="minecraft:milk_bucket"&&usingTicks>=32){effects.Clear();absorption=0;Active.Id="minecraft:bucket";usingItem=false;}else if(Active.Id=="minecraft:potion"&&usingTicks>=32)FinishPotion();}
             while(exhaustion>=4){exhaustion-=4;if(saturation>0)saturation=Math.Max(0,saturation-1);else if(!Creative&&!Spectator)food=Math.Max(0,food-1);}
             if(!Creative&&!Spectator) {
                 if(food>=20&&saturation>0&&health<20){if(++regenTicks>=10){double heal=Math.Min(6,saturation)/6;health=Math.Min(20,health+heal);exhaustion+=heal*6;regenTicks=0;}}
@@ -183,14 +185,20 @@ namespace HollowCraft.Standalone
             if(hurtTicks>10){if(amount<=lastDamage)return;double incoming=amount;amount-=lastDamage;lastDamage=incoming;}else {lastDamage=amount;hurtTicks=20;}
             if(kind!="fall"&&kind!="pearl"&&kind!="starve") {int armor=Inventory.Armor.Sum(s=>s.Empty?0:s.Definition.Armor);double toughness=Inventory.Armor.Sum(s=>s.Id.StartsWith("minecraft:diamond_",StringComparison.Ordinal)?2:s.Id.StartsWith("minecraft:netherite_",StringComparison.Ordinal)?3:0);amount*=1-Math.Min(20,Math.Max(armor/5.0,armor-amount/(2+toughness/4)))/25;foreach(var piece in Inventory.Armor)Inventory.Wear(piece,Math.Max(1,(int)(lastDamage/4)),Creative);}
             if(effects.TryGetValue("resistance",out var resist)&&kind!="starve")amount*=Math.Max(0,1-.2*(resist.Item2+1));
+            if(kind!="starve"){int protection=Inventory.Armor.Sum(s=>NativeData.Enchantment(s,"protection")+(kind=="fall"||kind=="pearl"?3*NativeData.Enchantment(s,"feather_falling"):0)+(kind=="explosion"?2*NativeData.Enchantment(s,"blast_protection"):0)+(kind=="onFire"||kind=="lava"?2*NativeData.Enchantment(s,"fire_protection"):0)+(kind=="arrow"||kind=="trident"?2*NativeData.Enchantment(s,"projectile_protection"):0));amount*=1-Math.Min(20,protection)/25.0;}
             double absorbed=Math.Min(absorption,amount);absorption-=absorbed;health=Math.Max(0,health-(amount-absorbed));exhaustion+=.1;
             if(health<=0){var totem=Inventory.Hand.Id=="minecraft:totem_of_undying"?Inventory.Hand:Inventory.Offhand.Id=="minecraft:totem_of_undying"?Inventory.Offhand:null;if(totem!=null){totem.Count--;totem.Normalize();health=1;effects.Clear();absorption=0;fireTicks=0;Effect("regeneration",900,1);Effect("absorption",100,1);Effect("fire_resistance",800,0);Emit(new JObject{["type"]="totem"});Notice("Totem of Undying");}}
             Emit(new JObject{["type"]="hurt",["ticks"]=10});
             if(kind!="fall"&&kind!="pearl"&&kind!="starve")Emit(new JObject{["type"]="impulse",["x"]=attackerX<x?.4:-.4,["y"]=.4});
         }
-        private void Effect(string id,int duration,int level) {effects[id]=Tuple.Create(duration,level);if(id=="absorption")absorption=Math.Max(absorption,4*(level+1));}
-        private void FinishFood() {var item=Active;if(item.Empty){usingItem=false;return;}food=Math.Min(20,food+item.Definition.Food);saturation=Math.Min(food,saturation+item.Definition.Saturation);if(item.Id.EndsWith("golden_apple",StringComparison.Ordinal)){bool enchanted=item.Id=="minecraft:enchanted_golden_apple";Effect("regeneration",enchanted?400:100,1);Effect("absorption",2400,enchanted?3:0);if(enchanted){Effect("resistance",6000,0);Effect("fire_resistance",6000,0);}}if(!Creative){item.Count--;item.Normalize();}usingItem=false;}
-        private void FinishPotion() {string potion=(string)Active.Data["Potion"]??"minecraft:healing";if(potion.Contains("healing"))health=Math.Min(20,health+(potion.Contains("strong")?8:4));else Effect(potion.Contains("swiftness")?"speed":potion.Split(':').Last().Replace("long_","").Replace("strong_",""),potion.Contains("long_")?9600:3600,potion.Contains("strong_")?1:0);if(!Creative){Active.Count--;Active.Normalize();Inventory.Insert(NativeStack.New("glass_bottle"));}usingItem=false;}
+        private void Effect(string id,int duration,int level) {if(effects.TryGetValue(id,out var previous)&&(previous.Item2>level||previous.Item2==level&&previous.Item1>=duration))return;effects[id]=Tuple.Create(duration,level);if(id=="absorption")absorption=Math.Max(absorption,4*(level+1));}
+        private void FinishFood() {
+            var item=Active;if(item.Empty){usingItem=false;return;}food=Math.Min(20,food+item.Definition.Food);saturation=Math.Min(food,saturation+item.Definition.Saturation);
+            foreach(JObject effect in item.Definition.FoodEffects??new JArray())if(random.NextDouble()<Number(effect,"chance",1))Effect(((string)effect["id"]).Split(':').Last(),(int)effect["ticks"],(int)effect["amplifier"]);
+            if(item.Id.EndsWith("golden_apple",StringComparison.Ordinal)){bool enchanted=item.Id=="minecraft:enchanted_golden_apple";Effect("regeneration",enchanted?400:100,1);Effect("absorption",2400,enchanted?3:0);if(enchanted){Effect("resistance",6000,0);Effect("fire_resistance",6000,0);}}
+            if(!Creative){string remainder=item.Definition.Remainder;item.Count--;item.Normalize();if(remainder!=null){var left=NativeStack.New(remainder);if(item.Empty){item.Id=left.Id;item.Count=1;}else if(!Inventory.Insert(left))DropAt(left,x,y+.5);}}usingItem=false;
+        }
+        private void FinishPotion() {ApplyPotion(Active);if(!Creative){Active.Count--;Active.Normalize();var bottle=NativeStack.New("glass_bottle");if(Active.Empty){Active.Id=bottle.Id;Active.Count=1;}else if(!Inventory.Insert(bottle))DropAt(bottle,x,y+.5);}usingItem=false;}
         private JObject lastVisual;
         private JObject packetVisual(JObject packet)=>packet["scene"]==null||(string)packet["scene"]==scene?(JObject)packet.DeepClone():lastVisual;
         private void Publish() {
@@ -198,7 +206,7 @@ namespace HollowCraft.Standalone
             var armor=new JArray(Inventory.Armor.Select(s=>s.Json()));
             var stats=new JObject{["health"]=health,["maxHealth"]=20,["food"]=(int)food,["saturation"]=saturation,["armor"]=Inventory.Armor.Sum(s=>s.Empty?0:s.Definition.Armor),["absorption"]=absorption,["dead"]=health<=0,["mode"]=mode,["offhand"]=Inventory.Offhand.Json(),["equipment"]=armor,["using"]=usingItem,["useTicks"]=usingTicks,["activeHand"]=usingOffhand?"offhand":"mainhand",["useAction"]=usingItem?Active.Definition.Food>0?"EAT":Active.Id=="minecraft:shield"?"BLOCK":Active.Id=="minecraft:bow"?"BOW":Active.Id=="minecraft:trident"?"SPEAR":"DRINK":"NONE",["blocking"]=usingItem&&usingTicks>=5&&Active.Id=="minecraft:shield",["speed"]=effects.ContainsKey("speed")?.12:.1,["jumpVelocity"]=.42,["velocityMultiplier"]=1,["slipperiness"]=.6,["eyeHeight"]=1.62,["allowFlying"]=Creative||Spectator,["flySpeed"]=.05,["flying"]=(bool?)lastVisual?["flying"]??false,["water"]=InFluid("water"),["lava"]=InFluid("lava"),["air"]=300,["effects"]=new JArray(effects.Select(e=>new JObject{["id"]="minecraft:"+e.Key,["ticks"]=e.Value.Item1,["amplifier"]=e.Value.Item2})),["level"]=0,["xp"]=0};
             var craft=new JArray{NativeRecipes.Result(Inventory.Craft,2).Json()};foreach(var item in Inventory.Craft)craft.Add(item.Json());
-            stats["air"]=air;stats["onFire"]=fireTicks>0;stats["rocket"]=effects.ContainsKey("rocket");stats["hurtTicks"]=hurtTicks;stats["swimHeight"]=.4;stats["waterHeight"]=InFluid("water")?1:0;stats["lavaHeight"]=InFluid("lava")?1:0;
+            stats["air"]=air;stats["onFire"]=fireTicks>0;stats["rocket"]=effects.ContainsKey("rocket");stats["hurtTicks"]=hurtTicks;stats["swimHeight"]=.4;stats["waterHeight"]=InFluid("water")?1:0;stats["lavaHeight"]=InFluid("lava")?1:0;if(usingItem&&Active.Id=="minecraft:crossbow")stats["useAction"]="CROSSBOW";
             stats["speed"]=.1*(effects.TryGetValue("speed",out var speedEffect)?1+.2*(speedEffect.Item2+1):1)*(effects.TryGetValue("slowness",out var slowEffect)?Math.Max(0,1-.15*(slowEffect.Item2+1)):1);
             stats["jumpVelocity"]=.42+(effects.TryGetValue("jump_boost",out var jumpEffect)?.1*(jumpEffect.Item2+1):0);
             snapshot=new JObject{["type"]="snapshot",["backend"]="native-csharp",["scene"]=scene,["campaign"]=campaign,["visit"]=visit,["tick"]=tick,["status"]=status,["creative"]=Creative,["selected"]=Inventory.Selected,["inventory"]=new JArray(Inventory.Slots.Select(s=>s.Json())),["stats"]=stats,["carried"]=Inventory.Carried.Json(),["playerCraft"]=craft,["playerSyncId"]=0,["insertSlots"]=new JArray(Enumerable.Range(1,45)),["combat"]=Profile(),["blocks"]=Room.BlocksJson((int)Math.Floor(x),(int)Math.Floor(y)),["drops"]=new JArray(Room.Drops.Select(d=>d.DeepClone())),["enemies"]=new JArray(enemies.Values.Select(e=>e.DeepClone())),["projectiles"]=ProjectileJson(),["primed"]=PrimedJson(),["creatures"]=new JArray()};
@@ -208,7 +216,7 @@ namespace HollowCraft.Standalone
         private static string Hash(string value) {using(var hash=SHA256.Create())return string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(value)).Select(b=>b.ToString("x2")));}
         private void Load() {
             Inventory=new NativeInventory();Inventory.Starter();rooms.Clear();effects.Clear();mode="survival";health=food=20;saturation=5;exhaustion=absorption=0;tick=serial=0;introDone=false;
-            lastSwing=-100;hurtTicks=regenTicks=fireTicks=0;air=300;lastDamage=0;zenithHeld=false;zenithBurst=zenithClock=0;zenithInput=-100;
+            lastSwing=-100;combo=0;comboItem="";lastComboTick=-100;hurtTicks=regenTicks=fireTicks=0;air=300;lastDamage=0;zenithHeld=false;zenithBurst=zenithClock=0;zenithInput=-100;
             savePath=Path.Combine(root,Hash(campaign)+".json");saveBlocked=File.Exists(savePath);if(!saveBlocked)return;
             var data=JObject.Parse(File.ReadAllText(savePath));if((int?)data["schema"]!=1)throw new InvalidDataException("Unsupported native save schema");
             tick=Math.Max(0,(int?)data["tick"]??0);introDone=(bool?)data["introDone"]??false;
