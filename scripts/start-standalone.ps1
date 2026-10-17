@@ -1,5 +1,6 @@
 ﻿param([string]$BossId,[ValidateRange(0,2)][int]$BossLevel=0,[ValidateRange(640,3840)][int]$Width=1280,[ValidateRange(480,2160)][int]$Height=720)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'native-launcher-process.ps1')
 $nativeRootTask=Split-Path $PSScriptRoot -Parent
 $configPathTask=Join-Path $nativeRootTask 'hollowcraft.native.local.json'
 if(-not(Test-Path -LiteralPath $configPathTask)){throw 'Run Install HollowCraft Native.cmd first.'}
@@ -8,10 +9,18 @@ if($configTask.schema -ne 1 -or $configTask.backend -ne 'standalone'){throw 'Inv
 $gameTask=Join-Path $nativeRootTask 'runtime\Hollow Knight Native'
 $executableTask=Join-Path $gameTask 'hollow_knight.exe'
 $recordPathTask=Join-Path $nativeRootTask 'runtime\hollow-knight-native-process.json'
-if(Test-Path -LiteralPath $recordPathTask) {
-    $recordTask=Get-Content -LiteralPath $recordPathTask -Raw | ConvertFrom-Json
-    $existingTask=Get-Process -Id $recordTask.id -ErrorAction SilentlyContinue
-    if($existingTask -and $existingTask.StartTime.ToUniversalTime().Ticks -eq $recordTask.startedTicks){throw 'Native HollowCraft is already running.'}
+New-Item -ItemType Directory -Path (Join-Path $nativeRootTask 'runtime') -Force | Out-Null
+try {$nativeLaunchLockTask=[IO.File]::Open((Join-Path $nativeRootTask 'runtime\native-start.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}
+catch [IO.IOException] {Write-Output '启动请求正在处理，请稍候 / Another launch request is being processed.';return}
+try {
+$existingTask=Get-HollowCraftNativeOwnedProcessTask $recordPathTask $executableTask
+if($null -ne $existingTask) {
+    try {
+        if($BossId){throw '普通冒险或录制已在运行。请先点击“关闭独立版”，关闭游戏后再选择新的 Boss / Close the existing native game before starting a new recording.'}
+        if(Show-HollowCraftNativeGameTask $existingTask.Id){Write-Output '已找回正在运行的空洞窗口 / Existing Hollow Knight window restored.'}
+        else {Write-Output '空洞已在运行，窗口仍在初始化。请稍后再点击继续冒险 / Hollow Knight is already starting. Try Play again shortly.'}
+        return
+    }finally{$existingTask.Dispose()}
 }
 if(-not(Test-Path -LiteralPath $executableTask)){throw 'Native game files are missing. Run Install HollowCraft Native.cmd.'}
 $env:HOLLOWCRAFT_BACKEND='standalone'
@@ -32,6 +41,7 @@ if($BossId) {
 New-Item -ItemType Directory -Path $env:HOLLOWCRAFT_SAVE_ROOT -Force | Out-Null
 $env:HOLLOWCRAFT_AUTOSTART='0';$env:HOLLOWCRAFT_SMOKE='0';$env:HOLLOWCRAFT_CAPTURE='0'
 $logTask=Join-Path $nativeRootTask 'runtime\hollowcraft-native.log'
-$processTask=Start-Process -FilePath $executableTask -WorkingDirectory $gameTask -ArgumentList @('-logFile',('"'+$logTask+'"'),'-screen-fullscreen','0','-screen-width',$Width,'-screen-height',$Height) -WindowStyle Hidden -PassThru
+$processTask=Start-Process -FilePath $executableTask -WorkingDirectory $gameTask -ArgumentList @('-logFile',('"'+$logTask+'"'),'-screen-fullscreen','0','-screen-width',$Width,'-screen-height',$Height) -WindowStyle Normal -PassThru
 @{id=$processTask.Id;path=$executableTask;startedTicks=$processTask.StartTime.ToUniversalTime().Ticks;backend='standalone';session=$env:HOLLOWCRAFT_RECORD_SESSION;saveRoot=$env:HOLLOWCRAFT_SAVE_ROOT} | ConvertTo-Json | Set-Content -LiteralPath $recordPathTask -Encoding UTF8
-Write-Output 'Started HollowCraft Native: one Hollow Knight process, in-process C# rules, separate native saves.'
+Write-Output '空洞已启动 / HollowCraft Native started. A/D 移动 · 空格跳跃 · E 背包 · F 副手。'
+}finally{$nativeLaunchLockTask.Dispose()}

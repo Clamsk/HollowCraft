@@ -1,6 +1,8 @@
 # HollowCraft Native · Standalone migration
 
-The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.1 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
+0.40.0-alpha.2 fixes hidden game windows, repeated-click errors and cascading launcher dialogs. [Fix notes](docs/NATIVE_LAUNCHER_FIX.md).
+
+The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.2 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
 
 - [Native installation, launch and migration checklist](docs/NATIVE_MIGRATION.en.md)
 - **Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -8,7 +10,7 @@ The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.1 i
 
 The following documents the legacy bridge. Its two-game requirements do not apply to Native.
 
-- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.1)
+- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.2)
 
 ---
 

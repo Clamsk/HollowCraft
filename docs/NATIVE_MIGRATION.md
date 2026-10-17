@@ -1,4 +1,4 @@
-# HollowCraft Native 0.40.0-alpha.1
+# HollowCraft Native 0.40.0-alpha.2
 
 [English](NATIVE_MIGRATION.en.md) | 简体中文
 

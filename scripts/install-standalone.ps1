@@ -55,5 +55,5 @@ if(-not(Test-Path -LiteralPath $cecilTask)) {
 & (Join-Path $PSScriptRoot 'build-hollow-knight.ps1') -GameRoot $GameRoot -UsePrebuilt:(-not $Build) -SkipAssets
 if(-not $SkipVisualResources){try{& (Join-Path $PSScriptRoot 'prepare-native-resources.ps1')}catch{Write-Warning ('Static resource setup failed; using authored fallback assets. Retry install when online. '+$_.Exception.Message)}}
 & (Join-Path $PSScriptRoot 'prepare-hk-test.ps1') -GameRoot $GameRoot -Standalone
-@{schema=1;backend='standalone';gameRoot=$GameRoot;version='0.40.0-alpha.1'} | ConvertTo-Json | Set-Content -LiteralPath $nativeConfigTask -Encoding UTF8
+@{schema=1;backend='standalone';gameRoot=$GameRoot;version='0.40.0-alpha.2'} | ConvertTo-Json | Set-Content -LiteralPath $nativeConfigTask -Encoding UTF8
 Write-Host 'Native HollowCraft installed. Open Start HollowCraft Native.cmd. Minecraft and Java are not required.'
