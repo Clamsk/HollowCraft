@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "version": "0.40.0-alpha.1",
+  "target": "Hollow Knight only, in-process C# mod",
+  "featureParity": false,
+  "gameplayVerified": false,
+  "fullPlaythroughVerified": false,
+  "runtimeRequiresMinecraft": false,
+  "runtimeRequiresJava": false,
+  "nativeSaveImportFromBridge": false,
+  "systems": [
+    {
+      "id": "backend-storage-launcher",
+      "status": "implemented",
+      "remaining": [
+        "bridge world/NBT save importer"
+      ]
+    },
+    {
+      "id": "native-scenes-story-bosses",
+      "status": "retained-native-adapters",
+      "remaining": [
+        "complete player playthrough acceptance"
+      ]
+    },
+    {
+      "id": "controls-jumpbuild-flight",
+      "status": "retained-native-controllers",
+      "remaining": [
+        "player feel and collision review"
+      ]
+    },
+    {
+      "id": "inventory-equipment-durability",
+      "status": "partial",
+      "remaining": [
+        "full item catalog",
+        "full NBT",
+        "enchantments"
+      ]
+    },
+    {
+      "id": "health-hunger-food-shield-totem",
+      "status": "partial",
+      "remaining": [
+        "complete damage types and enchantment modifiers",
+        "original audio fidelity"
+      ]
+    },
+    {
+      "id": "crafting-containers",
+      "status": "partial",
+      "remaining": [
+        "full recipes",
+        "brewing",
+        "enchanting",
+        "anvil",
+        "advanced workstation gestures"
+      ]
+    },
+    {
+      "id": "building-mining-bedrock-tnt",
+      "status": "partial",
+      "remaining": [
+        "all block collision shapes",
+        "exact vanilla explosion calculation"
+      ]
+    },
+    {
+      "id": "ranged-weapons",
+      "status": "partial",
+      "remaining": [
+        "crossbow loading state",
+        "animated loyalty return",
+        "tipped arrow effects"
+      ]
+    },
+    {
+      "id": "fluids",
+      "status": "simplified",
+      "remaining": [
+        "full water/lava update rules",
+        "fluid interactions and physics details"
+      ]
+    },
+    {
+      "id": "redstone",
+      "status": "simplified",
+      "remaining": [
+        "pistons",
+        "observers",
+        "advanced timing",
+        "automation"
+      ]
+    },
+    {
+      "id": "elytra-zenith-wings",
+      "status": "partial",
+      "remaining": [
+        "visual fidelity",
+        "sound and particle parity",
+        "Boss playthrough review"
+      ]
+    },
+    {
+      "id": "boats-creatures",
+      "status": "partial",
+      "species": 9,
+      "remaining": [
+        "full vanilla models",
+        "all species",
+        "full AI",
+        "loot tables",
+        "creature projectiles"
+      ]
+    },
+    {
+      "id": "creative-menu",
+      "status": "partial",
+      "remaining": [
+        "full catalog",
+        "all item variants"
+      ]
+    },
+    {
+      "id": "player-rendering",
+      "status": "partial",
+      "remaining": [
+        "original model/animation fidelity",
+        "transparent surface intersection cases"
+      ]
+    },
+    {
+      "id": "assets-ui-audio",
+      "status": "partial",
+      "remaining": [
+        "complete standalone-authored resources",
+        "original UI fidelity",
+        "audio and particles"
+      ]
+    }
+  ],
+  "validation": {
+    "mainBuild": "passed",
+    "gameStarted": false,
+    "originalSteamAssemblyUnchanged": true,
+    "ruleChecksPassed": 40
+  }
+}

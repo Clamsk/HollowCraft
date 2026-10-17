@@ -20,7 +20,7 @@ namespace HollowCraft
             root.AddComponent<BossRecording>();
             root.AddComponent<BedrockBarrier>();
             root.AddComponent<WorldCreatures>();
-            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Native scene entrance/physics handoff and scene-visit isolation; localhost:31674.");
+            Debug.Log("[HollowCraft] "+typeof(HollowCraftBootstrap).Assembly.GetName().Version.ToString(3)+" loaded. Backend="+(GameplayBackend.Standalone?"in-process native C#":"Minecraft localhost:31674"));
         }
         public static string SaveRoot()
         {

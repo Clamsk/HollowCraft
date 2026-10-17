@@ -1,3 +1,5 @@
+独立版构建入口已经改为 scripts/install-standalone.ps1 -Build，仅需本机空洞、.NET SDK 和 Mono.Cecil；不构建 Java。详见 [独立版构建及迁移说明](docs/NATIVE_MIGRATION.md)。以下为旧桥接版步骤。
+
 # 源码与本机构建
 
 [简体中文](SOURCE_SETUP.md) | [English](SOURCE_SETUP.en.md)

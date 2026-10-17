@@ -1,0 +1,57 @@
+﻿param([string]$MinecraftJar,[string]$BetterCombatJar)
+$ErrorActionPreference='Stop'
+$nativeRootTask=Split-Path $PSScriptRoot -Parent
+$assetsTask=Join-Path $nativeRootTask 'artifacts\StandaloneAssets'
+$cacheTask=Join-Path $nativeRootTask 'dependencies\native-resources'
+New-Item -ItemType Directory -Path $assetsTask,$cacheTask -Force | Out-Null
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$lockTask=Get-Content -LiteralPath (Join-Path $nativeRootTask 'release\native-dependencies.lock.json') -Raw | ConvertFrom-Json
+function NativeResourceArchiveTask($Metadata,[string]$Local,[string]$Filename) {
+    $pathTask=if($Local){(Resolve-Path -LiteralPath $Local).Path}else{Join-Path $cacheTask $Filename}
+    if(-not(Test-Path -LiteralPath $pathTask)) {
+        [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12
+        Write-Host ('Downloading static visual resources: '+$Filename)
+        Invoke-WebRequest -UseBasicParsing -Uri $Metadata.url -OutFile ($pathTask+'.download') -TimeoutSec 120
+        if((Get-FileHash -LiteralPath ($pathTask+'.download') -Algorithm SHA1).Hash -ne $Metadata.sha1){throw 'Visual resource checksum mismatch.'}
+        Move-Item -LiteralPath ($pathTask+'.download') -Destination $pathTask
+    }
+    if((Get-FileHash -LiteralPath $pathTask -Algorithm SHA1).Hash -ne $Metadata.sha1){throw 'Visual archive version/checksum mismatch.'}
+    return $pathTask
+}
+if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-visual-resources-v1.json'))) {
+    $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar'
+    $zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask)
+    $namedTask=@{
+        'assets/minecraft/textures/entity/player/wide/steve.png'='steve_skin.png'
+        'assets/minecraft/textures/font/ascii.png'='gui_font.png'
+        'assets/minecraft/textures/entity/trident.png'='trident_model.png'
+        'assets/minecraft/textures/entity/projectiles/arrow.png'='arrow_projectile.png'
+        'assets/minecraft/textures/entity/elytra.png'='elytra_model.png'
+        'assets/minecraft/textures/entity/shield_base.png'='shield_model.png'
+        'assets/minecraft/textures/entity/chest/normal.png'='chest_model.png'
+    }
+    try {
+        foreach($entryTask in $zipTask.Entries) {
+            $nameTask=$null
+            if($entryTask.FullName -match '^assets/minecraft/textures/(block|item)/([a-z0-9_]+)\.png$'){$nameTask=$Matches[2]+'.png'}
+            elseif($entryTask.FullName -match '^assets/minecraft/textures/gui/(icons|widgets|container/[a-z0-9_]+)\.png$'){$nameTask='gui_'+($Matches[1] -replace 'container/','')+'.png'}
+            elseif($entryTask.FullName -match '^assets/minecraft/textures/models/armor/([a-z0-9_]+)\.png$'){$nameTask='armor_'+$Matches[1]+'.png'}
+            elseif($entryTask.FullName -match '^assets/minecraft/textures/mob_effect/([a-z0-9_]+)\.png$'){$nameTask='effect_'+$Matches[1]+'.png'}
+            elseif($entryTask.FullName -match '^assets/minecraft/textures/gui/container/creative_inventory/([a-z0-9_]+)\.png$'){$nameTask='gui_creative_'+$Matches[1]+'.png'}
+            elseif($entryTask.FullName -match '^assets/minecraft/textures/block/(water_still|lava_still|fire_0)\.png\.mcmeta$'){$nameTask=$Matches[1]+'.png.mcmeta'}
+            else {$nameTask=$namedTask[$entryTask.FullName]}
+            if($nameTask){$destinationTask=Join-Path $assetsTask $nameTask;if(-not(Test-Path -LiteralPath $destinationTask)){[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,$destinationTask,$false)}}
+        }
+    }finally{$zipTask.Dispose()}
+    foreach($aliasTask in @{'crafting_table'='crafting_table_side';'furnace'='furnace_front';'grass_block'='grass_block_side';'tnt'='tnt_side';'water'='water_still';'lava'='lava_still'}.GetEnumerator()){
+        $destinationTask=Join-Path $assetsTask ($aliasTask.Key+'.png');if(-not(Test-Path -LiteralPath $destinationTask)){Copy-Item -LiteralPath (Join-Path $assetsTask ($aliasTask.Value+'.png')) -Destination $destinationTask}
+    }
+    @{schema=1;version='1.20.1';sha1=$lockTask.minecraftVisuals.sha1;source=$lockTask.minecraftVisuals.url;extracted='textures only; no game code loaded or executed'} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'native-visual-resources-v1.json') -Encoding UTF8
+}
+$combatTask=Join-Path $assetsTask 'bettercombat'
+if(-not(Test-Path -LiteralPath (Join-Path $combatTask 'one_handed_slash_horizontal_right.json'))) {
+    $archiveTask=NativeResourceArchiveTask $lockTask.betterCombatAnimations $BetterCombatJar 'better-combat-animation-resources.jar'
+    $zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask);New-Item -ItemType Directory -Path $combatTask -Force | Out-Null
+    try{foreach($entryTask in $zipTask.Entries){if($entryTask.FullName -match '^assets/bettercombat/attack_animations/([a-z0-9_]+)\.json$'){[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $combatTask ($Matches[1]+'.json')),$true)}}}finally{$zipTask.Dispose()}
+}
+Write-Output 'Static visual resources ready. Minecraft/Java was not started.'

@@ -11,7 +11,8 @@ namespace HollowCraft
     internal sealed class HollowCraftRuntime : MonoBehaviour
     {
         private const float CellSize = 1f;
-        private BridgeClient bridge;
+        private IGameplayBackend bridge;
+        internal bool Standalone=>bridge?.Local==true;
         private readonly NativePointerBuffer pointerInput=new NativePointerBuffer();
         private Collider2D[] terrainProbe=new Collider2D[32];
         internal static HollowCraftRuntime Instance;
@@ -37,7 +38,7 @@ namespace HollowCraft
             string key="model:"+id;
             if(textures.TryGetValue(key,out Texture2D cached)) return cached;
             string path=Path.Combine(assets,"item_models_rgba",parts[0],parts[1]+".png");
-            if(!File.Exists(path)) return Texture(id);
+            if(!File.Exists(path)) return Standalone?HollowCraft.Standalone.NativeAssets.Icon(id,assets):Texture(id);
             var icon=new Texture2D(2,2,TextureFormat.RGBA32,false) {filterMode=FilterMode.Point};icon.LoadImage(File.ReadAllBytes(path));textures[key]=icon;return icon;
         }
         private JObject container;
@@ -227,7 +228,9 @@ namespace HollowCraft
         private void Awake()
         {
             assets = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "HollowCraftAssets");
-            bridge = new BridgeClient();
+            if(GameplayBackend.Standalone)HollowCraft.Standalone.NativeAssets.Root=assets;
+            bridge = GameplayBackend.Create();
+            if(bridge.Local)gameObject.AddComponent<HollowCraft.Standalone.NativePresentation>();
             Instance=this; Combat=new CursorCombat(bridge.Send);JumpBuild=new JumpBuilding(this);
             audio=gameObject.AddComponent<MinecraftAudio>();audio.Initialize(this,assets);
             Application.runInBackground=true;
@@ -295,8 +298,8 @@ namespace HollowCraft
         }
         private void Update()
         {
-            Gui?.Refresh(assets);
-            Hud?.Refresh(assets);
+            bridge.Pump(Time.unscaledDeltaTime);
+            if(!Standalone){Gui?.Refresh(assets);Hud?.Refresh(assets);}
             // Scripted final attacks must remain available when the native ending
             // temporarily owns movement, while menus and pause still block input.
             if(InGame&&Connected&&!Automated&&Application.isFocused&&!InterfaceBlocked)NativeScriptedAttacks.Input(scene);
@@ -334,7 +337,7 @@ namespace HollowCraft
             }
             bool connected = bridge.Connected;
             bool newlyConnected = connected && !wasConnected;
-            if (!connected && wasConnected) {connectionFrozen=true;Time.timeScale=0;status = "Minecraft disconnected; reconnecting";}
+            if (!connected && wasConnected) {connectionFrozen=true;Time.timeScale=0;status = Standalone?"Native rules stopped: "+bridge.LastError:"Minecraft disconnected; reconnecting";}
             if(newlyConnected) {Terraria.ResetEffects();backendPauseSent=null;if(connectionFrozen) {connectionFrozen=false;Time.timeScale=paused?0:1;}}
             wasConnected = connected;
             while (bridge.TryRead(out JObject message))
@@ -357,6 +360,7 @@ namespace HollowCraft
                 if((string)message["type"]=="notice"&&(string)message["scene"]==scene)ui.ShowNotice((string)message["text"]);
                 if((string)message["type"]=="impulse"&&(string)message["scene"]==scene&&cachedHero!=null) PlayerSystem.ApplyImpulse(cachedHero,new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="hurt"&&(string)message["scene"]==scene) PlayerSystem.HurtFeedback((int?)message["ticks"]??10);
+                if((string)message["type"]=="totem"&&(string)message["scene"]==scene)GetComponent<HollowCraft.Standalone.NativePresentation>()?.Totem();
                 if((string)message["type"]=="shieldRecoil"&&(string)message["scene"]==scene)
                     EnemySystem.ShieldRecoil((int)message["id"],new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
@@ -605,7 +609,7 @@ namespace HollowCraft
         private void LateUpdate() {
             FlushNativeSteps();GameCursor.ApplyCursor();
             bool visible=InGame&&bridge?.Connected==true&&building&&!Dead;
-            particles.Draw(assets,this,cachedHero,visible);entityView.Draw(assets,this,cachedHero,visible);blockView.Draw(assets,this,cachedHero,visible);
+            if(!Standalone){particles.Draw(assets,this,cachedHero,visible);entityView.Draw(assets,this,cachedHero,visible);blockView.Draw(assets,this,cachedHero,visible);}
             bool hideWorld=!InGame;
             foreach(var block in blocks.Values) {
                 int x=Mathf.FloorToInt(block.transform.position.x),y=Mathf.FloorToInt(block.transform.position.y);
@@ -750,7 +754,7 @@ namespace HollowCraft
             if (!snapshotLogged)
             {
                 snapshotLogged=true;
-                Debug.Log("[HollowCraft] Received real Minecraft snapshot for " + scene);
+                Debug.Log("[HollowCraft] Received "+(Standalone?"local C#":"Minecraft")+" snapshot for " + scene);
             }
             status = (string)message["status"] ?? "Connected";
             creative = (bool?)message["creative"] ?? false;
@@ -957,6 +961,7 @@ namespace HollowCraft
         }
         private Texture2D Texture(string id)
         {
+            if(Standalone)return HollowCraft.Standalone.NativeAssets.Texture(id,assets);
             if (string.IsNullOrEmpty(id) || id == "minecraft:air") return null;
             if (textures.TryGetValue(id, out Texture2D found)) return found;
             bool shield=id=="minecraft:shield";

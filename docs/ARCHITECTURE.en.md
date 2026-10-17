@@ -1,3 +1,11 @@
+# Current mainline: native mod
+
+0.40.0-alpha.1 defaults to an in-process C# backend. The dedicated launcher starts Hollow Knight only; no MC process, bridge socket or live frame files are used. Unity renders player, equipment and local entities. NativeGame owns rules and JSON storage, retaining existing native scene, enemy, Boss, movement and interaction adapters.
+
+This incomplete preview has not reached feature parity. See [migration status](NATIVE_MIGRATION.en.md). The legacy bridge architecture follows for comparison.
+
+---
+
 # HollowCraft Runtime Boundaries and a Standalone Mod Route
 
 [简体中文](ARCHITECTURE.md) | [English](ARCHITECTURE.en.md)

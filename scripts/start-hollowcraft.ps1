@@ -1,5 +1,6 @@
 ﻿param([string]$BossId,[ValidateRange(0,2)][int]$BossLevel=0,[ValidateRange(640,3840)][int]$Width=1280,[ValidateRange(480,2160)][int]$Height=720)
 $ErrorActionPreference='Stop'
+$env:HOLLOWCRAFT_BACKEND='bridge'
 . (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
 $configTask=Get-HollowCraftConfigTask
 $projectTaskRoot=Split-Path $PSScriptRoot -Parent

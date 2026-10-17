@@ -1,3 +1,11 @@
+# 当前主线：独立 Mod
+
+0.40.0-alpha.1 默认使用空洞进程内 C# 后端，专用启动器只启动空洞；没有 MC 进程、TCP 桥接或实时帧文件依赖。人物、装备和实体在 Unity 内渲染。本地 NativeGame 管理规则与 JSON 存档，既有原生场景、敌人、Boss、移动和交互适配继续使用。
+
+当前是未达功能等价的迁移预览，逐项状态与限制见 [迁移说明](NATIVE_MIGRATION.md)。以下保留旧桥接版架构供对照。
+
+---
+
 # HollowCraft 的运行边界与独立 Mod 路线
 
 [简体中文](ARCHITECTURE.md) | [English](ARCHITECTURE.en.md)

@@ -1,3 +1,5 @@
+For the native mod, use scripts/install-standalone.ps1 -Build with local Hollow Knight, .NET SDK and Mono.Cecil. Java is not built. See [native source setup](docs/NATIVE_MIGRATION.en.md). The following instructions describe the legacy bridge.
+
 # Source and Local Builds
 
 [简体中文](SOURCE_SETUP.md) | [English](SOURCE_SETUP.en.md)

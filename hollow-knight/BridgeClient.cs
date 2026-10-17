@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 namespace HollowCraft
 {
     // All Unity work stays on the main thread. The socket thread only moves JSON.
-    internal sealed class BridgeClient : IDisposable
+    internal sealed class BridgeClient : IGameplayBackend
     {
         private readonly ConcurrentQueue<JObject> inbound = new ConcurrentQueue<JObject>();
         private readonly ConcurrentQueue<string> outbound = new ConcurrentQueue<string>();
@@ -24,6 +24,12 @@ namespace HollowCraft
         internal volatile string Campaign="";
         internal volatile int SceneVisit;
         public string LastError = "Waiting for Minecraft world HollowCraft";
+        bool IGameplayBackend.Connected=>Connected;
+        public bool Local=>false;
+        string IGameplayBackend.Campaign {get=>Campaign;set=>Campaign=value;}
+        int IGameplayBackend.SceneVisit {get=>SceneVisit;set=>SceneVisit=value;}
+        string IGameplayBackend.LastError=>LastError;
+        public void Pump(float elapsed) {}
         public BridgeClient()
         {
             worker = new Thread(Run) { IsBackground = true, Name = "HollowCraft bridge" };

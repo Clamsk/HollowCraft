@@ -48,13 +48,17 @@ namespace HollowCraft
         private Texture2D Texture(string name) => runtime.ItemTexture(name);
         private void Region(string name,Rect target,float x,float y,float w,float h)
         {
-            var image=Texture(name);if(image==null) return;
+            var image=Texture(name);if(image==null) {
+                if(!runtime.Standalone)return;Color previous=GUI.color;
+                if(name=="gui_icons"&&x==0&&y==0&&w==15&&h==15){GUI.DrawTexture(new Rect(target.center.x-1,target.y+target.height*.25f,2,target.height*.5f),Texture2D.whiteTexture);GUI.DrawTexture(new Rect(target.x+target.width*.25f,target.center.y-1,target.width*.5f,2),Texture2D.whiteTexture);return;}
+                GUI.color=previous*(name=="gui_icons"?x>=52?new Color(.9f,.2f,.2f):new Color(.18f,.18f,.18f):new Color(.58f,.58f,.58f));GUI.DrawTexture(target,Texture2D.whiteTexture);GUI.color=previous;return;
+            }
             GUI.DrawTextureWithTexCoords(target,image,new Rect(x/image.width,1-(y+h)/image.height,w/image.width,h/image.height));
         }
         private void Tile(string name,float x,float y,float w,float h,float sx,float sy,float sw,float sh) => Region(name,new Rect(left+x*scale,top+y*scale,w*scale,h*scale),sx,sy,sw,sh);
         private void Text(string value,float x,float y,float size=2,Color? color=null)
         {
-            var font=Texture("gui_font");if(font==null) return;
+            var font=Texture("gui_font");if(font==null) {if(runtime.Standalone){var style=new GUIStyle(GUI.skin.label){fontSize=Mathf.RoundToInt(8*size)};style.normal.textColor=color??Color.white;GUI.Label(new Rect(x,y,Math.Max(100,(value?.Length??0)*8*size),14*size),value??"",style);}return;}
             Color previous=GUI.color;
             for(int pass=0;pass<2;pass++) {
                 GUI.color=pass==0 ? new Color(0.12f,0.12f,0.12f) : color ?? Color.white;

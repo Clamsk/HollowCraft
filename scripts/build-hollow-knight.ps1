@@ -1,4 +1,4 @@
-param([string]$GameRoot,[switch]$UsePrebuilt)
+param([string]$GameRoot,[switch]$UsePrebuilt,[switch]$SkipAssets)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
 $configTask=Get-HollowCraftConfigTask
@@ -196,5 +196,5 @@ try {
     }
     $reportTask | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outTask 'patch-report.json') -Encoding utf8
 } finally { $gameAssemblyTask.Dispose(); $resolverTask.Dispose() }
-& (Join-Path $PSScriptRoot 'prepare-assets.ps1') -MinecraftJar (Join-Path $configTask.minecraftRoot 'versions\1.20.1\1.20.1.jar')
+if(-not $SkipAssets) { & (Join-Path $PSScriptRoot 'prepare-assets.ps1') -MinecraftJar (Join-Path $configTask.minecraftRoot 'versions\1.20.1\1.20.1.jar') }
 Write-Output "HollowCraft build ready: $outTask"

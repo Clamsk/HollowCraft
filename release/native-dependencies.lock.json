@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "minecraftVisuals": {
+    "url": "https://piston-data.mojang.com/v1/objects/0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838/client.jar",
+    "sha1": "0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838",
+    "bytes": 23028853
+  },
+  "betterCombatAnimations": {
+    "url": "https://cdn.modrinth.com/data/5sy6g3kz/versions/jhqZUDtT/bettercombat-fabric-1.8.5%2B1.20.1.jar",
+    "sha1": "54789b87d151bacfac73fc4a596bf249bde38528"
+  },
+  "cecil": {
+    "url": "https://api.nuget.org/v3-flatcontainer/mono.cecil/0.11.6/mono.cecil.0.11.6.nupkg",
+    "sha512": "1c5932246b23c9f317690a25ce3e1416d168d885871063d2f604cf997ed9e99d41bccdd0e22d4be6e4a5ea729d06bd92cc543686dbbd75ab0199db60e0912fb4",
+    "version": "0.11.6"
+  }
+}

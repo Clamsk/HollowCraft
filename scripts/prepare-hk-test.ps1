@@ -1,9 +1,9 @@
-param([string]$GameRoot)
+param([string]$GameRoot,[switch]$Standalone)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'hollowcraft-common.ps1')
 if(-not $GameRoot) {$GameRoot=(Get-HollowCraftConfigTask).gameRoot}
 $projectTaskRoot=Split-Path $PSScriptRoot -Parent
-$gameTestTask=Join-Path $projectTaskRoot 'runtime\Hollow Knight'
+$gameTestTask=Join-Path $projectTaskRoot $(if($Standalone){'runtime\Hollow Knight Native'}else{'runtime\Hollow Knight'})
 New-Item -ItemType Directory -Path $gameTestTask -Force | Out-Null
 # Links only to static game resources. The patched assembly, plugin and logs are private copies.
 function Link-ReadOnlyResourcesTask([string]$Source,[string]$Destination,[string[]]$Excluded=@()) {
@@ -28,10 +28,12 @@ Set-Content -LiteralPath (Join-Path $gameTestTask 'steam_appid.txt') -Value '367
 $testDataTask=Join-Path $gameTestTask 'hollow_knight_Data'
 Link-ReadOnlyResourcesTask (Join-Path $GameRoot 'hollow_knight_Data') $testDataTask @('Managed')
 $testManagedTask=Join-Path $testDataTask 'Managed'
-Link-ReadOnlyResourcesTask (Join-Path $GameRoot 'hollow_knight_Data\Managed') $testManagedTask @('Assembly-CSharp.dll')
+Link-ReadOnlyResourcesTask (Join-Path $GameRoot 'hollow_knight_Data\Managed') $testManagedTask @('Assembly-CSharp.dll','HollowCraft.dll','HollowCraftAssets')
 $artifactTask=Join-Path $projectTaskRoot 'artifacts\HollowCraft'
 Copy-Item -LiteralPath (Join-Path $artifactTask 'Assembly-CSharp.dll') -Destination $testManagedTask -Force
 Copy-Item -LiteralPath (Join-Path $artifactTask 'HollowCraft.dll') -Destination $testManagedTask -Force
 $testAssetsTask=Join-Path $testManagedTask 'HollowCraftAssets'
-if (-not (Test-Path -LiteralPath $testAssetsTask)) { New-Item -ItemType Junction -Path $testAssetsTask -Target (Join-Path $artifactTask 'HollowCraftAssets') | Out-Null }
+$assetsSourceTask=if($Standalone){Join-Path $projectTaskRoot 'artifacts\StandaloneAssets'}else{Join-Path $artifactTask 'HollowCraftAssets'}
+New-Item -ItemType Directory -Path $assetsSourceTask -Force | Out-Null
+if (-not (Test-Path -LiteralPath $testAssetsTask)) { New-Item -ItemType Junction -Path $testAssetsTask -Target $assetsSourceTask | Out-Null }
 Write-Output "Isolated HollowCraft game prepared: $gameTestTask"

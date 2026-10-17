@@ -60,7 +60,7 @@ namespace HollowCraft
             bool grip=holder.name=="HollowCraft.HeldItem3D"||holder.name=="HollowCraft.Offhand3D";
             string folder=grip?"scene_models_v2":"scene_models";
             string renderId=id+(leftHand?"_left_hand":"")+(grip?"_grip":"");
-            string file=Path.Combine(assets,folder,parts[0],parts[1]+(leftHand?"_left_hand":"")+".json");if(!File.Exists(file)) return false;
+            string file=Path.Combine(assets,folder,parts[0],parts[1]+(leftHand?"_left_hand":"")+".json");if(!File.Exists(file)) return GameplayBackend.Standalone&&Standalone.NativeAssets.Item(holder,id,layer,order,leftHand);
             holder.gameObject.SetActive(true);
             var data=JObject.Parse(File.ReadAllText(file));var quads=(JArray)data["quads"];
             if(quads.Count==0) return Builtin(holder,id,assets,layer,order,grip?data["builtinMatrix"] as JArray:null);
@@ -83,7 +83,7 @@ namespace HollowCraft
             return true;
         }
         internal static bool Arrow(Transform holder,string assets,int layer,int order) {
-            string file=Path.Combine(assets,"arrow_projectile.png");if(!File.Exists(file))return false;
+            string file=Path.Combine(assets,"arrow_projectile.png");if(!File.Exists(file))return GameplayBackend.Standalone&&Standalone.NativeAssets.Item(holder,"minecraft:arrow",layer,order,false);
             if(!atlases.TryGetValue(file,out Texture2D texture)) {texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};texture.LoadImage(File.ReadAllBytes(file));atlases[file]=texture;}
             const string key="vanilla_projectile_arrow";
             if(!meshes.TryGetValue(key,out Mesh mesh)) {
@@ -104,7 +104,7 @@ namespace HollowCraft
             }
             var go=new GameObject("Minecraft arrow flight model");go.transform.SetParent(holder,false);Renderer(go,mesh,texture,layer,order);return true;
         }
-        private static bool Builtin(Transform holder,string id,string assets,int layer,int order,JArray grip=null)
+        internal static bool Builtin(Transform holder,string id,string assets,int layer,int order,JArray grip=null)
         {
             string asset=id.StartsWith("minecraft:shield")?"shield_model":id=="minecraft:trident"?"trident_model":id=="minecraft:chest"?"chest_model":null;
             if(asset==null) {holder.gameObject.SetActive(false);return true;}

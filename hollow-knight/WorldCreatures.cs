@@ -79,6 +79,7 @@ namespace HollowCraft
                 body.transform.position=new Vector3((float)value["x"],(float)value["y"]+height*.5f,0);
                 body.Shape.size=new Vector2(width,height);body.Shape.isTrigger=!body.Boat;body.Shape.enabled=body.Health>0;
                 body.gameObject.layer=Math.Max(0,LayerMask.NameToLayer(body.Boat?"Terrain":"Enemies"));
+                if(GameplayBackend.Standalone){var local=body.GetComponent<Standalone.NativeCreatureView>()??body.gameObject.AddComponent<Standalone.NativeCreatureView>();local.Apply(value);}
             }
             foreach(int id in bodies.Keys.Where(id=>!present.Contains(id)).ToArray()) {bodies[id].gameObject.SetActive(false);UnityEngine.Object.Destroy(bodies[id].gameObject);bodies.Remove(id);}
             var active=new HashSet<int>();

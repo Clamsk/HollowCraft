@@ -105,7 +105,7 @@ namespace HollowCraft
         }
         private Sprite Sprite(string name) {
             if(sprites.TryGetValue(name,out var value))return value;
-            string path=Path.Combine(runtime.Assets,"terraria",name+".png");if(!File.Exists(path))return null;
+            string path=Path.Combine(runtime.Assets,"terraria",name+".png");if(!File.Exists(path)){if(runtime.Standalone){value=Standalone.NativeAssets.SwordSprite();sprites[name]=value;return value;}return null;}
             var texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};texture.LoadImage(File.ReadAllBytes(path));
             value=UnityEngine.Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),1/.0375f);sprites[name]=value;return value;
         }
