@@ -70,9 +70,9 @@ namespace HollowCraft
             var hits=Physics2D.CircleCastAll(start,kind=="minecraft:ender_pearl"?.125f:.08f,delta.normalized,delta.magnitude);
             Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));
             foreach(var hit in hits) {
-                var collider=hit.collider;if(collider==null||collider.GetComponent<CreatureBody>()!=null||collider.GetComponentInParent<HeroController>()!=null)continue;
+                var collider=hit.collider;if(collider==null||collider.GetComponentInParent<HeroController>()!=null)continue;var creature=collider.GetComponent<CreatureBody>();if(creature!=null&&!GameplayBackend.Standalone)continue;
                 var node=collider.transform;while(node!=null&&!node.name.StartsWith("HollowCraft.Block"))node=node.parent;
-                if(node!=null) {if(!collider.isTrigger)return;continue;}
+                if(node!=null) {if(collider.isTrigger)continue;if(!GameplayBackend.Standalone)return;}
                 var enemy=EnemySystem.Resolve(collider);
                 var breakable=collider.GetComponentInParent<Breakable>();
                 bool arrow=kind=="minecraft:arrow"||kind=="minecraft:spectral_arrow";
@@ -87,9 +87,9 @@ namespace HollowCraft
                 }
                 // Disabled/dead health responders are not inert solid walls.
                 if(enemy==null&&collider.GetComponentInParent<HealthManager>()!=null)continue;
-                int targetId=enemy!=null?enemy.GetInstanceID():breakable!=null?breakable.GetInstanceID():oneHit!=null?oneHit.GetInstanceID():0;
+                int targetId=creature!=null?creature.GetInstanceID():enemy!=null?enemy.GetInstanceID():breakable!=null?breakable.GetInstanceID():oneHit!=null?oneHit.GetInstanceID():0;
                 if(targetId!=0&&hitTargets.Contains(targetId))continue;
-                if(enemy==null&&breakable==null&&oneHit==null&&(collider.isTrigger||collider.gameObject.layer!=LayerMask.NameToLayer("Terrain")&&collider.gameObject.layer!=LayerMask.NameToLayer("Default")))continue;
+                if(creature==null&&enemy==null&&breakable==null&&oneHit==null&&(collider.isTrigger||collider.gameObject.layer!=LayerMask.NameToLayer("Terrain")&&collider.gameObject.layer!=LayerMask.NameToLayer("Default")))continue;
                 if(enemy!=null&&enemy.isDead)continue;
                 if(hit.distance<=.001f&&Vector2.Dot(hit.normal,delta)>=0)continue;
                 var runtime=HollowCraftRuntime.Instance;var hero=HeroController.instance;if(runtime==null||hero==null)return;
@@ -102,7 +102,7 @@ namespace HollowCraft
                 impactRequest=++nextImpactRequest;runtime.RevokeNativeStep(entity);
                 int target=enemy!=null?EnemySystem.Register(enemy):breakable!=null?EnemySystem.Register(breakable):0;
                 hitCommand=new {type="nativeProjectileHit",scene=room,entity,uuid,age,request=impactRequest,x=point.x,y=point.y,normalX=normal.x,normalY=normal.y,
-                    landingX=landing.x,landingY=landing.y,target,nativeOneHit=oneHit!=null,passThrough=arrow&&breakable!=null&&enemy==null,enemies=EnemySystem.Observe(hero,target)};
+                    landingX=landing.x,landingY=landing.y,target,creature=creature?.Target,nativeOneHit=oneHit!=null,passThrough=arrow&&breakable!=null&&enemy==null,enemies=EnemySystem.Observe(hero,target)};
                 runtime.Send(hitCommand);return;
             }
         }

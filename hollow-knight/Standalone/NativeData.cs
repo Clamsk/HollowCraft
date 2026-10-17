@@ -12,6 +12,8 @@ namespace HollowCraft.Standalone
     {
         internal static readonly Dictionary<string,JObject> Potions=new Dictionary<string,JObject>(),Entities=new Dictionary<string,JObject>(),Enchantments=new Dictionary<string,JObject>();
         internal static readonly Dictionary<string,HashSet<string>> Tags=new Dictionary<string,HashSet<string>>();
+        internal static JArray CreativeStacks=new JArray(),CreativeGroups=new JArray();
+        internal static JObject Sounds=new JObject();
         private static readonly Dictionary<string,JObject> brewing=new Dictionary<string,JObject>();
         private static readonly HashSet<string> brewIngredients=new HashSet<string>();
         internal static bool BrewIngredient(string id)=>brewIngredients.Contains(id);
@@ -22,6 +24,8 @@ namespace HollowCraft.Standalone
             string registry=Path.Combine(root,"native-registry.json");if(!File.Exists(registry))return;
             var data=JObject.Parse(File.ReadAllText(registry));if((string)data["minecraft"]!="1.20.1")throw new InvalidDataException("Unsupported native registry version");
             NativeCatalog.Import(data);
+            CreativeStacks=data["creativeStacks"] as JArray??new JArray();CreativeGroups=data["creativeGroups"] as JArray??new JArray();
+            string audio=Path.Combine(root,"native-audio-v4.json");Sounds=File.Exists(audio)?JObject.Parse(File.ReadAllText(audio))["sounds"] as JObject??new JObject():new JObject();
             brewing.Clear();brewIngredients.Clear();foreach(JObject recipe in data["brewing"] as JArray??new JArray()){brewing[(string)recipe["item"]+"|"+(string)recipe["potion"]+"|"+(string)recipe["ingredient"]]=recipe;brewIngredients.Add((string)recipe["ingredient"]);}
             foreach(var pair in new[]{Tuple.Create("potions",Potions),Tuple.Create("entities",Entities),Tuple.Create("enchantments",Enchantments)}){pair.Item2.Clear();foreach(JObject entry in (JArray)data[pair.Item1])pair.Item2[(string)entry["id"]]=entry;}
             Tags.Clear();string tagRoot=Path.Combine(root,"vanilla","tags","items");var raw=new Dictionary<string,JArray>();

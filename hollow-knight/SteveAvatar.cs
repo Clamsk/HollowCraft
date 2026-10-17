@@ -25,6 +25,7 @@ namespace HollowCraft
         private GameObject playerFlame;
         private readonly Dictionary<string,JObject> animations=new Dictionary<string,JObject>();
         private readonly Dictionary<string,Standalone.NativeAnimationClip> nativeAnimations=new Dictionary<string,Standalone.NativeAnimationClip>();
+        private readonly Vector3[] transitionPositions=new Vector3[7];private readonly Quaternion[] transitionRotations=new Quaternion[7];private int transitionSerial=-1;private bool transitionValid,renderedPose;
         private Transform animationRoot;
         private readonly Dictionary<Transform,Tuple<string,GameObject>> armor=new Dictionary<Transform,Tuple<string,GameObject>>();
         private readonly Dictionary<string,Tuple<string,GameObject>> nativeArmor=new Dictionary<string,Tuple<string,GameObject>>();
@@ -69,7 +70,10 @@ namespace HollowCraft
             int facing=MinecraftControls.Facing;
             if(swing&&Math.Abs(combat.Aim.x)>.1f&&!front) facing=combat.Aim.x<0?-1:1;
             avatar.transform.localRotation=Quaternion.Euler(0,front?0:-facing*75,MinecraftEnvironment.Gliding?-facing*75:0);
-            avatar.transform.localScale=Vector3.one*.9f;
+            // InventoryScreen's camera flips X relative to the old cuboid adapter.
+            // Reflect the whole rig once: bones, skin, armor and hand matrices agree.
+            avatar.transform.localScale=GameplayBackend.Standalone?new Vector3(-.9f,.9f,.9f):Vector3.one*.9f;
+            if(GameplayBackend.Standalone&&combat?.Current!=null&&transitionSerial!=combat.AnimationSerial){transitionSerial=combat.AnimationSerial;transitionValid=renderedPose;var bones=new[]{head,torso,rightArm,leftArm,rightLeg,leftLeg,animationRoot};for(int i=0;i<bones.Length;i++){transitionPositions[i]=bones[i].localPosition;transitionRotations[i]=bones[i].localRotation;}}
             if(animationRoot!=null){animationRoot.localPosition=Vector3.zero;animationRoot.localRotation=Quaternion.identity;}
             // Vanilla BipedEntityModel pivots and radians; Better Combat overlays these
             // same shoulder/body pivots rather than rotating cuboids around their centers.
@@ -106,7 +110,8 @@ namespace HollowCraft
                 if(wings!=null) wings.SetActive((string)runtime?.Stats?["equipment"]?[1]?["id"]=="minecraft:elytra");
             }
             if(leftWing!=null) {leftWing.localRotation=Quaternion.Euler(15,-20,MinecraftEnvironment.Gliding?-70:-15);rightWing.localRotation=Quaternion.Euler(15,20,MinecraftEnvironment.Gliding?70:15);}
-            if(GameplayBackend.Standalone&&combat?.Current!=null&&combat.AnimationAge<1.6f&&(bool?)runtime?.Stats?["using"]!=true) {
+            if(GameplayBackend.Standalone){int slot=(int?)runtime?.LatestSnapshot?["selected"]??0;TintHand(held,runtime?.LatestSnapshot?["inventory"]?[slot]);TintHand(offhand,runtime?.Stats?["offhand"]);}
+            if(GameplayBackend.Standalone&&combat?.Current!=null&&Standalone.NativeCombatTimeline.Recovery(combat.AnimationAge,(float)combat.Current["duration"])>0&&(bool?)runtime?.Stats?["using"]!=true) {
                 ApplyNativeAttack(combat);
             }
             else if(swing) {
@@ -122,9 +127,9 @@ namespace HollowCraft
             else if((bool?)runtime?.Stats?["using"]==true) {
                 string action=(string)runtime.Stats["useAction"];
                 float aim=GameCursor.WorldTarget(hero,out Vector2 target,out _)?Mathf.Atan2(target.y-GameCursor.Eye(hero).y,Math.Abs(target.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0;
-                if(action=="BOW"||action=="CROSSBOW") {rightArm.localRotation=Quaternion.Euler(90+aim,5.7f,0);leftArm.localRotation=Quaternion.Euler(90+aim,-28.6f,0);}
+                if(action=="BOW"||action=="CROSSBOW") {bool off=(string)runtime.Stats["activeHand"]=="offhand";rightArm.localRotation=Quaternion.Euler(90+aim,off?28.6f:5.7f,0);leftArm.localRotation=Quaternion.Euler(90+aim,off?-5.7f:-28.6f,0);}
                 else if(action=="BLOCK") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(60,arm==leftArm?-30:30,0);}
-                else if(action=="SPEAR") rightArm.localRotation=Quaternion.Euler(162+aim,0,0);
+                else if(action=="SPEAR") ((string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm).localRotation=Quaternion.Euler(162+aim,0,0);
                 else if(action=="DRINK"||action=="EAT") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(75+Mathf.Sin(Time.time*12)*5,arm==leftArm?25:-25,0);}
             }
             ApplyLandingPose();
@@ -132,6 +137,7 @@ namespace HollowCraft
             if(!GameplayBackend.Standalone)foreach(var renderer in avatar.GetComponentsInChildren<MeshRenderer>()) MinecraftMeshes.SortFaces(renderer);
             if(Time.unscaledTime>=nextPortrait&&(!GameplayBackend.Standalone||NativePortraitTexture==null||runtime?.InventoryVisible==true)) {nextPortrait=Time.unscaledTime+.1f;DrawPortrait();}
             if(GameplayBackend.Standalone)localView.Draw(avatar,position,layer,order,(string)runtime?.Stats?["equipment"]?[1]?["id"]==TerrariaEquipment.Wings);
+            renderedPose=true;
         }
         private void DrawPortrait()
         {
@@ -150,6 +156,7 @@ namespace HollowCraft
             }
             portrait.SetActive(true);foreach(var renderer in portrait.GetComponentsInChildren<MeshRenderer>()) MinecraftMeshes.SortFaces(renderer,portraitCamera);portraitCamera.Render();
         }
+        private void TintHand(Transform hand,JToken item){if(hand==null||item==null)return;foreach(var renderer in hand.GetComponentsInChildren<MeshRenderer>()){renderer.GetPropertyBlock(tint);tint.SetColor("_Color",Standalone.NativeItemColors.Tint(item,renderer.sharedMaterial.mainTexture?.name??""));renderer.SetPropertyBlock(tint);}}
         private static string NativeHandModel(string id,JToken item,bool active,int ticks) {
             string original=(string)item?["id"]??id;if(original=="minecraft:bow")return active?"minecraft:bow_pulling_"+Mathf.Clamp(ticks/7,0,2):original;
             if(original=="minecraft:crossbow"){if((bool?)item?["nbt"]?["Charged"]==true)return "minecraft:crossbow_arrow";if(active)return "minecraft:crossbow_pulling_"+Mathf.Clamp(ticks/8,0,2);}return id;
@@ -190,20 +197,21 @@ namespace HollowCraft
             if(bone!="head")pitch=clip.Sample(bone,"pitch",tick,pitch);yaw=clip.Sample(bone,"yaw",tick,yaw);roll=clip.Sample(bone,"roll",tick,roll);
             return Quaternion.AngleAxis(roll*factor,Vector3.forward)*Quaternion.AngleAxis(-yaw*factor,Vector3.up)*Quaternion.AngleAxis(-pitch*factor,Vector3.right);
         }
-        private static void NativeBone(Standalone.NativeAnimationClip clip,string name,Transform bone,float tick,float fade) {
+        private void NativeBone(Standalone.NativeAnimationClip clip,string name,Transform bone,int index,float tick,float fade,float recovery) {
             var current=bone.localPosition;
             var position=new Vector3(-clip.Sample(name,"x",tick,-current.x*16)/16,1.5f-clip.Sample(name,"y",tick,(1.5f-current.y)*16)/16,clip.Sample(name,"z",tick,current.z*16)/16);
-            bone.localPosition=Vector3.Lerp(current,position,fade);bone.localRotation=Quaternion.Slerp(bone.localRotation,NativeRotation(clip,name,tick,bone.localRotation),fade);
+            var rotation=NativeRotation(clip,name,tick,bone.localRotation);position=Vector3.Lerp(transitionValid?transitionPositions[index]:current,position,fade);rotation=Quaternion.Slerp(transitionValid?transitionRotations[index]:bone.localRotation,rotation,fade);
+            bone.localPosition=Vector3.Lerp(current,position,recovery);bone.localRotation=Quaternion.Slerp(bone.localRotation,rotation,recovery);
         }
         private void ApplyNativeAttack(CursorCombat combat) {
             var clip=NativeAnimation((string)combat.Current["move"]?["animation"]);
             if(clip==null){if(combat.AnimationAge<1)rightArm.localRotation=Quaternion.Euler(-Mathf.Sin(combat.AnimationAge*Mathf.PI)*110,Mathf.Sin(combat.AnimationAge*Mathf.PI*2)*25,0);return;}
-            float tick=combat.AnimationAge*clip.End;if(tick>=clip.Stop)return;float fade=clip.Fade(tick);
-            NativeBone(clip,"torso",torso,tick,fade);NativeBone(clip,"head",head,tick,fade);NativeBone(clip,"rightArm",rightArm,tick,fade);NativeBone(clip,"leftArm",leftArm,tick,fade);
-            if(!WorldCreatures.Riding){NativeBone(clip,"rightLeg",rightLeg,tick,fade);NativeBone(clip,"leftLeg",leftLeg,tick,fade);}
-            var rotation=Quaternion.Slerp(Quaternion.identity,NativeRotation(clip,"body",tick,Quaternion.identity),fade);
+            float tick=Standalone.NativeCombatTimeline.Tick(combat.AnimationAge,clip.End,(float?)combat.Current["upswing"]??.5f);float fade=clip.Fade(tick),recovery=Standalone.NativeCombatTimeline.Recovery(combat.AnimationAge,(float)combat.Current["duration"]);
+            NativeBone(clip,"torso",torso,1,tick,fade,recovery);NativeBone(clip,"head",head,0,tick,fade,recovery);NativeBone(clip,"rightArm",rightArm,2,tick,fade,recovery);NativeBone(clip,"leftArm",leftArm,3,tick,fade,recovery);
+            if(!WorldCreatures.Riding){NativeBone(clip,"rightLeg",rightLeg,4,tick,fade,recovery);NativeBone(clip,"leftLeg",leftLeg,5,tick,fade,recovery);}
+            var rotation=Quaternion.Slerp(transitionValid?transitionRotations[6]:Quaternion.identity,NativeRotation(clip,"body",tick,Quaternion.identity),fade);
             var offset=new Vector3(-clip.Sample("body","x",tick),clip.Sample("body","y",tick),clip.Sample("body","z",tick))*fade;
-            var pivot=new Vector3(0,.7f,0);animationRoot.localRotation=rotation;animationRoot.localPosition=offset+pivot-rotation*pivot;
+            var pivot=new Vector3(0,.7f,0);animationRoot.localRotation=Quaternion.Slerp(Quaternion.identity,rotation,recovery);animationRoot.localPosition=(offset+pivot-rotation*pivot)*recovery;
         }
         private JObject Animation(string id)
         {
@@ -238,6 +246,7 @@ namespace HollowCraft
         private void CreateAvatar()
         {
             if(GameplayBackend.Standalone)localView.ResetSources();
+            renderedPose=transitionValid=false;transitionSerial=-1;
             if(avatar!=null) Destroy(avatar);armor.Clear();nativeArmor.Clear();heldId=offhandId=null;playerFlame=null;
             assets=Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),"HollowCraftAssets");string path=Path.Combine(assets,"steve_skin.png");if(!File.Exists(path)&&!GameplayBackend.Standalone) return;
             if(File.Exists(path)){skin=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};skin.LoadImage(File.ReadAllBytes(path));}else skin=Standalone.NativeAssets.Skin();

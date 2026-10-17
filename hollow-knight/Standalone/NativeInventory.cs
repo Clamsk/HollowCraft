@@ -50,7 +50,7 @@ namespace HollowCraft.Standalone
     }
     internal sealed class NativeContainer
     {
-        internal string Id;internal NativeStack[] Slots;internal int Burn,BurnMax,Cook,Brew,BrewFuel;internal int Sync;internal string CookingItem="",BrewKey="";
+        internal string Id;internal NativeStack[] Slots;internal int Burn,BurnMax,Cook,Brew,BrewFuel;internal int Sync,Choice=-1;internal string CookingItem="",BrewKey="",Rename;
         internal NativeContainer(string id,int count) {Id=id;Slots=NativeInventory.Empty(count);}
         internal JObject Save()=>new JObject{["id"]=Id,["slots"]=new JArray(Slots.Select(s=>s.Json())),["burn"]=Burn,["burnMax"]=BurnMax,["cook"]=Cook,["cookingItem"]=CookingItem,["brew"]=Brew,["brewFuel"]=BrewFuel,["brewKey"]=BrewKey};
         internal static NativeContainer Read(JObject data) {
@@ -86,6 +86,8 @@ namespace HollowCraft.Standalone
     internal static class NativeRecipes
     {
         internal static readonly List<NativeRecipe> All=new List<NativeRecipe>();
+        internal static readonly List<JObject> WorkRecipes=new List<JObject>();
+        internal static bool Accepts(JToken ingredient,NativeStack item)=>!item.Empty&&Ingredients(ingredient).Any(value=>NativeData.Ingredient(value,item.Id));
         private static void Shape(string output,int count,string pattern,params string[] keys) {var map=new Dictionary<char,string[]>();foreach(string pair in keys)map[pair[0]]=pair.Substring(2).Split('|');All.Add(new NativeRecipe{Output=output,Count=count,Pattern=pattern.Split('/'),Keys=map});}
         static NativeRecipes() {
             foreach(string wood in new[]{"oak","spruce","birch","jungle","acacia","dark_oak","mangrove","cherry","bamboo","crimson","warped"}) {
@@ -111,9 +113,9 @@ namespace HollowCraft.Standalone
         private static string[] Ingredients(JToken token) {if(token is JArray choices)return choices.SelectMany(Ingredients).Distinct().ToArray();if(token?["item"]!=null)return new[]{NativeCatalog.Id((string)token["item"])};if(token?["tag"]!=null)return new[]{"#"+NativeCatalog.Id((string)token["tag"])};return new string[0];}
         internal static void Load(string root) {
             string directory=Path.Combine(root,"vanilla","recipes");if(!Directory.Exists(directory))return;
-            var recipes=new List<NativeRecipe>();cooking.Clear();ImportedCooking=0;
+            var recipes=new List<NativeRecipe>();cooking.Clear();WorkRecipes.Clear();ImportedCooking=0;
             foreach(string file in Directory.GetFiles(directory,"*.json",SearchOption.AllDirectories).OrderBy(p=>p,StringComparer.Ordinal)) {
-                var data=JObject.Parse(File.ReadAllText(file));string type=((string)data["type"]??"").Split(':').Last();var result=data["result"];string output=result?.Type==JTokenType.String?(string)result:(string)result?["item"];if(output==null||!NativeCatalog.Items.ContainsKey(NativeCatalog.Id(output)))continue;
+                var data=JObject.Parse(File.ReadAllText(file));string type=((string)data["type"]??"").Split(':').Last();if(type=="stonecutting"||type=="smithing_transform"||type=="smithing_trim")WorkRecipes.Add(data);var result=data["result"];string output=result?.Type==JTokenType.String?(string)result:(string)result?["item"];if(output==null||!NativeCatalog.Items.ContainsKey(NativeCatalog.Id(output)))continue;
                 if(type=="crafting_shaped") {var keys=new Dictionary<char,string[]>();foreach(var key in (JObject)data["key"])keys[key.Key[0]]=Ingredients(key.Value);var pattern=((JArray)data["pattern"]).Select(p=>(string)p).ToArray();recipes.Add(new NativeRecipe{Output=output,Count=(int?)result?["count"]??1,Pattern=pattern,Keys=keys});}
                 else if(type=="crafting_shapeless")recipes.Add(new NativeRecipe{Output=output,Count=(int?)result?["count"]??1,Loose=((JArray)data["ingredients"]).Select(Ingredients).ToArray()});
                 else if(type=="smelting"||type=="blasting"||type=="smoking"||type=="campfire_cooking") {var ingredients=Ingredients(data["ingredient"]);var cook=new Cooking{Output=NativeCatalog.Id(output),Ticks=(int?)data["cookingtime"]??200,Experience=(double?)data["experience"]??0};foreach(string item in NativeCatalog.Items.Keys)if(ingredients.Any(i=>NativeData.Ingredient(i,item)))cooking[type+":"+item]=cook;ImportedCooking++;}

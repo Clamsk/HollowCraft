@@ -2,6 +2,8 @@
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
+Native packages contain only the Hollow Knight-side HollowCraft.dll, scripts, registry facts and documentation. Static resource sources are pinned in [native-dependencies.lock.json](native-dependencies.lock.json). Texture/animation archives use SHA-1 verification; audio objects are checked against asset-index SHA-1 hashes and then addressed locally by SHA-256. Setup can read installed resources or download missing objects from official sources. Minecraft is not required to be installed or running. Extracted game/mod assets are excluded from Git and release ZIPs.
+
 Windows release packages contain only the two compiled HollowCraft mods, installation scripts, optional asset-importer source and documentation. They do not distribute Minecraft, Hollow Knight, modified original game assemblies, extracted textures/audio/animations, user saves or the dependency binaries listed below.
 
 The installer downloads fixed versions from official release sources using checksums in [dependencies.lock.json](dependencies.lock.json). Fabric Maven libraries use their official SHA-1 values; Modrinth dependencies use official SHA-512 values; Mono.Cecil uses a locked SHA-512 calculated from the official NuGet package.

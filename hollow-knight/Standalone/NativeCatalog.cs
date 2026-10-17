@@ -10,7 +10,7 @@ namespace HollowCraft.Standalone
         internal string Id,Tool="",Equipment="",Group="items",Remainder,Entity;
         internal int Maximum=64,Durability,Armor,Food,Harvest;
         internal double Attack=1,Speed=4,Hardness=.8,Saturation,MiningSpeed=1;
-        internal bool Block,Solid=true,AlwaysEdible,FastFood,RequiresTool;internal int Fuel;internal double Toughness;internal JArray Collision,FoodEffects;
+        internal bool Block,Solid=true,AlwaysEdible,FastFood,RequiresTool;internal int Fuel,Enchantability,EggBase,EggSpots;internal double Toughness;internal JArray Collision,FoodEffects,RepairItems;
     }
     internal static class NativeCatalog
     {
@@ -57,6 +57,8 @@ namespace HollowCraft.Standalone
                 item.Maximum=(int)entry["maxCount"];item.Durability=(int)entry["durability"];item.Food=(int?)entry["food"]??0;item.Saturation=(double?)entry["saturation"]??0;item.AlwaysEdible=(bool?)entry["alwaysEdible"]??false;item.FastFood=(bool?)entry["fastFood"]??false;
                 item.Remainder=(string)entry["remainder"];item.Entity=(string)entry["entity"];item.Fuel=(int?)entry["fuel"]??0;item.Armor=(int?)entry["armor"]??0;item.Toughness=(double?)entry["toughness"]??0;
                 item.FoodEffects=entry["foodEffects"] as JArray;
+                item.Enchantability=(int?)entry["enchantability"]??0;item.RepairItems=entry["repairItems"] as JArray;
+                item.EggBase=(int?)entry["eggBase"]??0xffffff;item.EggSpots=(int?)entry["eggSpots"]??0xffffff;
                 if(entry["tool"]!=null)item.Tool=(string)entry["tool"];item.RequiresTool=(bool?)entry["requiresTool"]??false;
                 item.Attack=(double?)entry["attack"]??item.Attack;item.Speed=(double?)entry["speed"]??item.Speed;item.Harvest=(int?)entry["harvest"]??item.Harvest;item.MiningSpeed=(double?)entry["miningSpeed"]??item.MiningSpeed;
                 string slot=(string)entry["equipment"];if(slot!=null)item.Equipment=slot=="head"?"helmet":slot=="chest"?"chestplate":slot=="legs"?"leggings":"boots";
@@ -75,7 +77,8 @@ namespace HollowCraft.Standalone
         internal NativeStack Copy(int count=-1)=>new NativeStack{Id=Id,Count=count<0?Count:count,Damage=Damage,Data=(JObject)Data.DeepClone()};
         internal bool Matches(NativeStack other)=>!Empty&&!other.Empty&&Id==other.Id&&Damage==other.Damage&&JToken.DeepEquals(Data,other.Data);
         internal void Normalize() {if(Count<=0){Id="minecraft:air";Count=Damage=0;Data=new JObject();}}
-        internal JObject Json()=>new JObject{["id"]=Empty?"minecraft:air":Id,["count"]=Empty?0:Count,["name"]=(Data["Potion"]!=null?((string)Data["Potion"]).Split(':').Last().Replace('_',' ')+" ":"")+NativeCatalog.Label(Id),["render"]=Id,["block"]=Definition.Block,["predictSolid"]=Definition.Block&&Definition.Solid,["maxCount"]=Definition.Maximum,["damage"]=Damage,["maxDamage"]=Definition.Durability,["food"]=Definition.Food>0,["nbt"]=Data.DeepClone()};
+        internal string Name {get{string custom=(string)Data["display"]?["Name"];if(!string.IsNullOrEmpty(custom)){try{var parsed=JToken.Parse(custom);return parsed is JObject text?(string)text["text"]??custom:parsed.Type==JTokenType.String?(string)parsed:custom;}catch(Newtonsoft.Json.JsonException){return custom;}}string prefix=Data["Potion"]!=null?((string)Data["Potion"]).Split(':').Last().Replace('_',' ')+" ":"";var enchant=(Data["StoredEnchantments"] as JArray)?.FirstOrDefault();if(enchant!=null)prefix=((string)enchant["id"]).Split(':').Last().Replace('_',' ')+" "+(int?)enchant["lvl"]+" ";return prefix+NativeCatalog.Label(Id);}}
+        internal JObject Json()=>new JObject{["id"]=Empty?"minecraft:air":Id,["count"]=Empty?0:Count,["name"]=Name,["render"]=Id,["block"]=Definition.Block,["predictSolid"]=Definition.Block&&Definition.Solid,["maxCount"]=Definition.Maximum,["damage"]=Damage,["maxDamage"]=Definition.Durability,["food"]=Definition.Food>0,["nbt"]=Data.DeepClone()};
         internal static NativeStack Read(JToken token) {
             var value=new NativeStack{Id=NativeCatalog.Id((string)token?["id"]),Count=Math.Max(0,(int?)token?["count"]??0),Damage=Math.Max(0,(int?)token?["damage"]??0),Data=token?["nbt"] is JObject data?(JObject)data.DeepClone():new JObject()};
             if(!NativeCatalog.Items.ContainsKey(value.Id))throw new InvalidOperationException("Unknown native item in save: "+value.Id);

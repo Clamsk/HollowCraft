@@ -1,5 +1,7 @@
 # Native alpha.3: player rendering, combat and data migration
 
+Current release: alpha.4. See the [input/timing fixes](NATIVE_INPUT_FIX.en.md). The following preserves the alpha.3 implementation notes.
+
 [简体中文](NATIVE_RENDERING.md)
 
 This release corrects hand transforms and surface occlusion, then migrates more crafting, brewing, crossbow and enchantment rules. It remains an incomplete native migration preview, with no verified full playthrough.

@@ -1,5 +1,10 @@
 {
   "schema": 1,
+  "minecraftSoundsIndex": {
+    "url": "https://piston-meta.mojang.com/v1/packages/9d58fdd2538c6877fb5c5c558ebc60ee0b6d0e84/5.json",
+    "sha1": "9d58fdd2538c6877fb5c5c558ebc60ee0b6d0e84",
+    "id": "5"
+  },
   "minecraftVisuals": {
     "url": "https://piston-data.mojang.com/v1/objects/0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838/client.jar",
     "sha1": "0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838",

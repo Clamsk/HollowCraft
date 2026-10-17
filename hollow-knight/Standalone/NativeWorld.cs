@@ -46,9 +46,9 @@ namespace HollowCraft.Standalone
             string request=(string)packet["request"]??"";if(tower&&towerResults.TryGetValue(request,out var prior)){Emit((JObject)prior.DeepClone());return;}
             int bx=(int)Number(packet,"x"),by=(int)Number(packet,"y");var held=Inventory.Hand.Definition.Block?Inventory.Hand:Inventory.Offhand;
             bool foundation=tower&&(bool?)packet["nativeFoundation"]==true&&Number(packet,"supportY")>=by-.05&&Number(packet,"supportY")<by+1;
-            bool body=Math.Abs(x-bx-.5)<.8&&y<by+1.015&&y+1.8>by;
+            bool body=held.Definition.Solid&&x+.3>bx+.001&&x-.3<bx+1-.001&&y<by+1-.001&&y+1.8>by+.001;
             bool allowed=!Spectator&&mode!="adventure"&&health>0&&!held.Empty&&held.Definition.Block&&Math.Abs(bx)<4096&&by>= -256&&by<=4096&&Reach(bx,by,Creative?5:4.5)&&!body&&!Room.Blocks.ContainsKey(NativeRoom.Key(bx,by))&&(!TerrainFull(bx,by)||foundation)&&Room.Blocks.Count<32768;
-            if(allowed){Room.Blocks[NativeRoom.Key(bx,by)]=NativeRoom.Cell(bx,by,held.Id);if(!Creative){held.Count--;held.Normalize();}}
+            if(allowed){Room.Blocks[NativeRoom.Key(bx,by)]=NativeRoom.Cell(bx,by,held.Id);Sound(SurfaceSound(held.Id,"place"),.8,.9+random.NextDouble()*.2,bx+.5,by+.5);if(!Creative){held.Count--;held.Normalize();}}
             var reply=new JObject{["type"]=tower?"towerResult":"placeResult",["request"]=request,["x"]=bx,["y"]=by,["accepted"]=allowed,["reason"]=allowed?"native placement":"native placement rejected"};
             if(tower){towerResults[request]=(JObject)reply.DeepClone();if(towerResults.Count>128)towerResults.Remove(towerResults.Keys.First());}Emit(reply);
         }
@@ -63,7 +63,7 @@ namespace HollowCraft.Standalone
             double delta=Creative||definition.Hardness<=0?1:speed/definition.Hardness/(harvest?30:100);
             mining["progress"]=Number(mining,"progress")+delta;
             if(Number(mining,"progress")<1)return;
-            Room.Blocks.Remove(key);if(Room.Containers.TryGetValue(key,out var box)){if(containerKey==key)CloseContainer();foreach(var item in box.Slots)DropAt(item,bx+.5,by+.5);Room.Containers.Remove(key);}
+            Sound(SurfaceSound(definition.Id,"break"),.8,1,bx+.5,by+.5);Room.Blocks.Remove(key);if(Room.Containers.TryGetValue(key,out var box)){if(containerKey==key)CloseContainer();foreach(var item in box.Slots)DropAt(item,bx+.5,by+.5);Room.Containers.Remove(key);}
             if(!Creative&&harvest){string drop=definition.Id=="minecraft:stone"?"minecraft:cobblestone":definition.Id=="minecraft:iron_ore"?"minecraft:raw_iron":definition.Id=="minecraft:gold_ore"?"minecraft:raw_gold":definition.Id=="minecraft:diamond_ore"?"minecraft:diamond":definition.Id=="minecraft:coal_ore"?"minecraft:coal":definition.Id;DropAt(NativeStack.New(drop),bx+.5,by+.5);}
             Inventory.Wear(Inventory.Hand,tool.Tool=="sword"?2:1,Creative);mining=null;
         }

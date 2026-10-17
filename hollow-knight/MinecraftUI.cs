@@ -74,7 +74,7 @@ namespace HollowCraft
         private void Item(JToken entry,Rect bounds)
         {
             if(entry==null || ((int?)entry["count"] ?? 0)<=0) return;
-            var texture=runtime.ItemTexture((string)entry["render"] ?? (string)entry["id"])??runtime.ItemTexture((string)entry["id"]);
+            var texture=runtime.ItemTexture(entry)??runtime.ItemTexture((string)entry["id"]);
             if(texture!=null) GUI.DrawTexture(bounds,texture,ScaleMode.ScaleToFit);
             int count=(int)entry["count"];
             if(count>1) Text(count.ToString(),bounds.xMax-count.ToString().Length*6*scale,bounds.yMax-8*scale,scale);

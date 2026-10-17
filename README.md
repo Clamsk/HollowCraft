@@ -1,8 +1,8 @@
 # HollowCraft Native · 独立 Mod 迁移
 
-0.40.0-alpha.3 修正人物逐像素遮挡、装备和原版手持变换，接入 Better Combat 三连招与动作恢复，并继续迁移配方、酿药和弩；[本版说明](docs/NATIVE_RENDERING.md)。启动器修复保留。
+0.40.0-alpha.4 修复实际右键放置／拉弓协议、人物镜像与三段连招时序、创造分页，并继续迁移铁砧、附魔、切石、锻造、投射物和静态音效；[本版说明](docs/NATIVE_INPUT_FIX.md)。
 
-现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.3 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
+现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.4 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
 
 - [独立版安装、启动和迁移清单](docs/NATIVE_MIGRATION.md)
 - 独立启动入口：**Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@
 
 以下是旧桥接版文档和历史记录，其双游戏依赖不适用于 Native。
 
-- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.3)
+- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.4)
 
 ---
 

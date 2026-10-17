@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.3",
+  "version": "0.40.0-alpha.4",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -52,11 +52,9 @@
       "status": "partial",
       "remaining": [
         "dynamic special crafting recipes",
-        "smithing",
-        "stonecutting",
-        "enchanting",
-        "anvil",
-        "advanced workstation gestures"
+        "full vanilla enchantment randomness and bookshelf occlusion",
+        "trim rendering",
+        "remaining workstation gestures"
       ]
     },
     {
@@ -71,9 +69,8 @@
       "id": "ranged-weapons",
       "status": "partial",
       "remaining": [
-        "animated loyalty return",
         "lingering potion clouds",
-        "multishot and remaining projectile/enchantment details",
+        "remaining projectile/enchantment details",
         "complete potion immunities and visual effects"
       ]
     },
@@ -109,10 +106,10 @@
       "status": "partial",
       "species": 9,
       "remaining": [
-        "full vanilla models",
+        "complete vanilla model details",
         "all species",
         "full AI",
-        "loot tables",
+        "complete loot tables",
         "creature projectiles"
       ]
     },
@@ -120,8 +117,7 @@
       "id": "creative-menu",
       "status": "partial",
       "remaining": [
-        "remaining behavior/model support for catalog entries",
-        "remaining item variants"
+        "remaining behavior/model support for catalog entries"
       ]
     },
     {
@@ -147,7 +143,7 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 76,
+    "ruleChecksPassed": 111,
     "launcherChecksPassed": 12
   },
   "dataCoverage": {
@@ -158,6 +154,10 @@
     "cookingRecipes": 112,
     "metadataDoesNotImplyBehaviorParity": true,
     "enchantmentMetadata": 39,
-    "entityMetadata": 124
+    "entityMetadata": 124,
+    "creativeTabs": 13,
+    "sourceCreativeStacks": 1523,
+    "soundEventMappings": 76,
+    "localAudioFiles": 149
   }
 }

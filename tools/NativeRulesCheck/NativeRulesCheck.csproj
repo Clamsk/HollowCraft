@@ -3,6 +3,12 @@
     <OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework><LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../hollow-knight/Standalone/NativeSounds.cs" Link="NativeSounds.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeWorkstations.cs" Link="NativeWorkstations.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeCreative.cs" Link="NativeCreative.cs" />
+    <Compile Include="../../hollow-knight/GameplayPackets.cs" Link="GameplayPackets.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeCombatTimeline.cs" Link="NativeCombatTimeline.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeInteraction.cs" Link="NativeInteraction.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeBrewing.cs" Link="NativeBrewing.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeData.cs" Link="NativeData.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeCombatProfiles.cs" Link="NativeCombatProfiles.cs" />

@@ -16,7 +16,7 @@ namespace HollowCraft.Standalone
             if(string.IsNullOrEmpty(id)||id=="minecraft:air")return null;
             assets=assets??Root;
             if(textures.TryGetValue(id,out var cached)&&cached!=null)return cached;string name=id.Substring(id.IndexOf(':')+1);
-            if(assets!=null&&name.IndexOfAny(new[]{'/', '\\', '.', ':'})<0){string path=Path.Combine(assets,name+".png");if(File.Exists(path)){var imported=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};imported.LoadImage(File.ReadAllBytes(path));textures[id]=imported;return imported;}}
+            if(assets!=null&&name.IndexOfAny(new[]{'/', '\\', '.', ':'})<0){string path=Path.Combine(assets,name+".png");if(File.Exists(path)){var imported=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,name=id};imported.LoadImage(File.ReadAllBytes(path));textures[id]=imported;return imported;}}
             if(id.StartsWith("gui_",StringComparison.Ordinal))return null;
             bool armor=name.StartsWith("armor_",StringComparison.Ordinal);int w=armor?64:16,h=armor?32:16;var image=new Texture2D(w,h,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};var pixels=new Color[w*h];Color color=ColorFor(name);
             bool block=NativeCatalog.Get(id).Block||armor;
@@ -64,6 +64,7 @@ namespace HollowCraft.Standalone
         }
         internal static Texture2D Icon(string id,string assets) {
             var source=Texture(id,assets);if(source==null||!NativeCatalog.Get(id).Block||id=="minecraft:water"||id=="minecraft:lava")return source;
+            var model=NativeItemModels.Icon(id);if(model!=null)return model;
             string key=id+"#native_icon";if(textures.TryGetValue(key,out var cached)&&cached!=null)return cached;var output=new Texture2D(32,32,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};var pixels=new Color[1024];
             Action<Vector2,Vector2,Vector2,Color> triangle=(a,b,c,shade)=>{float area=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);for(int y=0;y<32;y++)for(int x=0;x<32;x++){float u=((x+.5f-a.x)*(c.y-a.y)-(y+.5f-a.y)*(c.x-a.x))/area,v=((b.x-a.x)*(y+.5f-a.y)-(b.y-a.y)*(x+.5f-a.x))/area;if(u<0||v<0||u+v>1)continue;var tex=source.GetPixel(x%source.width,y%Mathf.Min(source.height,source.width));pixels[y*32+x]=tex*shade;}};
             Action<Vector2,Vector2,Vector2,Vector2,float> quad=(a,b,c,d,shade)=>{var color=new Color(shade,shade,shade,1);triangle(a,b,c,color);triangle(a,c,d,color);};

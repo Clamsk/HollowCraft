@@ -41,6 +41,7 @@ namespace HollowCraft
             if(!File.Exists(path)) return Standalone?HollowCraft.Standalone.NativeAssets.Icon(id,assets):Texture(id);
             var icon=new Texture2D(2,2,TextureFormat.RGBA32,false) {filterMode=FilterMode.Point};icon.LoadImage(File.ReadAllBytes(path));textures[key]=icon;return icon;
         }
+        internal Texture2D ItemTexture(JToken item){if(Standalone){var tinted=HollowCraft.Standalone.NativeItemColors.Icon(item);if(tinted!=null)return tinted;}return ItemTexture((string)item?["render"]??(string)item?["id"]);}
         private JObject container;
         private readonly Dictionary<string, GameObject> blocks = new Dictionary<string, GameObject>();
         private readonly Dictionary<string,string> blockStates=new Dictionary<string,string>();
@@ -534,8 +535,7 @@ namespace HollowCraft
                     if(canPlace&&predict&&item!=null&&(!blocks.TryGetValue(Key(cell.x,cell.y),out GameObject pointed)||MinecraftControls.Crouching||!Interactive(pointed.name)))PredictPlacement(placement,item);
                     var eye=GameCursor.Eye(hero);
                     if(tower)Debug.Log("[HollowCraft] Jump placement sent cell="+placement+" canPlace="+canPlace+" blocker="+blockedBy+" feet="+hero.GetComponent<Collider2D>().bounds.min.y);
-                    Send(new {type="interact",scene,x=cell.x,y=cell.y,placeX=placement.x,placeY=placement.y,canPlace,
-                        playerX=hero.transform.position.x,playerY=hero.GetComponent<Collider2D>().bounds.min.y,aimX=mouse.x-eye.x,aimY=mouse.y-eye.y});
+                    Send(GameplayPackets.Interact(scene,cell.x,cell.y,placement.x,placement.y,canPlace,hero.transform.position.x,hero.GetComponent<Collider2D>().bounds.min.y,mouse.x-eye.x,mouse.y-eye.y));
                     usingItem=true;
                 }
             }
@@ -592,7 +592,7 @@ namespace HollowCraft
         }
         private void SendItemUse(HeroController hero,Vector2 target,bool start,bool release) {
             float feet=hero.GetComponent<Collider2D>().bounds.min.y;
-            Send(new {type="itemUse",scene,start,release,x=Cell(target.x),y=Cell(target.y),aimX=target.x-hero.transform.position.x,aimY=target.y-feet-((float?)Stats?["eyeHeight"] ?? 1.62f)});
+            Send(GameplayPackets.Use(scene,Cell(target.x),Cell(target.y),start,release,target.x-hero.transform.position.x,target.y-feet-((float?)Stats?["eyeHeight"] ?? 1.62f)));
         }
         private void SendPose(HeroController hero,bool sample) {
             int x=Cell(hero.transform.position.x),y=Cell(hero.transform.position.y);

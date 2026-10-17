@@ -2,6 +2,8 @@
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
+Native 安装包仅包含空洞端 HollowCraft.dll、脚本、注册表事实数据与文档。独立版静态资源使用 [native-dependencies.lock.json](native-dependencies.lock.json) 中的来源；纹理与动画归档固定版本并校验 SHA-1，原版音频对象按资源索引的 SHA-1 校验，再以 SHA-256 命名供本地加载。本机已有资源可就地读取，缺失时从官方资源源获取，不要求安装或运行 MC。所有提取的游戏／模组素材均不进入 Git 和发布 ZIP。
+
 Windows 发布包仅包含 HollowCraft 自编译的两端 Mod、安装脚本、素材导入工具和文档。Minecraft、空洞骑士、修改后的原游戏程序集、提取的纹理/音频/动画、用户存档以及下列依赖二进制不随发布包分发。
 
 安装器按 `dependencies.lock.json` 的固定版本与哈希值，从官方发布源获取依赖。Fabric Maven 的运行库使用其官方 SHA-1；Modrinth 依赖使用官方 SHA-512；Mono.Cecil 使用从官方 NuGet 包计算并锁定的 SHA-512。

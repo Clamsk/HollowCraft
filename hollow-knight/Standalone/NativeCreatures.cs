@@ -62,10 +62,17 @@ namespace HollowCraft.Standalone
             foreach(var enemy in enemies.Values)if(enemy["seat"]!=null&&!Room.Creatures.Any(v=>(int)v["entity"]==(int)enemy["seat"]["boat"]))enemy.Remove("seat");
         }
         private void Dismount() {if(rider==null)return;rider=null;dismountUntil=tick+20;}
-        private void HitCreature(JObject target,double amount) {
-            if(!Room.Creatures.Any(v=>(int)v["entity"]==(int?)target["entity"]&&(string)v["uuid"]==(string)target["uuid"]))return;
-            var mob=Room.Creatures.First(v=>(int)v["entity"]==(int)target["entity"]);if(Math.Abs(Number(mob,"x")-x)>(Creative?7:4)||Math.Abs(Number(mob,"y")-y)>4)return;
-            mob["health"]=Math.Max(0,Number(mob,"health")-amount);if(Number(mob,"health")<=0){string kind=(string)mob["kind"];if((bool?)mob["boat"]==true)DropAt(NativeStack.New(kind),Number(mob,"x"),Number(mob,"y"));else DropAt(NativeStack.New(kind=="minecraft:skeleton"?"arrow":kind=="minecraft:zombie"?"rotten_flesh":"cooked_beef"),Number(mob,"x"),Number(mob,"y"));}
+        private bool HitCreature(JObject target,double amount,bool ranged=false) {
+            if(!Room.Creatures.Any(v=>(int)v["entity"]==(int?)target["entity"]&&(string)v["uuid"]==(string)target["uuid"]))return false;
+            var mob=Room.Creatures.First(v=>(int)v["entity"]==(int)target["entity"]);if(Number(mob,"health")<=0||!ranged&&(Math.Abs(Number(mob,"x")-x)>(Creative?7:4)||Math.Abs(Number(mob,"y")-y)>4))return false;
+            if(!ranged){string kind=(string)mob["kind"];if(kind=="minecraft:zombie"||kind=="minecraft:skeleton")amount+=2.5*NativeData.Enchantment(Inventory.Hand,"smite");else if(kind=="minecraft:spider")amount+=2.5*NativeData.Enchantment(Inventory.Hand,"bane_of_arthropods");}
+            mob["health"]=Math.Max(0,Number(mob,"health")-amount);if(Number(mob,"health")<=0)DropCreatureLoot(mob);return true;
+        }
+        private void DropCreatureLoot(JObject mob) {
+            string kind=(string)mob["kind"];double px=Number(mob,"x"),py=Number(mob,"y");if((bool?)mob["boat"]==true){DropAt(NativeStack.New(kind),px,py);return;}
+            Action<string,int,int> drop=(id,min,max)=>{int count=random.Next(min,max+1);if(count>0)DropAt(NativeStack.New(id,count),px,py);};
+            switch(kind){case "minecraft:zombie":drop("rotten_flesh",0,2);break;case "minecraft:skeleton":drop("bone",0,2);drop("arrow",0,2);break;case "minecraft:creeper":drop("gunpowder",0,2);break;case "minecraft:spider":drop("string",0,2);if(random.Next(3)==0)drop("spider_eye",1,1);break;case "minecraft:pig":drop("porkchop",1,3);break;case "minecraft:cow":drop("beef",1,3);drop("leather",0,2);break;case "minecraft:sheep":drop("mutton",1,2);drop("white_wool",1,1);break;case "minecraft:chicken":drop("chicken",1,1);drop("feather",0,2);break;}
+            if(kind!="minecraft:villager")AddExperience(kind=="minecraft:zombie"||kind=="minecraft:skeleton"||kind=="minecraft:creeper"||kind=="minecraft:spider"?5:random.Next(1,4));
         }
     }
 }

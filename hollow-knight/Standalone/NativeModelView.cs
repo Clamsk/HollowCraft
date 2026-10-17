@@ -57,11 +57,12 @@ namespace HollowCraft.Standalone
         }
         internal void DrawPortrait(GameObject model) {
             if(portrait==null){portrait=new NativeDepthBuffer(128,160);portraitPixels=new Color32[128*160];portraitFrame=new Texture2D(128,160,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};}
-            var matrix=Matrix4x4.TRS(Vector3.zero,Quaternion.Euler(0,-20,0),Vector3.one*.9f)*model.transform.worldToLocalMatrix;
+            var matrix=Matrix4x4.TRS(Vector3.zero,Quaternion.Euler(0,-20,0),new Vector3(-.9f,.9f,.9f))*model.transform.worldToLocalMatrix;
             Render(model,portrait,matrix,72,64,12);Upload(portrait,portraitPixels,portraitFrame);
         }
         internal void Hide(){if(quad!=null)quad.SetActive(false);}
         internal void ResetSources(){geometry.Clear();textures.Clear();nextFrame=0;}
+        internal Texture2D Capture(GameObject model,int size,Matrix4x4 projection,float scale,float baseY) {var target=new NativeDepthBuffer(size,size);var output=new Texture2D(size,size,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};Render(model,target,projection,scale,size*.5f,baseY);Upload(target,new Color32[size*size],output);geometry.Clear();renderers.Clear();return output;}
         public void Dispose(){if(quad!=null)UnityEngine.Object.Destroy(quad);if(mesh!=null)UnityEngine.Object.Destroy(mesh);if(material!=null)UnityEngine.Object.Destroy(material);if(frame!=null)UnityEngine.Object.Destroy(frame);if(portraitFrame!=null)UnityEngine.Object.Destroy(portraitFrame);geometry.Clear();textures.Clear();}
     }
 }
