@@ -238,6 +238,7 @@ namespace HollowCraft
             Application.runInBackground=true;
             ui=new MinecraftUI(this);
             Chat=new LocalChat(this);Terraria=gameObject.AddComponent<TerrariaEquipment>();Terraria.Initialize(this);
+            gameObject.AddComponent<Standalone.NativeCloudView>();
             Gui=new NativeGuiView(this);
             Hud=new NativeHudView(this);
         }

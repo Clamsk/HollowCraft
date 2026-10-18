@@ -9,7 +9,8 @@ namespace HollowCraft.Standalone
     internal sealed class NativeCreatureView : MonoBehaviour
     {
         private static readonly Dictionary<string,Sprite> frames=new Dictionary<string,Sprite>();private static readonly NativeModelView raster=new NativeModelView();
-        private string kind;private GameObject model;private Transform[] legs,arms;private SpriteRenderer display;private float phase,lastX;private bool first=true;private Texture2D texture;
+        private string kind;private GameObject model;private Transform[] legs,arms;private SpriteRenderer display;private float phase,lastX,modelHeight;private bool first=true;private Texture2D texture;private NativeCreatureRig imported;
+        private static readonly Dictionary<string,float> lastUsed=new Dictionary<string,float>();private static long cachedPixels;
         private Transform Part(string name,float w,float h,float d,float u,float v,Vector3 pivot,Vector3 from,float inflate=0) {
             var bone=new GameObject(name).transform;bone.SetParent(model.transform,false);bone.localPosition=new Vector3(pivot.x,24-pivot.y,pivot.z)/16;
             var mesh=new GameObject("Geometry");mesh.transform.SetParent(bone,false);mesh.transform.localPosition=new Vector3(from.x+w/2,-from.y-h/2,from.z+d/2)/16;
@@ -17,6 +18,8 @@ namespace HollowCraft.Standalone
         }
         private void Create(string id,bool boat,float height) {
             DisposeModel();model=new GameObject("Native textured rig "+id);model.transform.SetParent(transform,false);model.transform.localPosition=new Vector3(0,-height/2,-.05f);kind=id;first=true;legs=arms=null;
+            modelHeight=height;
+            var blueprint=NativeMobCatalog.Find(id);if(!boat&&blueprint!=null){imported=new NativeCreatureRig(model.transform,blueprint,height);CreateDisplay();return;}
             string name=id.Substring(id.IndexOf(':')+1),file=boat?"boat_"+name.Replace("_chest_boat","").Replace("_boat","").Replace("_chest_raft","").Replace("_raft",""):name=="chicken"?"chicken":name+"_"+name;texture=NativeAssets.Texture("mob_"+file);
             if(boat){Part("Floor",16,3,28,0,0,new Vector3(0,24,0),new Vector3(-8,-3,-14));Part("Port",2,6,28,0,19,new Vector3(-8,21,0),new Vector3(-2,-3,-14));Part("Starboard",2,6,28,0,19,new Vector3(8,21,0),new Vector3(0,-3,-14));Part("Bow",16,6,2,0,27,new Vector3(0,21,-14),new Vector3(-8,-3,-2));Part("Stern",16,6,2,0,27,new Vector3(0,21,14),new Vector3(-8,-3,0));}
             else if(name=="zombie"||name=="skeleton"||name=="villager") {
@@ -33,17 +36,22 @@ namespace HollowCraft.Standalone
             } else {
                 bool cow=name=="cow",sheep=name=="sheep";float length=cow||sheep?12:6;Part("Head",sheep?6:8,sheep?6:8,cow?6:8,0,0,new Vector3(0,sheep?6:cow?4:12,-8),new Vector3(sheep?-3:-4,sheep?-3:-4,-6));var body=Part("Body",cow?12:sheep?8:10,cow?18:16,cow?10:8,cow?18:28,8,new Vector3(0,sheep||cow?5:11,2),new Vector3(cow?-6:sheep?-4:-5,-10,-7));body.localRotation=Quaternion.Euler(-90,0,0);legs=new Transform[4];for(int i=0;i<4;i++)legs[i]=Part("Leg",4,length,4,0,16,new Vector3(i%2==0?-3:3,24-length,i<2?-5:7),new Vector3(-2,0,-2));
             }
-            var shown=new GameObject("Native cached creature sprite");shown.transform.SetParent(model.transform,false);display=shown.AddComponent<SpriteRenderer>();display.sortingOrder=25;
+            CreateDisplay();
         }
+        private void CreateDisplay(){var shown=new GameObject("Native cached creature sprite");shown.transform.SetParent(model.transform,false);display=shown.AddComponent<SpriteRenderer>();display.sortingOrder=25;}
         internal void Apply(JObject data) {
-            string next=(string)data["kind"];bool boat=(bool?)data["boat"]==true;if(next!=kind||model==null)Create(next,boat,(float?)data["height"]??1);
-            float px=(float)data["x"],distance=first?0:Mathf.Abs(px-lastX);phase+=distance*4;first=false;lastX=px;int frame=boat?0:distance<.001f?8:Mathf.FloorToInt(phase)%8,facing=(int?)data["facing"]<0?-1:1;bool sitting=data["vehicle"]!=null;string key=kind+"/"+facing+"/"+frame+"/"+sitting;
+            string next=(string)data["kind"];bool boat=(bool?)data["boat"]==true;float height=(float?)data["height"]??1;if(next!=kind||model==null||Math.Abs(height-modelHeight)>.01f)Create(next,boat,height);
+            float px=(float)data["x"],distance=first?0:Mathf.Abs(px-lastX);phase+=distance*4;first=false;lastX=px;var spec=NativeMobCatalog.Find(kind);int frame=boat?0:spec?.Motion=="fly"||spec?.Motion=="swim"?Mathf.FloorToInt(Time.time*12)%8:distance<.001f?8:Mathf.FloorToInt(phase)%8,facing=(int?)data["facing"]<0?-1:1;bool sitting=data["vehicle"]!=null;string key=kind+"/"+facing+"/"+frame+"/"+sitting;
+            key+="/"+((int?)data["attacking"]>0)+"/"+((bool?)data["sheared"]==true)+"/"+((bool?)data["baby"]==true);
             if(!frames.TryGetValue(key,out var sprite)) {
+                imported?.Pose(frame,sitting,data);
                 if(legs!=null)for(int i=0;i<legs.Length;i++){if(kind=="minecraft:spider")continue;legs[i].localRotation=Quaternion.Euler(sitting?65:frame==8?0:Mathf.Cos(frame*Mathf.PI/4+i*Mathf.PI)*35,0,0);}if(arms!=null)for(int i=0;i<arms.Length;i++)arms[i].localRotation=Quaternion.Euler(kind=="minecraft:zombie"?80:frame==8?0:Mathf.Cos(frame*Mathf.PI/4+i*Mathf.PI)*25,0,0);
-                var matrix=Matrix4x4.Rotate(Quaternion.Euler(0,-facing*75,0))*model.transform.worldToLocalMatrix;var image=raster.Capture(model,160,matrix,64,16);sprite=Sprite.Create(image,new Rect(0,0,160,160),new Vector2(.5f,.1f),64);frames[key]=sprite;
-            }display.sprite=sprite;
+                var matrix=Matrix4x4.Rotate(Quaternion.Euler(0,-facing*75,0))*model.transform.worldToLocalMatrix;int size=imported?.ImageSize??160;var image=raster.Capture(model,size,matrix,64,16);sprite=Sprite.Create(image,new Rect(0,0,size,size),new Vector2(.5f,16f/size),64);TrimFrames((long)size*size);frames[key]=sprite;cachedPixels+=(long)size*size;
+            }lastUsed[key]=Time.unscaledTime;display.sprite=sprite;
         }
-        private void DisposeModel(){if(model==null)return;foreach(var filter in model.GetComponentsInChildren<MeshFilter>(true))if(filter.sharedMesh!=null)Destroy(filter.sharedMesh);Destroy(model);model=null;}
+        private static void TrimFrames(long incoming){while(cachedPixels+incoming>8*1024*1024){string oldest=null;float age=Time.unscaledTime-.5f;foreach(var pair in lastUsed)if(pair.Value<age){oldest=pair.Key;age=pair.Value;}if(oldest==null)break;var sprite=frames[oldest];cachedPixels-=(long)sprite.texture.width*sprite.texture.height;Destroy(sprite.texture);Destroy(sprite);frames.Remove(oldest);lastUsed.Remove(oldest);}}
+        internal static void ClearFrames(){foreach(var sprite in frames.Values){if(sprite!=null){Destroy(sprite.texture);Destroy(sprite);}}frames.Clear();lastUsed.Clear();cachedPixels=0;}
+        private void DisposeModel(){if(model==null)return;if(imported==null)foreach(var filter in model.GetComponentsInChildren<MeshFilter>(true))if(filter.sharedMesh!=null)Destroy(filter.sharedMesh);Destroy(model);model=null;imported=null;}
         private void OnDestroy(){DisposeModel();}
     }
 }

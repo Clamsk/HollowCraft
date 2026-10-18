@@ -1,8 +1,8 @@
 # HollowCraft Native · 独立 Mod 迁移
 
-0.40.0-alpha.5 对照本机原模组修正旧动画格式和骨骼坐标，修复跳搭输入中断，并还原字体字符表、字宽与空格；[本版说明](docs/NATIVE_ANIMATION_FIX.md)。
+0.40.0-alpha.6 继续移植 Clamsk 彩蛋、75 种生物模型与基础行为、滞留药水和爆炸抗性，接入常见动物交互及原版实体掉落表；[本版说明](docs/NATIVE_EXPANSION.md)。
 
-现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.5 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
+现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.6 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
 
 - [独立版安装、启动和迁移清单](docs/NATIVE_MIGRATION.md)
 - 独立启动入口：**Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@
 
 以下是旧桥接版文档和历史记录，其双游戏依赖不适用于 Native。
 
-- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.5)
+- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.6)
 
 ---
 

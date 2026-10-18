@@ -204,6 +204,7 @@ namespace HollowCraft
         internal static void Clear() {
             rider=null;ReleasePlayer();foreach(var seat in seats.Values)Release(seat);seats.Clear();friendly.Clear();nextFriendly=0;
             foreach(var body in bodies.Values)if(body!=null) {body.gameObject.SetActive(false);UnityEngine.Object.Destroy(body.gameObject);}bodies.Clear();
+            Standalone.NativeCreatureView.ClearFrames();
         }
     }
 }

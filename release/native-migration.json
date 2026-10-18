@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.5",
+  "version": "0.40.0-alpha.6",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -62,16 +62,17 @@
       "status": "partial",
       "remaining": [
         "all block collision shapes",
-        "exact vanilla explosion calculation"
+        "complete 3D-to-2D explosion parity",
+        "remaining explosion/knockback details"
       ]
     },
     {
       "id": "ranged-weapons",
       "status": "partial",
       "remaining": [
-        "lingering potion clouds",
         "remaining projectile/enchantment details",
-        "complete potion immunities and visual effects"
+        "custom potion NBT and complete immunities",
+        "remaining projectile and cloud presentation"
       ]
     },
     {
@@ -96,21 +97,21 @@
       "id": "elytra-zenith-wings",
       "status": "partial",
       "remaining": [
-        "visual fidelity",
-        "sound and particle parity",
-        "Boss playthrough review"
+        "Bendy deformation integration",
+        "remaining particles and presentation",
+        "Boss playthrough acceptance"
       ]
     },
     {
       "id": "boats-creatures",
       "status": "partial",
-      "species": 9,
+      "species": 75,
       "remaining": [
-        "complete vanilla model details",
-        "all species",
-        "full AI",
-        "complete loot tables",
-        "creature projectiles"
+        "full vanilla pathfinding and AI",
+        "special abilities and ranged presentation",
+        "variants, equipment and trading",
+        "remaining loot predicates/functions",
+        "native visual/performance acceptance"
       ]
     },
     {
@@ -143,7 +144,7 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 161,
+    "ruleChecksPassed": 415,
     "launcherChecksPassed": 12,
     "originalPlayerAnimatorAxesCompared": 260232,
     "originalMatrixPointsCompared": 4782,
@@ -163,6 +164,9 @@
     "sourceCreativeStacks": 1523,
     "soundEventMappings": 76,
     "localAudioFiles": 149,
-    "importedBitmapGlyphs": 2413
+    "importedBitmapGlyphs": 2413,
+    "nativeMobSpecies": 75,
+    "entityLootTables": 97,
+    "nativeEntityTextures": 82
   }
 }

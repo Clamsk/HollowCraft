@@ -2,7 +2,7 @@
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
-Native packages contain only the Hollow Knight-side HollowCraft.dll, scripts, registry facts and documentation. Static resource sources are pinned in [native-dependencies.lock.json](native-dependencies.lock.json). Texture/animation archives use SHA-1 verification; audio objects are checked against asset-index SHA-1 hashes and then addressed locally by SHA-256. Setup can read installed resources or download missing objects from official sources. Minecraft is not required to be installed or running. Extracted game/mod assets are excluded from Git and release ZIPs.
+Native packages contain only the Hollow Knight-side HollowCraft.dll, scripts, registry/model numerical descriptions, optional asset-importer source and documentation. Static resource sources are pinned in [native-dependencies.lock.json](native-dependencies.lock.json). Texture/animation archives use SHA-1 verification; audio objects are checked against asset-index SHA-1 hashes and then addressed locally by SHA-256. Setup can read installed resources or download missing objects from official sources. Minecraft is not required to be installed or running. Extracted textures, audio, animations and original game files are excluded from Git and release ZIPs. release/native-creature-models.json contains offline part/pivot/UV descriptions and source attribution, with no executable game code or texture pixels.
 
 Windows release packages contain only the two compiled HollowCraft mods, installation scripts, optional asset-importer source and documentation. They do not distribute Minecraft, Hollow Knight, modified original game assemblies, extracted textures/audio/animations, user saves or the dependency binaries listed below.
 

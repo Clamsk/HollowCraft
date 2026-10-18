@@ -225,6 +225,7 @@ namespace HollowCraft.Standalone
             stats["level"]=ExperienceLevel;stats["xp"]=ExperienceProgress;
             snapshot=new JObject{["type"]="snapshot",["backend"]="native-csharp",["scene"]=scene,["campaign"]=campaign,["visit"]=visit,["tick"]=tick,["status"]=status,["creative"]=Creative,["selected"]=Inventory.Selected,["inventory"]=new JArray(Inventory.Slots.Select(s=>s.Json())),["stats"]=stats,["carried"]=Inventory.Carried.Json(),["playerCraft"]=craft,["playerSyncId"]=0,["insertSlots"]=new JArray(Enumerable.Range(1,45)),["combat"]=Profile(),["blocks"]=Room.BlocksJson((int)Math.Floor(x),(int)Math.Floor(y)),["drops"]=new JArray(Room.Drops.Select(d=>d.DeepClone())),["enemies"]=new JArray(enemies.Values.Select(e=>e.DeepClone())),["projectiles"]=ProjectileJson(),["primed"]=PrimedJson(),["creatures"]=new JArray()};
             snapshot["playerX"]=x;snapshot["playerY"]=y;snapshot["creatures"]=new JArray(Room.Creatures.Select(v=>v.DeepClone()));if(rider!=null)snapshot["rider"]=rider.DeepClone();
+            snapshot["clouds"]=new JArray(Room.Clouds.Select(v=>v.DeepClone()));
             if(mining!=null)snapshot["mining"]=mining.DeepClone();if(container!=null)snapshot["container"]=ContainerJson();
         }
         private static string Hash(string value) {using(var hash=SHA256.Create())return string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(value)).Select(b=>b.ToString("x2")));}
@@ -238,7 +239,7 @@ namespace HollowCraft.Standalone
             Inventory.Load((JObject)data["inventory"]);mode=(string)data["mode"]??"survival";health=Math.Max(0,Math.Min(20,Number(data,"health",20)));food=Math.Max(0,Math.Min(20,Number(data,"food",20)));saturation=Math.Max(0,Math.Min(food,Number(data,"saturation",5)));absorption=Math.Max(0,Number(data,"absorption"));
             foreach(var property in (JObject)data["rooms"])rooms[property.Key]=NativeRoom.Read((JObject)property.Value);
             foreach(JObject value in data["effects"] as JArray??new JArray())effects[(string)value["id"]]=Tuple.Create((int)value["ticks"],(int)value["amplifier"]);
-            serial=rooms.Values.SelectMany(r=>r.Drops.Concat(r.Creatures).Concat(r.Projectiles).Concat(r.Primed)).Select(v=>(int?)v["entity"]??(int?)v["id"]??0).DefaultIfEmpty(0).Max();saveBlocked=false;
+            serial=rooms.Values.SelectMany(r=>r.Drops.Concat(r.Creatures).Concat(r.Projectiles).Concat(r.Primed).Concat(r.Clouds)).Select(v=>(int?)v["entity"]??(int?)v["id"]??0).DefaultIfEmpty(0).Max();saveBlocked=false;
         }
         private void Save() {
             if(string.IsNullOrEmpty(savePath)||saveBlocked)return;

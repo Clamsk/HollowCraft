@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using HollowCraft.Standalone;
 
-internal static class Program
+internal static partial class Program
 {
     private static int checks;
     private static void Check(bool condition,string reason) {if(!condition)throw new Exception(reason);checks++;}
@@ -33,7 +33,7 @@ internal static class Program
         using(var reloaded=new NativeGame(root)){Send(reloaded,"room-a","save-a","scene","exactX",0,"exactY",2);var state=Latest(reloaded);Check((int)state["inventory"][3]["count"]==62,"Native disk reload");Check(((JArray)state["blocks"]).Count==1,"Native world disk reload");}
         Additional(root);
         Rendering();
-        if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));FontContracts(Path.GetFullPath(args[1]));TowerContracts(root,Path.GetFullPath(args[1]));}
+        if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));FontContracts(Path.GetFullPath(args[1]));TowerContracts(root,Path.GetFullPath(args[1]));NativeExpansion(root,Path.GetFullPath(args[1]));}
         Console.WriteLine("Native rule checks: "+checks+" passed. No Unity, Minecraft, Java, sockets or gameplay launched.");
     }
     private static void Rendering() {
@@ -144,7 +144,7 @@ internal static class Program
             for(int i=0;i<360;i++)game.Pump(.05);state=Latest(game);Check((string)state["container"]["slots"][0]["nbt"]["Potion"]=="minecraft:awkward"&&(int)state["container"]["brewFuel"]==19,"Brewing consumes one ingredient and one fuel charge for the batch");
             game.Inventory.Slots[12]=NativeStack.New("glass_bottle",64);Send(game,"room","imported","slotClick","handler","container","syncId",sync,"slot",8,"action","QUICK_MOVE");state=Latest(game);Check((int)state["container"]["slots"][1]["count"]==1&&(int)state["container"]["slots"][2]["count"]==1&&game.Inventory.Slots[12].Count==62&&(int)state["container"]["slots"][3]["count"]==0,"Brewing bottle slots cap at one and reject bottles as ingredients without losing items");
             Send(game,"room","imported","mode","mode","creative");Latest(game);Send(game,"room","imported","creativeCatalog");var catalog=Drain(game).FirstOrDefault(p=>(string)p["type"]=="catalog");Check(catalog!=null&&((JArray)catalog["items"]).Any(p=>(string)p["nbt"]?["Potion"]=="minecraft:strong_healing"),"Creative menu includes potion NBT variants");
-            Check(!((JArray)catalog["items"]).Any(p=>(string)p["id"]=="minecraft:warden_spawn_egg")&&((JArray)catalog["items"]).Any(p=>(string)p["id"]=="minecraft:cow_spawn_egg"),"Unported creature models are not advertised as working spawn eggs");
+            Check(!((JArray)catalog["items"]).Any(p=>(string)p["id"]=="minecraft:ender_dragon_spawn_egg")&&((JArray)catalog["items"]).Any(p=>(string)p["id"]=="minecraft:warden_spawn_egg"),"Newly ported models expose their eggs while unported boss models stay hidden");
             Send(game,"room","potions","scene","exactX",0,"exactY",2);Latest(game);var enemy=new JObject{["id"]=501,["generation"]=1,["health"]=20,["maxHealth"]=20,["x"]=1,["y"]=2,["width"]=.6,["height"]=1.8};Send(game,"room","potions","pose","enemies",new JArray(enemy));Latest(game);
             foreach(string potion in new[]{"water","strong_harming"}){game.Inventory.Slots[0]=NativeStack.New("splash_potion");game.Inventory.Slots[0].Data["Potion"]="minecraft:"+potion;Send(game,"room","potions","itemUse","start",true,"x",1,"y",2,"aimX",1);state=Latest(game);var shot=state["projectiles"].Last();Send(game,"room","potions","nativeProjectileHit","entity",(int)shot["entity"],"uuid",(string)shot["uuid"],"request",1,"target",501,"x",1,"y",2);state=Latest(game);Check((double)state["enemies"][0]["health"]==(potion=="water"?20:8),potion=="water"?"Splash water does not deal invented damage":"Strong harming uses the imported instant-damage potency");}
         }

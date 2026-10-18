@@ -1,9 +1,10 @@
-param([string]$TerrariaRoot,[string]$AssetsRoot)
+﻿param([string]$TerrariaRoot,[string]$AssetsRoot,[switch]$NativeOnly)
 $ErrorActionPreference='Stop'
 if($PSVersionTable.PSEdition -eq 'Core') {
     $argumentsTask=@('-NoProfile','-ExecutionPolicy','Bypass','-File',$PSCommandPath)
     if($TerrariaRoot){$argumentsTask+=@('-TerrariaRoot',$TerrariaRoot)}
     if($AssetsRoot){$argumentsTask+=@('-AssetsRoot',$AssetsRoot)}
+    if($NativeOnly){$argumentsTask+='-NativeOnly'}
     & powershell.exe @argumentsTask
     if($LASTEXITCODE -ne 0){throw 'Terraria local import failed.'};return
 }
@@ -27,7 +28,8 @@ if(-not $TerrariaRoot) {Write-Output 'Terraria not installed; optional Clamsk as
 $destinationTask=Join-Path $AssetsRoot 'terraria'
 $packTask=Join-Path $rootTask 'runtime\minecraft\resourcepacks\HollowCraft-Terraria'
 $texturesTask=Join-Path $packTask 'assets\hollowcraft_bridge\textures\item'
-New-Item -ItemType Directory -Path $destinationTask,$texturesTask -Force | Out-Null
+New-Item -ItemType Directory -Path $destinationTask -Force | Out-Null
+if(-not $NativeOnly){New-Item -ItemType Directory -Path $texturesTask -Force | Out-Null}
 if(-not ('TerrariaAssetImporter' -as [type])) {
     Add-Type -AssemblyName System.Drawing
     $sourceTask=@('LzxDecoder.cs','LzxDecoderStream.cs','Importer.cs') | ForEach-Object {Join-Path $rootTask ('tools\TerrariaAssetImporter\'+$_)}
@@ -37,12 +39,13 @@ $itemsTask=@{zenith=4956;stardust_wings=3471;copper_shortsword=3507;starfury=65;
 foreach($entryTask in $itemsTask.GetEnumerator()) {
     $targetTask=Join-Path $destinationTask ($entryTask.Key+'.png')
     [TerrariaAssetImporter]::Texture((Join-Path $TerrariaRoot ('Content\Images\Item_'+$entryTask.Value+'.xnb')),$targetTask)
-    if($entryTask.Key -in @('zenith','stardust_wings')) {Copy-Item -LiteralPath $targetTask -Destination $texturesTask -Force}
+    if(-not $NativeOnly -and $entryTask.Key -in @('zenith','stardust_wings')) {Copy-Item -LiteralPath $targetTask -Destination $texturesTask -Force}
 }
 $wingsTask=Join-Path $destinationTask 'stardust_sheet.png'
 [TerrariaAssetImporter]::Texture((Join-Path $TerrariaRoot 'Content\Images\Wings_32.xnb'),$wingsTask)
-[TerrariaAssetImporter]::WingFrames($wingsTask,$texturesTask,4)
+if(-not $NativeOnly){[TerrariaAssetImporter]::WingFrames($wingsTask,$texturesTask,4)}
 [TerrariaAssetImporter]::Sound((Join-Path $TerrariaRoot 'Content\Sounds\Item_169.xnb'),(Join-Path $destinationTask 'swing.wav'))
+if($NativeOnly){[IO.File]::WriteAllText((Join-Path $destinationTask 'ready.txt'),'local Terraria import schema 1',[Text.UTF8Encoding]::new($false));Write-Output 'Imported original Terraria sprites and sword sound for Native HollowCraft.';return}
 [IO.File]::WriteAllText((Join-Path $packTask 'pack.mcmeta'),'{"pack":{"pack_format":15,"description":"HollowCraft: locally imported Terraria assets"}}',[Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllText((Join-Path $destinationTask 'ready.txt'),'local Terraria import schema 1',[Text.UTF8Encoding]::new($false))
 $optionsTask=Join-Path $rootTask 'runtime\minecraft\options.txt'

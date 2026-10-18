@@ -272,6 +272,7 @@ namespace HollowCraft
         private void CreateAvatar()
         {
             if(GameplayBackend.Standalone)localView.ResetSources();
+            nativeWings?.Dispose();nativeWings=null;
             renderedPose=transitionValid=nativePoseValid=nativeFrameRecorded=false;transitionSerial=-1;
             if(avatar!=null) Destroy(avatar);armor.Clear();nativeArmor.Clear();heldId=offhandId=null;playerFlame=null;
             assets=Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),"HollowCraftAssets");string path=Path.Combine(assets,"steve_skin.png");if(!File.Exists(path)&&!GameplayBackend.Standalone) return;
@@ -332,6 +333,6 @@ namespace HollowCraft
             }
         }
         private Vector3 ModelOffset(Transform part) => part==head?new Vector3(0,.25f,0):part==torso?new Vector3(0,-.375f,0):part==rightArm?new Vector3(.0625f,.125f,0):part==leftArm?new Vector3(-.0625f,.125f,0):Vector3.zero;
-        private void OnDestroy() {localView.Dispose();nativeView.Dispose();NativeTexture=null;NativePortraitTexture=null;if(knightRenderer!=null) knightRenderer.enabled=true;if(avatar!=null) Destroy(avatar);if(skin!=null) Destroy(skin);if(portrait!=null) Destroy(portrait);if(portraitCamera!=null) Destroy(portraitCamera.gameObject);if(PortraitTexture!=null) {PortraitTexture.Release();Destroy(PortraitTexture);PortraitTexture=null;}}
+        private void OnDestroy() {localView.Dispose();nativeView.Dispose();nativeWings?.Dispose();NativeTexture=null;NativePortraitTexture=null;if(knightRenderer!=null) knightRenderer.enabled=true;if(avatar!=null) Destroy(avatar);if(skin!=null) Destroy(skin);if(portrait!=null) Destroy(portrait);if(portraitCamera!=null) Destroy(portraitCamera.gameObject);if(PortraitTexture!=null) {PortraitTexture.Release();Destroy(PortraitTexture);PortraitTexture=null;}}
     }
 }

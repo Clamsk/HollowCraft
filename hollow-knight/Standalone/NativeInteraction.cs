@@ -11,6 +11,7 @@ namespace HollowCraft.Standalone
             if(Creative||!Spectator&&health>0) {
                 if(usingItem)return;
                 bool sneak=(bool?)lastVisual?["crouching"]==true;
+                if(!sneak&&TryInteractCreature(packet)){RejectPredictedPlacement(packet);return;}
                 if(!sneak&&TryInteractBlock(packet)){RejectPredictedPlacement(packet);return;}
                 var item=Inventory.Hand.Definition.Block&&!Inventory.Hand.Empty?Inventory.Hand:!CanUse(Inventory.Hand)?Inventory.Offhand:new NativeStack();
                 if(!item.Empty&&item.Definition.Block) {

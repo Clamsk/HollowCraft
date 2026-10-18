@@ -9,7 +9,7 @@ namespace HollowCraft.Standalone
     {
         internal string Id,Tool="",Equipment="",Group="items",Remainder,Entity;
         internal int Maximum=64,Durability,Armor,Food,Harvest;
-        internal double Attack=1,Speed=4,Hardness=.8,Saturation,MiningSpeed=1;
+        internal double Attack=1,Speed=4,Hardness=.8,Saturation,MiningSpeed=1,BlastResistance;
         internal bool Block,Solid=true,AlwaysEdible,FastFood,RequiresTool;internal int Fuel,Enchantability,EggBase,EggSpots;internal double Toughness;internal JArray Collision,FoodEffects,RepairItems;
     }
     internal static class NativeCatalog
@@ -17,14 +17,14 @@ namespace HollowCraft.Standalone
         internal static readonly Dictionary<string,NativeItem> Items=new Dictionary<string,NativeItem>(StringComparer.Ordinal);
         internal static bool RegistryLoaded;
         private static readonly HashSet<string> vanillaItems=new HashSet<string>();
-        internal static bool CreatureSupported(string kind)=>new[]{"minecraft:zombie","minecraft:skeleton","minecraft:creeper","minecraft:spider","minecraft:pig","minecraft:cow","minecraft:sheep","minecraft:chicken","minecraft:villager"}.Contains(kind);
+        internal static bool CreatureSupported(string kind)=>NativeMobCatalog.Supported(kind);
         internal static bool Visible(string id)=>(!RegistryLoaded||vanillaItems.Contains(id)||!id.StartsWith("minecraft:",StringComparison.Ordinal))&&(Get(id).Entity==null||CreatureSupported(Get(id).Entity));
         internal static string Id(string id)=>string.IsNullOrEmpty(id)?"minecraft:air":id.Contains(":")?id:"minecraft:"+id;
         internal static NativeItem Get(string id)=>Items.TryGetValue(Id(id),out var value)?value:Items["minecraft:air"];
         private static NativeItem Add(string id,int max=64) {var value=new NativeItem{Id=Id(id),Maximum=max};Items[value.Id]=value;return value;}
         static NativeCatalog() {
             Add("air").Solid=false;
-            foreach(string liquid in new[]{"water","lava"}){var fluid=Add(liquid);fluid.Block=true;fluid.Solid=false;fluid.Group="fluids";}
+            foreach(string liquid in new[]{"water","lava"}){var fluid=Add(liquid);fluid.Block=true;fluid.Solid=false;fluid.BlastResistance=100;fluid.Group="fluids";}
             foreach(string id in new[]{"stone","cobblestone","cobbled_deepslate","deepslate","granite","diorite","andesite","dirt","grass_block","sand","red_sand","gravel","glass","obsidian","crying_obsidian","bedrock","netherrack","end_stone","bricks","stone_bricks","coal_ore","iron_ore","gold_ore","diamond_ore","redstone_ore","coal_block","iron_block","gold_block","diamond_block","crafting_table","furnace","blast_furnace","smoker","chest","barrel","ender_chest","hopper","dispenser","dropper","anvil","enchanting_table","brewing_stand","tnt","bookshelf","hay_block","slime_block","honey_block","sponge","wet_sponge","redstone_block","redstone_lamp","target","piston","sticky_piston","observer","note_block","jukebox"}) {
                 var item=Add(id);item.Block=true;item.Group="blocks";
                 item.Hardness=id=="bedrock"?-1:id.Contains("obsidian")?50:id.Contains("deepslate")?3:id=="stone"||id=="cobblestone"?1.5:id.Contains("_ore")?3:id=="dirt"||id=="grass_block"||id.Contains("sand")||id=="gravel"?.5:id=="glass"?.3:2;
@@ -62,7 +62,7 @@ namespace HollowCraft.Standalone
                 if(entry["tool"]!=null)item.Tool=(string)entry["tool"];item.RequiresTool=(bool?)entry["requiresTool"]??false;
                 item.Attack=(double?)entry["attack"]??item.Attack;item.Speed=(double?)entry["speed"]??item.Speed;item.Harvest=(int?)entry["harvest"]??item.Harvest;item.MiningSpeed=(double?)entry["miningSpeed"]??item.MiningSpeed;
                 string slot=(string)entry["equipment"];if(slot!=null)item.Equipment=slot=="head"?"helmet":slot=="chest"?"chestplate":slot=="legs"?"leggings":"boots";
-                if((bool?)entry["block"]==true){item.Block=true;item.Hardness=(double?)entry["hardness"]??item.Hardness;item.Collision=entry["collision"] as JArray;item.Solid=item.Collision==null||item.Collision.Count>0;item.Group="blocks";}
+                if((bool?)entry["block"]==true){item.Block=true;item.Hardness=(double?)entry["hardness"]??item.Hardness;item.BlastResistance=(double?)entry["blastResistance"]??item.BlastResistance;item.Collision=entry["collision"] as JArray;item.Solid=item.Collision==null||item.Collision.Count>0;item.Group="blocks";}
                 else if(item.Food>0)item.Group="food";else if(item.Entity!=null)item.Group="creatures";else if(item.Durability>0)item.Group="equipment";
             }
             RegistryLoaded=true;

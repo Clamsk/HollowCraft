@@ -24,6 +24,7 @@ namespace HollowCraft.Standalone
             string registry=Path.Combine(root,"native-registry.json");if(!File.Exists(registry))return;
             var data=JObject.Parse(File.ReadAllText(registry));if((string)data["minecraft"]!="1.20.1")throw new InvalidDataException("Unsupported native registry version");
             NativeCatalog.Import(data);
+            NativeMobCatalog.Load(root);
             CreativeStacks=data["creativeStacks"] as JArray??new JArray();CreativeGroups=data["creativeGroups"] as JArray??new JArray();
             string audio=Path.Combine(root,"native-audio-v4.json");Sounds=File.Exists(audio)?JObject.Parse(File.ReadAllText(audio))["sounds"] as JObject??new JObject():new JObject();
             brewing.Clear();brewIngredients.Clear();foreach(JObject recipe in data["brewing"] as JArray??new JArray()){brewing[(string)recipe["item"]+"|"+(string)recipe["potion"]+"|"+(string)recipe["ingredient"]]=recipe;brewIngredients.Add((string)recipe["ingredient"]);}
@@ -32,6 +33,7 @@ namespace HollowCraft.Standalone
             if(Directory.Exists(tagRoot))foreach(string file in Directory.GetFiles(tagRoot,"*.json",SearchOption.AllDirectories)){string id="minecraft:"+file.Substring(tagRoot.Length+1).Replace('\\','/');raw[id.Substring(0,id.Length-5)]=(JArray)JObject.Parse(File.ReadAllText(file))["values"];}
             foreach(string id in raw.Keys)ResolveTag(id,raw,new HashSet<string>());
             NativeRecipes.Load(root);loaded=root;
+            NativeLoot.Load(root);
         }
         private static HashSet<string> ResolveTag(string id,Dictionary<string,JArray> raw,HashSet<string> visiting) {
             if(Tags.TryGetValue(id,out var cached))return cached;var result=new HashSet<string>();if(!visiting.Add(id))return result;

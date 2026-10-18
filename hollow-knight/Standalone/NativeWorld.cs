@@ -11,6 +11,7 @@ namespace HollowCraft.Standalone
         internal readonly Dictionary<string,NativeContainer> Containers=new Dictionary<string,NativeContainer>();
         internal readonly List<JObject> Drops=new List<JObject>();
         internal readonly List<JObject> Creatures=new List<JObject>();
+        internal readonly List<JObject> Clouds=new List<JObject>();
         internal readonly List<JObject> Projectiles=new List<JObject>(),Primed=new List<JObject>();
         internal static string Key(int x,int y)=>x+":"+y;
         internal static JObject Cell(int x,int y,string id,bool source=true,int level=0)=>new JObject{["x"]=x,["y"]=y,["id"]=NativeCatalog.Id(id),["source"]=source,["level"]=level};
@@ -22,13 +23,14 @@ namespace HollowCraft.Standalone
                 value["collision"]=!solid?new JArray():item.Collision!=null?new JArray(item.Collision.Cast<JArray>().Select(b=>new JArray(b[0].DeepClone(),b[1].DeepClone(),b[3].DeepClone(),b[4].DeepClone()))):new JArray(new JArray(0,0,1,height));value["breakTicks"]=item.Hardness<0?int.MaxValue:Math.Max(1,(int)Math.Ceiling(item.Hardness*30));result.Add(value);
             }return result;
         }
-        internal JObject Save() {var boxes=new JObject();foreach(var pair in Containers)boxes[pair.Key]=pair.Value.Save();return new JObject{["blocks"]=new JArray(Blocks.Values.Select(v=>v.DeepClone())),["containers"]=boxes,["drops"]=new JArray(Drops.Select(v=>v.DeepClone())),["creatures"]=new JArray(Creatures.Select(v=>v.DeepClone())),["projectiles"]=new JArray(Projectiles.Select(v=>v.DeepClone())),["primed"]=new JArray(Primed.Select(v=>v.DeepClone()))};}
+        internal JObject Save() {var boxes=new JObject();foreach(var pair in Containers)boxes[pair.Key]=pair.Value.Save();return new JObject{["blocks"]=new JArray(Blocks.Values.Select(v=>v.DeepClone())),["containers"]=boxes,["drops"]=new JArray(Drops.Select(v=>v.DeepClone())),["creatures"]=new JArray(Creatures.Select(v=>v.DeepClone())),["clouds"]=new JArray(Clouds.Select(v=>v.DeepClone())),["projectiles"]=new JArray(Projectiles.Select(v=>v.DeepClone())),["primed"]=new JArray(Primed.Select(v=>v.DeepClone()))};}
         internal static NativeRoom Read(JObject data) {
             var room=new NativeRoom();if((data["blocks"] as JArray)?.Count>32768)throw new InvalidOperationException("Native room exceeds block limit");
             foreach(JObject value in data["blocks"] as JArray??new JArray())room.Blocks[Key((int)value["x"],(int)value["y"])]=(JObject)value.DeepClone();
             foreach(var box in data["containers"] as JObject??new JObject())room.Containers[box.Key]=NativeContainer.Read((JObject)box.Value);
             foreach(JObject drop in data["drops"] as JArray??new JArray())room.Drops.Add((JObject)drop.DeepClone());
-            foreach(JObject mob in data["creatures"] as JArray??new JArray()){var value=(JObject)mob.DeepClone();value.Remove("vehicle");room.Creatures.Add(value);}
+            foreach(JObject mob in data["creatures"] as JArray??new JArray()){var value=(JObject)mob.DeepClone();value.Remove("vehicle");if(value["maxHealth"]==null)value["maxHealth"]=NativeData.Entities.TryGetValue((string)value["kind"]??"",out var definition)?definition["health"]?.DeepClone()??value["health"]?.DeepClone():value["health"]?.DeepClone();room.Creatures.Add(value);}
+            foreach(JObject cloud in data["clouds"] as JArray??new JArray())room.Clouds.Add((JObject)cloud.DeepClone());
             foreach(JObject value in data["projectiles"] as JArray??new JArray())room.Projectiles.Add((JObject)value.DeepClone());
             foreach(JObject value in data["primed"] as JArray??new JArray())room.Primed.Add((JObject)value.DeepClone());return room;
         }
@@ -80,7 +82,7 @@ namespace HollowCraft.Standalone
                 if(can&&box.Burn>0){box.Cook++;if(box.Cook>=recipe.Ticks){box.Cook=0;box.Slots[0].Count--;box.Slots[0].Normalize();if(box.Slots[2].Empty)box.Slots[2]=NativeStack.New(output);else box.Slots[2].Count++;}}else box.Cook=Math.Max(0,box.Cook-2);
                 if(Room.Blocks.TryGetValue(entry.Key,out var cell))cell["lit"]=box.Burn>0;
             }
-            TickCreatures();if(tick%4==0)FluidStep();if(tick%2==0)RedstoneStep();
+            TickCreatures();TickClouds();if(tick%4==0)FluidStep();if(tick%2==0)RedstoneStep();
             if(tick%10==0&&InFluid("lava")&&!effects.ContainsKey("fire_resistance"))Damage(4,"lava",x,y);
         }
         private bool InFluid(string id)=>scene.Length>0&&Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+.4)),out var block)&&(string)block["id"]=="minecraft:"+id;

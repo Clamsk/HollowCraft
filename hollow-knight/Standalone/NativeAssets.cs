@@ -16,10 +16,13 @@ namespace HollowCraft.Standalone
             if(string.IsNullOrEmpty(id)||id=="minecraft:air")return null;
             assets=assets??Root;
             if(textures.TryGetValue(id,out var cached)&&cached!=null)return cached;string name=id.Substring(id.IndexOf(':')+1);
+            if(assets!=null&&(id=="hollowcraft_bridge:zenith"||id=="hollowcraft_bridge:stardust_wings")) {
+                string original=Path.Combine(assets,"terraria",name+".png");if(File.Exists(original)){var originalTexture=new Texture2D(2,2,TextureFormat.RGBA32,false){name=id};originalTexture.LoadImage(File.ReadAllBytes(original));originalTexture.filterMode=FilterMode.Point;originalTexture.wrapMode=TextureWrapMode.Clamp;textures[id]=originalTexture;return originalTexture;}
+            }
             if(assets!=null&&name.IndexOfAny(new[]{'/', '\\', '.', ':'})<0){string path=Path.Combine(assets,name+".png");if(File.Exists(path)){var imported=new Texture2D(2,2,TextureFormat.RGBA32,false){name=id};imported.LoadImage(File.ReadAllBytes(path));imported.filterMode=FilterMode.Point;imported.wrapMode=TextureWrapMode.Clamp;textures[id]=imported;return imported;}}
             if(id.StartsWith("gui_",StringComparison.Ordinal))return null;
             bool armor=name.StartsWith("armor_",StringComparison.Ordinal);int w=armor?64:16,h=armor?32:16;var image=new Texture2D(w,h,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};var pixels=new Color[w*h];Color color=ColorFor(name);
-            bool block=NativeCatalog.Get(id).Block||armor;
+            bool block=NativeCatalog.Get(id).Block||armor||name.StartsWith("mob_",StringComparison.Ordinal);
             for(int y=0;y<h;y++)for(int x=0;x<w;x++) {
                 bool draw=block;
                 if(!block){if(name.Contains("sword")||name.Contains("zenith"))draw=Math.Abs(x-y)<=1&&x>=3&&x<=13||y>=3&&y<=4&&x>=1&&x<=7;

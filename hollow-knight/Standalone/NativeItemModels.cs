@@ -20,8 +20,11 @@ namespace HollowCraft.Standalone
         private static Model Read(string id,int depth=0) {
             if(depth>20||id.Contains("..")||id.Contains('\\'))return null;if(!id.Contains(":"))id="minecraft:"+id;
             if(models.TryGetValue(id,out var cached))return cached;string[] split=id.Split(':');if(split.Length!=2)return null;
-            string path=Path.Combine(NativeAssets.Root??"","models",split[0],split[1]+".json");if(!File.Exists(path))return null;
-            var json=JObject.Parse(File.ReadAllText(path));string parent=(string)json["parent"]??"";var inherited=parent.Length>0?Read(parent,depth+1):null;
+            string path=Path.Combine(NativeAssets.Root??"","models",split[0],split[1]+".json");JObject json;
+            if(File.Exists(path))json=JObject.Parse(File.ReadAllText(path));
+            else if(id=="hollowcraft_bridge:item/zenith"||id=="hollowcraft_bridge:item/stardust_wings")json=new JObject{["parent"]=id.EndsWith("/zenith",StringComparison.Ordinal)?"minecraft:item/handheld":"minecraft:item/generated",["textures"]=new JObject{["layer0"]=id}};
+            else return null;
+            string parent=(string)json["parent"]??"";var inherited=parent.Length>0?Read(parent,depth+1):null;
             var result=new Model{Textures=inherited!=null?(JObject)inherited.Textures.DeepClone():new JObject(),Display=inherited!=null?(JObject)inherited.Display.DeepClone():new JObject(),Elements=json["elements"] as JArray??inherited?.Elements,Builtin=parent=="builtin/entity"||inherited?.Builtin==true};
             foreach(var entry in json["textures"] as JObject??new JObject())result.Textures[entry.Key]=entry.Value.DeepClone();foreach(var entry in json["display"] as JObject??new JObject())result.Display[entry.Key]=entry.Value.DeepClone();models[id]=result;return result;
         }
@@ -36,12 +39,12 @@ namespace HollowCraft.Standalone
         }
         private static Texture2D Image(Model model,string key) {
             for(int i=0;i<16&&key!=null&&key.StartsWith("#",StringComparison.Ordinal);i++)key=(string)model.Textures[key.Substring(1)];if(string.IsNullOrEmpty(key))return null;
-            string name=key.Split('/').Last().Split(':').Last();return NativeAssets.Texture("minecraft:"+name);
+            string resource=key.Contains(":")?key:"minecraft:"+key;string name=resource.Split('/').Last().Split(':').Last(),space=resource.Split(':')[0];return NativeAssets.Texture(space+":"+name);
         }
         private static Mesh Bake(Mesh source,Matrix4x4 transform,bool gui=false) {var mesh=UnityEngine.Object.Instantiate(source);var points=mesh.vertices;for(int i=0;i<points.Length;i++){var p=transform.MultiplyPoint3x4(points[i]);points[i]=gui?new Vector3(p.x,p.y,-p.z):new Vector3(-p.x,-p.y,p.z);}mesh.vertices=points;mesh.RecalculateBounds();return mesh;}
         internal static bool Draw(Transform holder,string id,int layer,int order,bool left,bool gui=false) {
-            if(string.IsNullOrEmpty(id)||!id.StartsWith("minecraft:",StringComparison.Ordinal))return false;
-            string item=id.Substring(10),modelId="minecraft:item/"+(item=="trident"?"trident_in_hand":item);var model=Read(modelId);if(model==null)return false;
+            if(string.IsNullOrEmpty(id)||!id.StartsWith("minecraft:",StringComparison.Ordinal)&&id!="hollowcraft_bridge:zenith"&&id!="hollowcraft_bridge:stardust_wings")return false;
+            string space=id.Split(':')[0],item=id.Substring(id.IndexOf(':')+1),modelId=space+":item/"+(item=="trident"?"trident_in_hand":item);var model=Read(modelId);if(model==null)return false;
             bool grip=holder.name=="HollowCraft.HeldItem3D"||holder.name=="HollowCraft.Offhand3D";var transform=Transform(model,grip,left,gui);if(gui&&model.Builtin)return false;
             if(model.Builtin){if(!item.StartsWith("shield",StringComparison.Ordinal)&&item!="trident"&&item!="chest")return false;var matrix=grip?transform*Matrix4x4.Translate(new Vector3(-.5f,-.5f,-.5f))*Matrix4x4.Scale(new Vector3(1,-1,-1)):Matrix4x4.identity;var values=new JArray();for(int column=0;column<4;column++)for(int row=0;row<4;row++)values.Add(matrix[row,column]);return MinecraftMeshes.Builtin(holder,id,NativeAssets.Root,layer,order,grip?values:null);}
             string key=id+":"+grip+":"+left+":"+gui;

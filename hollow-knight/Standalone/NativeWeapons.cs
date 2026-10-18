@@ -9,7 +9,7 @@ namespace HollowCraft.Standalone
     {
         private sealed class Flight
         {
-            internal int Id,Style,Steps;internal double Dx,Dy,Spin,Rate,Age;internal readonly Dictionary<int,int> NextHit=new Dictionary<int,int>();
+            internal int Id,Style,Steps;internal double Dx,Dy,Spin,Rate,Age;internal readonly Dictionary<long,int> NextHit=new Dictionary<long,int>();
         }
         private readonly List<Flight> flights=new List<Flight>();
         private readonly Dictionary<int,JObject> projectiles=new Dictionary<int,JObject>(),primed=new Dictionary<int,JObject>();
@@ -64,9 +64,11 @@ namespace HollowCraft.Standalone
             foreach(JObject step in packet["steps"] as JArray??new JArray()) {
                 int id=(int?)step["entity"]??-1;if(!projectiles.TryGetValue(id,out var value)||(string)value["uuid"]!=(string)step["uuid"]||(int?)value["age"]!=(int?)step["age"]||(bool?)value["grounded"]==true)continue;
                 double px=Number(value,"x")+Number(value,"vx"),py=Number(value,"y")+Number(value,"vy");
+                if((bool?)value["hostile"]==true&&SegmentBox(Number(value,"x"),Number(value,"y"),px,py,x-.3,y,x+.3,y+1.8)) {MobProjectilePlayer(value,px,py);projectiles.Remove(id);continue;}
                 // The shared Unity sweep acknowledges only a clear segment. A sampled
                 // native terrain cell may contain a thin ledge, not a full cube.
-                value["x"]=px;value["y"]=py;value["vx"]=Number(value,"vx")*.99;value["vy"]=Number(value,"vy")*.99-(((string)value["kind"])=="minecraft:ender_pearl"?.03:.05);value["nextVx"]=value["vx"];value["nextVy"]=value["vy"];value["age"]=(int)value["age"]+1;
+                bool floating=(bool?)value["hostile"]==true&&(string)value["mobKind"]!="arrow"&&(string)value["mobKind"]!="potion";
+                value["x"]=px;value["y"]=py;value["vx"]=Number(value,"vx")*(floating?1:.99);value["vy"]=Number(value,"vy")*(floating?1:.99)-(floating?0:((string)value["kind"])=="minecraft:ender_pearl"?.03:.05);value["nextVx"]=value["vx"];value["nextVy"]=value["vy"];value["age"]=(int)value["age"]+1;
                 if((int)value["age"]>1200||py< -64)projectiles.Remove(id);
             }
         }
@@ -76,12 +78,13 @@ namespace HollowCraft.Standalone
             if(!projectiles.TryGetValue(id,out var value)||(string)value["uuid"]!=identity)return;
             if((bool?)value["returning"]==true)return;
             Observe(packet);string kind=(string)value["kind"];int target=(int?)packet["target"]??0;bool propPass=(bool?)packet["passThrough"]==true,pass=propPass,removed=false;
+            if((bool?)value["hostile"]==true&&(string)value["mobKind"]=="fireball")Explode(Number(packet,"x"),Number(packet,"y"),1,false);
             int piercing=(int?)value["stack"]?["nbt"]?["HollowCraftPiercing"]??0;if(kind=="minecraft:arrow"&&piercing>0&&target!=0){var hitIds=value["hitIds"] as JArray??new JArray();if(hitIds.Values<int>().Contains(target))return;hitIds.Add(target);value["hitIds"]=hitIds;pass|=hitIds.Count<=piercing;}
-            if(packet["creature"] is JObject creature&&(kind=="minecraft:arrow"||kind=="minecraft:trident"))HitCreature(creature,Math.Max(1,Number(value,"damage")),true);
+            if(packet["creature"] is JObject creature&&(kind=="minecraft:arrow"||kind=="minecraft:trident"))HitCreature(creature,Math.Max(1,Number(value,"damage")),true,(bool?)value["hostile"]!=true);
             double angle=Math.Atan2(Number(value,"vy"),Number(value,"vx"))*180/Math.PI;
             if(target!=0&&enemies.TryGetValue(target,out var enemy)&&(kind=="minecraft:trident"||kind=="minecraft:arrow")){HitEnemy(enemy,propPass?999:Math.Max(1,Number(value,"damage")),kind=="minecraft:trident"?"trident":"arrow",angle);if(kind=="minecraft:arrow"&&value["stack"] is JObject carried){var ammo=NativeStack.Read(carried);if(ammo.Id=="minecraft:tipped_arrow")ApplyPotionEnemy(enemy,ammo,.125);}}
             if(kind=="minecraft:ender_pearl") {x=Number(packet,"landingX",Number(packet,"x"));y=Number(packet,"landingY",Number(packet,"y"));teleport++;hurtTicks=0;Damage(3,"pearl",x,y);Emit(new JObject{["type"]="teleport",["x"]=x,["y"]=y,["normalX"]=Number(packet,"normalX"),["normalY"]=Number(packet,"normalY",1),["teleport"]=teleport});removed=true;}
-            else if(kind.Contains("potion")){var potion=NativeStack.Read(value["stack"]);double px=Number(packet,"x"),py=Number(packet,"y");foreach(var enemy2 in enemies.Values){double distance=Math.Sqrt(Math.Pow(Number(enemy2,"x")-px,2)+Math.Pow(Number(enemy2,"y")-py,2));if(distance<4)ApplyPotionEnemy(enemy2,potion,(int)enemy2["id"]==target?1:1-distance/4);}double playerDistance=Math.Sqrt((x-px)*(x-px)+(y-py)*(y-py));if(playerDistance<4)ApplyPotion(potion,1-playerDistance/4);removed=true;}
+            else if(kind.Contains("potion")){var potion=NativeStack.Read(value["stack"]);double px=Number(packet,"x"),py=Number(packet,"y");if(kind=="minecraft:lingering_potion")SpawnCloud(potion,px,py);else {foreach(var enemy2 in enemies.Values.Concat(Room.Creatures)){double distance=Math.Sqrt(Math.Pow(Number(enemy2,"x")-px,2)+Math.Pow(Number(enemy2,"y")-py,2));if(distance<4)ApplyPotionEnemy(enemy2,potion,(int?)enemy2["id"]==target?1:1-distance/4);}double playerDistance=Math.Sqrt((x-px)*(x-px)+(y-py)*(y-py));if(playerDistance<4)ApplyPotion(potion,1-playerDistance/4);}removed=true;}
             else if(kind=="minecraft:trident"){var stack=NativeStack.Read(value["stack"]);Inventory.Wear(stack,1,Creative);value["stack"]=stack.Json();value["x"]=Number(packet,"x");value["y"]=Number(packet,"y");value["vx"]=value["vy"]=0;value["stepRequired"]=false;bool loyalty=NativeData.Enchantment(stack,"loyalty")>0;value["returning"]=loyalty;value["noClip"]=loyalty;value["grounded"]=!loyalty;}
             else if(kind=="minecraft:snowball"||kind=="minecraft:egg")removed=true;
             else if(!pass){value["x"]=Number(packet,"x");value["y"]=Number(packet,"y");value["vx"]=value["vy"]=0;value["grounded"]=true;value["stepRequired"]=false;}
@@ -101,14 +104,26 @@ namespace HollowCraft.Standalone
             }
         }
         private bool BedrockShield(double ax,double ay,double bx,double by) {int steps=Math.Max(1,(int)Math.Ceiling(Math.Max(Math.Abs(bx-ax),Math.Abs(by-ay))*4));for(int i=1;i<steps;i++){string key=NativeRoom.Key((int)Math.Floor(ax+(bx-ax)*i/steps),(int)Math.Floor(ay+(by-ay)*i/steps));if(Room.Blocks.TryGetValue(key,out var cell)&&(string)cell["id"]=="minecraft:bedrock")return true;}return false;}
-        private void Explode(double px,double py) {
+        private void Explode(double px,double py,double power=4,bool playerOwned=true) {
             Sound("minecraft:entity.generic.explode",.8,.8+random.NextDouble()*.2,px,py);
-            foreach(var cell in Room.Blocks.Values.ToArray()) {double dx=(int)cell["x"]+.5-px,dy=(int)cell["y"]+.5-py;if(dx*dx+dy*dy>16||(string)cell["id"]=="minecraft:bedrock"||BedrockShield(px,py,(int)cell["x"]+.5,(int)cell["y"]+.5))continue;Room.Blocks.Remove(NativeRoom.Key((int)cell["x"],(int)cell["y"]));if((string)cell["id"]=="minecraft:tnt")Prime((int)cell["x"]+.5,(int)cell["y"],10+random.Next(20));}
-            foreach(var enemy in enemies.Values){double dx=Number(enemy,"x")-px,dy=Number(enemy,"y")-py,d=Math.Sqrt(dx*dx+dy*dy)/8;if(d>1||BedrockShield(px,py,Number(enemy,"x"),Number(enemy,"y")))continue;double impact=1-d;HitEnemy(enemy,Math.Floor((impact*impact+impact)/2*56+1),"explosion",Math.Atan2(dy,dx)*180/Math.PI);}
-            double distance=Math.Sqrt((x-px)*(x-px)+(y-py)*(y-py))/8;if(distance<1&&!BedrockShield(px,py,x,y))Damage(Math.Floor(((1-distance)*(1-distance)+(1-distance))/2*56+1),"explosion",px,py);
+            double reach=power*2;var broken=new HashSet<string>();
+            // Vanilla ray energy/resistance, projected onto the game's 2D plane.
+            for(int ray=0;ray<128;ray++){double angle=ray*Math.PI*2/128,dx=Math.Cos(angle),dy=Math.Sin(angle),energy=power*(.7+random.NextDouble()*.6);
+                for(double distance=0;energy>0&&distance<power*4;distance+=.3){int bx=(int)Math.Floor(px+dx*distance),by=(int)Math.Floor(py+dy*distance);string key=NativeRoom.Key(bx,by);if(TerrainFull(bx,by))break;
+                    if(Room.Blocks.TryGetValue(key,out var cell)){var item=NativeCatalog.Get((string)cell["id"]);if(item.Hardness<0)break;energy-=(item.BlastResistance+.3)*.3;if(energy>0)broken.Add(key);}energy-=.22500001;
+                }
+            }
+            foreach(var target in enemies.Values.Concat(Room.Creatures).ToArray()){double dx=Number(target,"x")-px,dy=Number(target,"y")-py,d=Math.Sqrt(dx*dx+dy*dy)/reach;if(d>1||BedrockShield(px,py,Number(target,"x"),Number(target,"y")))continue;double impact=(1-d)*BlastExposure(px,py,Number(target,"x"),Number(target,"y"),Number(target,"width",.6),Number(target,"height",1.8)),amount=Math.Floor((impact*impact+impact)/2*7*reach+1);if(impact<=0)continue;if(target["entity"]!=null)HitCreature(target,amount,true,playerOwned);else HitEnemy(target,amount,"explosion",Math.Atan2(dy,dx)*180/Math.PI);}
+            double playerDistance=Math.Sqrt((x-px)*(x-px)+(y-py)*(y-py))/reach;
+            if(playerDistance<1&&!BedrockShield(px,py,x,y)){double impact=(1-playerDistance)*BlastExposure(px,py,x,y,.6,1.8);if(impact>0)Damage(Math.Floor((impact*impact+impact)/2*7*reach+1),"explosion",px,py);}
+            foreach(string key in broken)if(Room.Blocks.TryGetValue(key,out var cell)){
+                Room.Blocks.Remove(key);if(Room.Containers.TryGetValue(key,out var box)){if(containerKey==key)CloseContainer();foreach(var stack in box.Slots)DropAt(stack,(int)cell["x"]+.5,(int)cell["y"]+.5);Room.Containers.Remove(key);}
+                if((string)cell["id"]=="minecraft:tnt")Prime((int)cell["x"]+.5,(int)cell["y"],10+random.Next(20));else if((string)cell["id"]!="minecraft:water"&&(string)cell["id"]!="minecraft:lava"&&random.NextDouble()<1/power)DropAt(NativeStack.New((string)cell["id"]),(int)cell["x"]+.5,(int)cell["y"]+.5);
+            }
             Emit(new JObject{["type"]="explosion",["x"]=px,["y"]=py});
         }
-        private void ZenithInput(JObject p) {if(Inventory.Hand.Id!="hollowcraft_bridge:zenith"||health<=0){zenithHeld=false;return;}zenithHeld=(bool?)p["held"]==true;if(!zenithHeld)return;zenithX=Number(p,"x",x+1);zenithY=Number(p,"y",y+1);zenithInput=tick;if(zenithBurst==0)zenithBurst=60;}
+        private double BlastExposure(double px,double py,double tx,double ty,double width,double height){int clear=0,total=0;for(int i=0;i<3;i++)for(int j=0;j<5;j++){double bx=tx+(i-1)*width*.45,by=ty+j*height/4;bool blocked=false;int steps=Math.Max(1,(int)Math.Ceiling(Math.Max(Math.Abs(bx-px),Math.Abs(by-py))*5));for(int step=1;step<steps;step++){int x0=(int)Math.Floor(px+(bx-px)*step/steps),y0=(int)Math.Floor(py+(by-py)*step/steps);if(TerrainFull(x0,y0)||Room.Blocks.TryGetValue(NativeRoom.Key(x0,y0),out var cell)&&NativeCatalog.Get((string)cell["id"]).Solid&&(bool?)cell["open"]!=true){blocked=true;break;}}total++;if(!blocked)clear++;}return (double)clear/total;}
+        private void ZenithInput(JObject p) {if(Inventory.Hand.Id!="hollowcraft_bridge:zenith"||health<=0||rider!=null||usingItem){zenithHeld=false;return;}bool held=(bool?)p["held"]==true;if(held&&!zenithHeld&&zenithBurst==0){zenithClock=0;zenithBurst=60;}zenithHeld=held;if(!held)return;zenithX=Number(p,"x",x+1);zenithY=Number(p,"y",y+1);zenithInput=tick;}
         private static Tuple<double,double> SwordPoint(double px,double py,Flight f,double age) {
             const double pixel=.0375;double p=Math.Max(0,Math.Min(1,age/60)),length=Math.Sqrt(f.Dx*f.Dx+f.Dy*f.Dy),lerp=Math.Max(0,Math.Min(1,1-length*2/(900*pixel))),minimum=Math.Min(60*pixel,Math.Max(.6,length));
             double angle=Math.PI+Math.Sign(f.Dx)*p*Math.PI*2,radius=Math.Max(minimum,length+40*pixel*Math.Max(0,Math.Min(1,(p-.5)*2))),sx=Math.Cos(angle)*radius,sy=Math.Sin(angle)*f.Spin*(2-lerp),rotation=Math.Atan2(f.Dy,f.Dx),tail=1-Math.Max(0,Math.Min(1,(p-.5)*2));
@@ -119,20 +134,34 @@ namespace HollowCraft.Standalone
                 else if((bool?)shot["grounded"]==true&&shot["stack"] is JObject data&&(string)shot["kind"]!="minecraft:ender_pearl"&&Math.Pow(Number(shot,"x")-x,2)+Math.Pow(Number(shot,"y")-y-.8,2)<1.5){var returned=NativeStack.Read(data);if((bool?)returned.Data["HollowCraftNoPickup"]==true)continue;returned.Data.Remove("HollowCraftPiercing");if(Inventory.Insert(returned))projectiles.Remove(pair.Key);}}
             foreach(var pair in primed.ToArray()){var value=pair.Value;value["fuse"]=(int)value["fuse"]-1;if((int)value["fuse"]<=0){primed.Remove(pair.Key);Explode(Number(value,"x"),Number(value,"y"));}}
             if(tick-zenithInput>6||Inventory.Hand.Id!="hollowcraft_bridge:zenith"||health<=0)zenithHeld=false;
+            if(Inventory.Hand.Id!="hollowcraft_bridge:zenith"||usingItem)zenithBurst=0;
+            if(health<=0||rider!=null){flights.Clear();zenithHeld=false;zenithBurst=0;}
             for(int sub=0;sub<6;sub++) {
                 if((zenithHeld||zenithBurst>0)&&zenithClock%20==0&&flights.Count<24){double dx=zenithX-x,dy=zenithY-y-1;if(dx*dx+dy*dy<.01)dx=.12;double length=Math.Sqrt(dx*dx+dy*dy);if(length>48){dx*=48/length;dy*=48/length;}flights.Add(new Flight{Id=++serial,Dx=dx,Dy=dy,Spin=(random.Next(2)==0?1:-1)*(.65+random.NextDouble()*.35),Style=zenithClock%60==0?0:1+random.Next(10),Rate=.7+1.3*Math.Max(0,Math.Min(1,1-length*2/(900*.0375)))});}
                 if(zenithHeld||zenithBurst>0){zenithClock++;if(zenithBurst>0)zenithBurst--;if(zenithHeld&&zenithClock%60==0)zenithBurst=60;}
                 foreach(var flight in flights.ToArray()) {
                     var a=SwordPoint(x,y,flight,flight.Age);flight.Age+=flight.Rate;if(flight.Age>=120){flights.Remove(flight);continue;}if(flight.Age>60)continue;var b=SwordPoint(x,y,flight,flight.Age);
                     foreach(var enemy in enemies.Values) {
-                        int id=(int)enemy["id"];if(flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
+                        long id=((long)(int)enemy["id"])<<1;if(flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
                         double minX=Number(enemy,"x")-Number(enemy,"width",.6)/2-.55,maxX=Number(enemy,"x")+Number(enemy,"width",.6)/2+.55,minY=Number(enemy,"y")-.55,maxY=Number(enemy,"y")+Number(enemy,"height",1.8)+.55;
                         if(!SegmentBox(a.Item1,a.Item2,b.Item1,b.Item2,minX,minY,maxX,maxY))continue;
                         flight.NextHit[id]=flight.Steps+7;HitEnemy(enemy,190*(random.NextDouble()<.14?2:1),"player",Math.Atan2(b.Item2-a.Item2,b.Item1-a.Item1)*180/Math.PI);
+                    }
+                    foreach(var mob in Room.Creatures.ToArray()) {
+                        if(Number(mob,"health")<=0)continue;long id=(((long)(int)mob["entity"])<<1)|1;
+                        if(flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
+                        double half=Number(mob,"width",.6)/2+.55;
+                        if(!SegmentBox(a.Item1,a.Item2,b.Item1,b.Item2,Number(mob,"x")-half,Number(mob,"y")-.55,Number(mob,"x")+half,Number(mob,"y")+Number(mob,"height",1.8)+.55))continue;
+                        flight.NextHit[id]=flight.Steps+7;HitCreature(mob,190*(random.NextDouble()<.14?2:1),true);
                     }flight.Steps++;
                 }
             }
             Emit(new JObject{["type"]="zenith",["tick"]=tick,["swords"]=new JArray(flights.Select(f=>new JObject{["id"]=f.Id,["dx"]=f.Dx,["dy"]=f.Dy,["spin"]=f.Spin,["rate"]=f.Rate,["age"]=f.Age,["style"]=f.Style}))});
+        }
+        private void MobProjectilePlayer(JObject value,double px,double py) {
+            string type=(string)value["mobKind"];
+            if(type=="fireball")Explode(px,py,1,false);
+            else {Damage(Number(value,"damage",3),type=="arrow"?"arrow":"magic",Number(value,"x"),Number(value,"y"),(int?)value["owner"]??0);if(type=="small_fireball")fireTicks=100;if(type=="bullet")Effect("levitation",200,0);if(type=="potion")Effect("poison",200,0);}
         }
         private static bool SegmentBox(double ax,double ay,double bx,double by,double minX,double minY,double maxX,double maxY) {
             double low=0,high=1;double[] p={bx-ax,by-ay},start={ax,ay},min={minX,minY},max={maxX,maxY};

@@ -16,6 +16,10 @@
     <Compile Include="../../hollow-knight/Standalone/NativeDepthBuffer.cs" Link="NativeDepthBuffer.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeAnimationClip.cs" Link="NativeAnimationClip.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeFont.cs" Link="NativeFont.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeMobCatalog.cs" Link="NativeMobCatalog.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeClouds.cs" Link="NativeClouds.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeMobInteractions.cs" Link="NativeMobInteractions.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeLoot.cs" Link="NativeLoot.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeCatalog.cs" Link="NativeCatalog.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeInventory.cs" Link="NativeInventory.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeGame.cs" Link="NativeGame.cs" />
