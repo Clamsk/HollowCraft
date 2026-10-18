@@ -109,6 +109,7 @@ namespace HollowCraft
             }
             if(spectatorBody) {hero.GetComponent<Collider2D>().isTrigger=previousTrigger;body.bodyType=previousBodyType;spectatorBody=false;body.linearVelocity=Vector2.zero;ownGravity=false;}
             PlayerSystem.DecayKnockback(Time.fixedDeltaTime,MinecraftControls.Grounded(hero));
+            runtime.JumpBuild?.TrackSupport(hero);
             bool water=(bool?)runtime.Stats?["water"] ?? false,lava=(bool?)runtime.Stats?["lava"]??false,climbing=(bool?)runtime.Stats?["climbing"] ?? false;
             int levitation=Effect("levitation");
             if(!Flying&&!Gliding&&levitation<0&&!climbing&&!lava&&WingStep(runtime,water))return;
@@ -172,6 +173,9 @@ namespace HollowCraft
                 }
                 body.gravityScale=0;lastAppliedY=displacement/Time.fixedDeltaTime;body.linearVelocity=new Vector2(body.linearVelocity.x,lastAppliedY);step=0;
             }
+            // A queued underfoot placement must not depend on the render frame
+            // or wait behind enemy/visual snapshot collection in Update.
+            runtime.JumpBuild?.Tick(hero);
         }
         private bool WingStep(HollowCraftRuntime runtime,bool water) {
             if(!TerrariaEquipment.WingEquipped) {TerrariaEquipment.FlightRemaining=3;TerrariaEquipment.WingState="none";ReleaseWings(false);return false;}

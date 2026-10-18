@@ -74,6 +74,10 @@ if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.
     @{profiles=$countTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.json') -Encoding UTF8
 }
 $registryTask=Join-Path $nativeRootTask 'release/native-registry.json'
+if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-font-v5.json'))) {
+    $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar'
+    & (Join-Path $PSScriptRoot 'prepare-native-font.ps1') -MinecraftJar $archiveTask -AssetsRoot $assetsTask
+}
 if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-creature-textures-v4.json'))) {
     $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask);$countTask=0
     try{foreach($entryTask in $zipTask.Entries){if($entryTask.FullName -match '^assets/minecraft/textures/entity/(zombie/zombie|skeleton/skeleton|creeper/creeper|spider/spider|pig/pig|cow/cow|sheep/sheep|sheep/sheep_fur|chicken|villager/villager|boat/[a-z_]+)\.png$'){$nameTask='mob_'+$Matches[1].Replace('/','_')+'.png';[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask $nameTask),$true);$countTask++}}}finally{$zipTask.Dispose()};@{textures=$countTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'native-creature-textures-v4.json') -Encoding UTF8

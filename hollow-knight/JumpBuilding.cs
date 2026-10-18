@@ -13,6 +13,8 @@ namespace HollowCraft
         private Vector2Int cell;
         private float supportY,jumpedAt,intentUntil;
         private bool nativeSupport,active,used,intent;
+        private float lastSupportTime=-1000,lastSupportY,lastSupportX;
+        private bool lastSupportNative;
         private Request request;
         private sealed class Request {
             internal string Id,Item;
@@ -45,9 +47,10 @@ namespace HollowCraft
             return !float.IsNegativeInfinity(top);
         }
         internal void BeginJump(HeroController hero) {
-            active=false;used=false;
             if(request!=null)return;
-            if(!Support(hero,out supportY,out nativeSupport)) {supportY=hero.GetComponent<Collider2D>().bounds.min.y;nativeSupport=false;}
+            active=false;used=false;
+            if(Time.unscaledTime-lastSupportTime<.25f&&Math.Abs(hero.transform.position.x-lastSupportX)<.85f){supportY=lastSupportY;nativeSupport=lastSupportNative;}
+            else if(!Support(hero,out supportY,out nativeSupport)) {supportY=hero.GetComponent<Collider2D>().bounds.min.y;nativeSupport=false;}
             // A thin foundation may embed below a fractional native surface. Its
             // top is the next voxel edge, so the first jump never needs two blocks.
             cell=new Vector2Int(Mathf.FloorToInt(hero.GetComponent<Collider2D>().bounds.center.x),Mathf.FloorToInt(supportY+.025f));
@@ -55,6 +58,18 @@ namespace HollowCraft
             bool pointed=GameCursor.WorldTarget(hero,out Vector2 mouse,out _)&&Underfoot(hero,mouse);
             if(CanUse&&(Input.GetKey(KeyCode.B)||(intent&&Time.unscaledTime<=intentUntil)||runtime.BuildRightHeld&&pointed))Arm();
             intent=false;
+        }
+        internal void TrackSupport(HeroController hero) {
+            if(MinecraftControls.Grounded(hero)) {
+                if(Support(hero,out float top,out bool native)){lastSupportTime=Time.unscaledTime;lastSupportY=top;lastSupportNative=native;lastSupportX=hero.transform.position.x;}
+                return;
+            }
+            // HK and MC do not run their jump callbacks in a guaranteed order.
+            // Recover the same support-anchored plan from actual upward motion.
+            if(!active&&request==null&&CanUse&&Time.unscaledTime-lastSupportTime<.25f&&(Input.GetKey(KeyCode.Space)||Input.GetKey(KeyCode.B))) {
+                var body=hero.GetComponent<Collider2D>();var motion=hero.GetComponent<Rigidbody2D>();
+                if(body!=null&&motion!=null&&motion.linearVelocity.y>1&&body.bounds.min.y>lastSupportY+.03f)BeginJump(hero);
+            }
         }
         private void Arm() {
             if(request!=null||used||!active||!CanUse)return;
@@ -104,7 +119,7 @@ namespace HollowCraft
         }
         internal void Cancel() {
             if(request!=null&&request.Sent)runtime.RejectTower(request.Cell);
-            request=null;active=false;intent=false;used=false;
+            request=null;active=false;intent=false;used=false;lastSupportTime=-1000;
         }
     }
 }

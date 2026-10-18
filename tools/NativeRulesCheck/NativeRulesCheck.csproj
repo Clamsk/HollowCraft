@@ -15,6 +15,7 @@
     <Reference Include="Newtonsoft.Json"><HintPath>$(MSBuildSDKsPath)/../Newtonsoft.Json.dll</HintPath></Reference>
     <Compile Include="../../hollow-knight/Standalone/NativeDepthBuffer.cs" Link="NativeDepthBuffer.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeAnimationClip.cs" Link="NativeAnimationClip.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeFont.cs" Link="NativeFont.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeCatalog.cs" Link="NativeCatalog.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeInventory.cs" Link="NativeInventory.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeGame.cs" Link="NativeGame.cs" />

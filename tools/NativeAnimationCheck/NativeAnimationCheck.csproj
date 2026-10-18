@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../hollow-knight/Standalone/NativeAnimationClip.cs" Link="NativeAnimationClip.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeRigSpace.cs" Link="NativeRigSpace.cs" />
+    <Reference Include="Newtonsoft.Json"><HintPath>$(MSBuildSDKsPath)/../Newtonsoft.Json.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

@@ -86,7 +86,10 @@ namespace HollowCraft
             var result=new List<object>(observed.Count);
             foreach(int id in observed) {
                 if(!enemies.TryGetValue(id,out var adapter))continue;
-                var actor=adapter.Resource?adapter.Breakable?.gameObject:adapter.Enemy?.gameObject;
+                // Unity destroyed components are managed references whose overloaded
+                // == null is true. ?. bypasses that check and throws on gameObject,
+                // aborting the rest of Update (including pointer/tower input).
+                var actor=adapter.Resource?(adapter.Breakable!=null?adapter.Breakable.gameObject:null):(adapter.Enemy!=null?adapter.Enemy.gameObject:null);
                 if(actor==null||!actor.activeInHierarchy||!adapter.Resource&&((!adapter.Enemy.enabled&&!NativeScriptedAttacks.NeedsNailContact(adapter.Enemy))||adapter.Enemy.isDead||adapter.Enemy.hp<=0))continue;
                 var body=adapter.Body;
                 if(body==null||!body.enabled||!body.gameObject.activeInHierarchy)adapter.Body=body=actor.GetComponentsInChildren<Collider2D>().FirstOrDefault(c=>c.enabled&&c.gameObject.activeInHierarchy&&(adapter.Resource||Resolve(c)==adapter.Enemy));

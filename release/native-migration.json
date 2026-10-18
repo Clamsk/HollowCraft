@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.4",
+  "version": "0.40.0-alpha.5",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -143,8 +143,12 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 111,
-    "launcherChecksPassed": 12
+    "ruleChecksPassed": 161,
+    "launcherChecksPassed": 12,
+    "originalPlayerAnimatorAxesCompared": 260232,
+    "originalMatrixPointsCompared": 4782,
+    "originalAnimationClipsCompared": 29,
+    "animationReferenceIsGameplayAcceptance": false
   },
   "dataCoverage": {
     "craftingRecipes": 822,
@@ -158,6 +162,7 @@
     "creativeTabs": 13,
     "sourceCreativeStacks": 1523,
     "soundEventMappings": 76,
-    "localAudioFiles": 149
+    "localAudioFiles": 149,
+    "importedBitmapGlyphs": 2413
   }
 }

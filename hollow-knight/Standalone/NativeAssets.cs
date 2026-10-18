@@ -16,7 +16,7 @@ namespace HollowCraft.Standalone
             if(string.IsNullOrEmpty(id)||id=="minecraft:air")return null;
             assets=assets??Root;
             if(textures.TryGetValue(id,out var cached)&&cached!=null)return cached;string name=id.Substring(id.IndexOf(':')+1);
-            if(assets!=null&&name.IndexOfAny(new[]{'/', '\\', '.', ':'})<0){string path=Path.Combine(assets,name+".png");if(File.Exists(path)){var imported=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,name=id};imported.LoadImage(File.ReadAllBytes(path));textures[id]=imported;return imported;}}
+            if(assets!=null&&name.IndexOfAny(new[]{'/', '\\', '.', ':'})<0){string path=Path.Combine(assets,name+".png");if(File.Exists(path)){var imported=new Texture2D(2,2,TextureFormat.RGBA32,false){name=id};imported.LoadImage(File.ReadAllBytes(path));imported.filterMode=FilterMode.Point;imported.wrapMode=TextureWrapMode.Clamp;textures[id]=imported;return imported;}}
             if(id.StartsWith("gui_",StringComparison.Ordinal))return null;
             bool armor=name.StartsWith("armor_",StringComparison.Ordinal);int w=armor?64:16,h=armor?32:16;var image=new Texture2D(w,h,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};var pixels=new Color[w*h];Color color=ColorFor(name);
             bool block=NativeCatalog.Get(id).Block||armor;

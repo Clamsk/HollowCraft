@@ -33,7 +33,7 @@ internal static class Program
         using(var reloaded=new NativeGame(root)){Send(reloaded,"room-a","save-a","scene","exactX",0,"exactY",2);var state=Latest(reloaded);Check((int)state["inventory"][3]["count"]==62,"Native disk reload");Check(((JArray)state["blocks"]).Count==1,"Native world disk reload");}
         Additional(root);
         Rendering();
-        if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));}
+        if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));FontContracts(Path.GetFullPath(args[1]));TowerContracts(root,Path.GetFullPath(args[1]));}
         Console.WriteLine("Native rule checks: "+checks+" passed. No Unity, Minecraft, Java, sockets or gameplay launched.");
     }
     private static void Rendering() {
@@ -46,7 +46,32 @@ internal static class Program
         depth.Clear();paint(5,red);paint(1,new NativeRasterTexture(2,1,new uint[]{0,0xffff0000}));Check(depth.Pixels[9]==0xff0000ff&&depth.Depth[9]==5,"Transparent texels do not hide skin or write depth");Check(depth.Pixels[13]==0xffff0000,"Opaque edge texels write depth normally");
         depth.Clear();Check(depth.Pixels.All(v=>v==0)&&depth.Depth.All(float.IsPositiveInfinity),"Clearing removes previous frame colors and depth");
         var clip=new NativeAnimationClip(JObject.Parse("{\"emote\":{\"beginTick\":8,\"endTick\":20,\"stopTick\":30,\"degrees\":false,\"moves\":[{\"tick\":8,\"rightArm\":{\"yaw\":1,\"y\":4},\"torso\":{\"yaw\":0.5}},{\"tick\":12,\"easing\":\"EASEOUTQUAD\",\"rightArm\":{\"yaw\":-1}},{\"tick\":8,\"body\":{\"z\":0.2}}]}}"));
-        Check(clip.Has("right_arm","yaw")&&clip.Sample("leftArm","yaw",10,.3f)==.3f,"Animation aliases and unkeyed vanilla pose channels");Check(Math.Abs(clip.Sample("rightArm","yaw",10)+.5f)<.0001f,"Better Combat ease-out keyframes");Check(clip.Sample("rightArm","y",8,2)==4,"Limb positions are absolute model coordinates");Check(clip.Sample("torso","yaw",8)==.5f&&clip.Sample("body","yaw",8)==0,"Torso and global body bones remain independent");Check(clip.Sample("rightArm","yaw",20)==-1&&clip.Sample("rightArm","yaw",30)==0,"Attack holds to endTick and recovers by stopTick");Check(clip.Fade(0)==0&&clip.Fade(8)==1,"Attack fades in instead of starting at the ready pose");Check(Math.Abs(NativeAnimationClip.Ease("EASEINQUAD",.5f)-.25f)<.0001f,"Ease-in is not accidentally linear");
+        Check(clip.Has("right_arm","yaw")&&clip.Sample("leftArm","yaw",10,.3f)==.3f,"Animation aliases and unkeyed vanilla pose channels");Check(Math.Abs(clip.Sample("rightArm","yaw",10))<.0001f,"Original default uses the preceding keyframe's easing");Check(clip.Sample("rightArm","y",8,2)==4,"Limb positions are absolute model coordinates");Check(clip.Sample("torso","yaw",8)==0&&clip.Sample("body","yaw",8)==.5f,"Legacy torso means the global body, not the chest joint");Check(clip.Sample("rightArm","yaw",20)==-1&&clip.Sample("rightArm","yaw",30)==0,"Attack holds to endTick and recovers by stopTick");Check(clip.Fade(0)==0&&clip.Fade(8)==1,"Attack fades in instead of starting at the ready pose");Check(Math.Abs(NativeAnimationClip.Ease("EASEINQUAD",.5f)-.25f)<.0001f,"Ease-in is not accidentally linear");
+        var modern=new NativeAnimationClip(JObject.Parse("{\"version\":3,\"emote\":{\"endTick\":20,\"moves\":[{\"tick\":0,\"torso\":{\"yaw\":90}}]}}"));
+        Check(Math.Abs(modern.Sample("torso","yaw",1)-(float)Math.PI/2)<.0001&&modern.Sample("body","yaw",1)==0,"Modern torso remains independent and omitted degrees flag defaults to degrees");
+    }
+    private static void FontContracts(string assets) {
+        var font=new NativeFont(JObject.Parse(File.ReadAllText(Path.Combine(assets,"native-font-v5.json"))));
+        Check(font.TryGet(32,out var space)&&space.Texture==null&&space.Advance==4,"Space advances four pixels without rendering any atlas slot");
+        Check(Math.Abs(font.Measure("Iron Sword")-font.Measure("IronSword")-4)<.001,"Spaces retain the provider's original width");
+        Check(font.Measure("iii")<font.Measure("WWW"),"Narrow letters use their actual bitmap width");
+        Check(font.Supports("Furnace Inventory 64:32")&&font.Supports("é"),"Provider character tables map Latin/accented glyphs");
+        Check(!font.Supports("空洞"),"Unmapped CJK labels select the readable system-font fallback");
+        Check(font.Measure("§6Iron Sword")==font.Measure("Iron Sword"),"Formatting markers do not create visible spacing");
+        Check(font.Measure("i\nWW")==font.Measure("WW"),"Multiline width is the widest line");
+    }
+    private static void TowerContracts(string root,string assets) {
+        using(var game=new NativeGame(Path.Combine(root,"tower-foundations"),assets))foreach(double support in new[]{-2.99,-2.5,-2.01,0,.25,.98,10.5})foreach(double step in new[]{.02,.05,.1}) {
+            string campaign="tower-"+support.ToString(System.Globalization.CultureInfo.InvariantCulture)+"-"+step.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Send(game,"tower",campaign,"scene","exactX",.5,"exactY",support);Latest(game);game.Inventory.Selected=3;
+            int cell=(int)Math.Floor(support+.025);double feet=support,velocity=.4634,phase=0;bool clear=false;
+            for(double age=0;age<1;age+=step){double remaining=step;while(remaining>1e-8){double segment=Math.Min(remaining,.05-phase);feet+=velocity*20*segment;phase+=segment;remaining-=segment;if(phase>=.049999){phase=0;velocity=(velocity-.08)*.98;}}if(feet>=cell+1.015){clear=true;break;}}
+            Check(clear,"Requested 1.5-block arc clears fractional foundation at simulated frame interval "+step);
+            // Deliberately leave the periodic pose at ground height. The action
+            // packet must carry the current feet, including the very first HK floor.
+            Send(game,"tower",campaign,"towerPlace","request","one-jump","x",0,"y",cell,"nativeFoundation",true,"supportY",support,"playerX",.5,"playerY",feet);
+            var state=Latest(game);Check(((JArray)state["blocks"]).Any(b=>(int)b["x"]==0&&(int)b["y"]==cell)&&(int)state["inventory"][3]["count"]==63,"Native foundation is placed once using current action coordinates");
+        }
     }
     private static void FrontendContracts(string root,string assets) {
         using(var game=new NativeGame(Path.Combine(root,"frontend"),assets)){

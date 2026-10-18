@@ -9,6 +9,7 @@ namespace HollowCraft
     internal sealed class MinecraftUI
     {
         private readonly HollowCraftRuntime runtime;
+        private Standalone.NativeFont bitmapFont;private bool fontLoaded;private Font readableFont;
         private float scale,left,top;
         private Vector2 pointer;
         private bool containerOpen;
@@ -42,7 +43,7 @@ namespace HollowCraft
                 if(i==menu.Selected)Region("gui_gamemode_switcher",rect,26,75,26,26);
                 var texture=runtime.ItemTexture(GameModeMenu.Icons[i]);if(texture!=null)GUI.DrawTexture(new Rect(rect.x+5*size,rect.y+5*size,16*size,16*size),texture);
             }
-            Text(GameModeMenu.Labels[menu.Selected],Screen.width/2-GameModeMenu.Labels[menu.Selected].Length*3*size,Screen.height/2+5*size,size);
+            Text(GameModeMenu.Labels[menu.Selected],Screen.width/2-TextWidth(GameModeMenu.Labels[menu.Selected],size)/2,Screen.height/2+5*size,size);
             Text("[F4]",Screen.width/2-27*size,Screen.height/2+25*size,size,Color.yellow);Text("Next",Screen.width/2+3*size,Screen.height/2+25*size,size,new Color(.67f,.67f,.67f));
         }
         private Texture2D Texture(string name) => runtime.ItemTexture(name);
@@ -56,17 +57,34 @@ namespace HollowCraft
             GUI.DrawTextureWithTexCoords(target,image,new Rect(x/image.width,1-(y+h)/image.height,w/image.width,h/image.height));
         }
         private void Tile(string name,float x,float y,float w,float h,float sx,float sy,float sw,float sh) => Region(name,new Rect(left+x*scale,top+y*scale,w*scale,h*scale),sx,sy,sw,sh);
+        private Standalone.NativeFont BitmapFont {
+            get{if(!fontLoaded){fontLoaded=true;string root=Standalone.NativeAssets.Root;if(root!=null){string file=System.IO.Path.Combine(root,"native-font-v5.json");if(System.IO.File.Exists(file))bitmapFont=new Standalone.NativeFont(JObject.Parse(System.IO.File.ReadAllText(file)));}}return bitmapFont;}
+        }
+        private GUIStyle ReadableStyle(float size) {
+            if(readableFont==null)readableFont=Font.CreateDynamicFontFromOSFont(new[]{"Microsoft YaHei","Arial"},16);
+            return new GUIStyle(GUI.skin.label){font=readableFont,fontSize=Mathf.RoundToInt(8*size),padding=new RectOffset(0,0,0,0),richText=false};
+        }
+        private float TextWidth(string value,float size)=>BitmapFont!=null&&BitmapFont.Supports(value??"")?BitmapFont.Measure(value)*Math.Max(1,Mathf.Round(size)):ReadableStyle(size).CalcSize(new GUIContent(value??"")).x;
         private void Text(string value,float x,float y,float size=2,Color? color=null)
         {
-            var font=Texture("gui_font");if(font==null) {if(runtime.Standalone){var style=new GUIStyle(GUI.skin.label){fontSize=Mathf.RoundToInt(8*size)};style.normal.textColor=color??Color.white;GUI.Label(new Rect(x,y,Math.Max(100,(value?.Length??0)*8*size),14*size),value??"",style);}return;}
+            value=value??"";size=Math.Max(1,Mathf.Round(size));x=Mathf.Round(x);y=Mathf.Round(y);
+            var font=BitmapFont;
+            if(font==null||!font.Supports(value)) {
+                var style=ReadableStyle(size);var bounds=style.CalcSize(new GUIContent(value));
+                style.normal.textColor=new Color(.12f,.12f,.12f);GUI.Label(new Rect(x+size,y+size,Math.Max(100,bounds.x+4),Math.Max(14*size,bounds.y+4)),value,style);
+                style.normal.textColor=color??Color.white;GUI.Label(new Rect(x,y,Math.Max(100,bounds.x+4),Math.Max(14*size,bounds.y+4)),value,style);return;
+            }
             Color previous=GUI.color;
             for(int pass=0;pass<2;pass++) {
                 GUI.color=pass==0 ? new Color(0.12f,0.12f,0.12f) : color ?? Color.white;
                 float advance=x+(pass==0 ? size : 0),py=y+(pass==0 ? size : 0);
-                foreach(char ch in value ?? "") {
-                    int code=ch<256 ? ch : '?';
-                    Region("gui_font",new Rect(advance,py,8*size,8*size),(code%16)*8,(code/16)*8,8,8);
-                    advance+=6*size;
+                for(int i=0;i<value.Length;i++) {
+                    int code=Standalone.NativeFont.Code(value,ref i);
+                    if(code==167&&i+1<value.Length){i++;continue;}
+                    if(code==10){advance=x+(pass==0?size:0);py+=9*size;continue;}if(code==13)continue;if(code==9){advance+=16*size;continue;}
+                    if(!font.TryGet(code,out var glyph))continue;
+                    if(glyph.Texture!=null)Region(glyph.Texture,new Rect(advance,py+(7-glyph.Ascent)*size,glyph.Width*glyph.RenderHeight/glyph.Height*size,glyph.RenderHeight*size),glyph.X,glyph.Y,glyph.Width,glyph.Height);
+                    advance+=glyph.Advance*size;
                 }
             }
             GUI.color=previous;
@@ -77,7 +95,7 @@ namespace HollowCraft
             var texture=runtime.ItemTexture(entry)??runtime.ItemTexture((string)entry["id"]);
             if(texture!=null) GUI.DrawTexture(bounds,texture,ScaleMode.ScaleToFit);
             int count=(int)entry["count"];
-            if(count>1) Text(count.ToString(),bounds.xMax-count.ToString().Length*6*scale,bounds.yMax-8*scale,scale);
+            if(count>1) Text(count.ToString(),bounds.xMax-TextWidth(count.ToString(),scale),bounds.yMax-8*scale,scale);
             int damage=(int?)entry["damage"] ?? 0,max=(int?)entry["maxDamage"] ?? 0;
             if(max>0 && damage>0) {
                 float remaining=Mathf.Clamp01(1-(float)damage/max);
@@ -161,7 +179,7 @@ namespace HollowCraft
         {
             var rect=new Rect(x,y,width*scale,20*scale);bool hover=rect.Contains(pointer);
             Region("gui_widgets",rect,0,hover ? 86 : 66,200,20);
-            Text(caption,x+(width*scale-caption.Length*6*scale)/2,y+6*scale,scale);
+            Text(caption,x+(width*scale-TextWidth(caption,scale))/2,y+6*scale,scale);
             if(GUI.enabled&&hover && Event.current.type==EventType.MouseDown && Event.current.button==0) {Event.current.Use();return true;}return false;
         }
         internal void Draw(JObject snapshot,JObject container,bool open,int selected,bool creative,bool dead,bool paused,bool connected,Vector2 crosshair,float mine)
@@ -221,7 +239,7 @@ namespace HollowCraft
             bool nativeGui=false;
             if(dead || paused) {
                 GUI.color=dead ? new Color(0.4f,0,0,0.65f) : new Color(0,0,0,0.65f);GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);GUI.color=Color.white;
-                string heading=dead ? "You died!" : "Game Menu";Text(heading,Screen.width/2-heading.Length*9,Screen.height/2-100,3);
+                string heading=dead ? "You died!" : "Game Menu";Text(heading,Screen.width/2-TextWidth(heading,3)/2,Screen.height/2-100,3);
                 if(Button(dead ? "Respawn" : "Back to Game",Screen.width/2-100*scale,Screen.height/2)) {if(dead) runtime.Send(new {type="respawn",scene=runtime.Room});else runtime.Resume();}
             } else if((open||runtime.CatalogOpen)&&(nativeGui=runtime.Gui?.Draw()==true)) { }
             else if(runtime.CatalogOpen) DrawCatalog();
@@ -239,7 +257,7 @@ namespace HollowCraft
             }
             GUI.color=Color.white;
             if(CampaignBridge.Sitting&&!open&&!dead&&!paused) {if(Button("Leave Bench (W / Space)",Screen.width/2-110*scale,Screen.height-76*scale,220)) CampaignBridge.LeaveBench();}
-            if(Time.unscaledTime<noticeUntil&&!string.IsNullOrEmpty(notice))Text(notice,Screen.width/2-notice.Length*3*scale,top-45*scale,scale);
+            if(Time.unscaledTime<noticeUntil&&!string.IsNullOrEmpty(notice))Text(notice,Screen.width/2-TextWidth(notice,scale)/2,top-45*scale,scale);
             if(open&&hovered!=null&&((int?)hovered["count"] ?? 0)>0) {
                 var lines=new System.Collections.Generic.List<string>{(string)hovered["name"] ?? (string)hovered["id"]};
                 foreach(var line in hovered["tooltip"] as JArray ?? new JArray()) lines.Add((string)line);

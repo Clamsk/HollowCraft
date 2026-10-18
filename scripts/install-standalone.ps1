@@ -57,5 +57,5 @@ $nativeAssetsTask=Join-Path $nativeRootTask 'artifacts/StandaloneAssets';New-Ite
 Copy-Item -LiteralPath (Join-Path $nativeRootTask 'release/native-registry.json') -Destination (Join-Path $nativeAssetsTask 'native-registry.json') -Force
 if(-not $SkipVisualResources){try{& (Join-Path $PSScriptRoot 'prepare-native-resources.ps1')}catch{Write-Warning ('Static resource setup failed; using authored fallback assets. Retry install when online. '+$_.Exception.Message)}}
 & (Join-Path $PSScriptRoot 'prepare-hk-test.ps1') -GameRoot $GameRoot -Standalone
-@{schema=1;backend='standalone';gameRoot=$GameRoot;version='0.40.0-alpha.4'} | ConvertTo-Json | Set-Content -LiteralPath $nativeConfigTask -Encoding UTF8
+@{schema=1;backend='standalone';gameRoot=$GameRoot;version='0.40.0-alpha.5'} | ConvertTo-Json | Set-Content -LiteralPath $nativeConfigTask -Encoding UTF8
 Write-Host 'Native HollowCraft installed. Open Start HollowCraft Native.cmd. Minecraft and Java are not required.'
