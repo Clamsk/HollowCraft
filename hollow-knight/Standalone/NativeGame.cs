@@ -120,7 +120,7 @@ namespace HollowCraft.Standalone
             scene=nextScene;visit=(int?)packet["visit"]??0;terrainSurveyRequired=(bool?)packet["nativeTerrain"]??false;
             if(!rooms.ContainsKey(scene))rooms[scene]=new NativeRoom();
             x=Number(packet,"exactX",Number(packet,"x"));y=Number(packet,"exactY",Number(packet,"y"));
-            enemies.Clear();enemyHurt.Clear();attackReplies.Clear();spentAttacks.Clear();towerResults.Clear();flights.Clear();projectiles.Clear();primed.Clear();terrain.Clear();terrainKnown.Clear();rider=null;mining=null;usingItem=false;usingTicks=0;accumulator=0;teleport=0;lastLanding=-1;landingWater=null;lastVisual=null;
+            enemies.Clear();enemyHurt.Clear();attackReplies.Clear();spentAttacks.Clear();towerResults.Clear();flights.Clear();zenithVolley=null;zenithHeld=false;zenithBurst=zenithClock=0;zenithInput=-100;projectiles.Clear();primed.Clear();terrain.Clear();terrainKnown.Clear();rider=null;mining=null;usingItem=false;usingTicks=0;accumulator=0;teleport=0;lastLanding=-1;landingWater=null;lastVisual=null;
             foreach(var value in Room.Projectiles)projectiles[(int)value["entity"]]=(JObject)value.DeepClone();
             foreach(var value in Room.Primed)primed[(int)value["id"]]=(JObject)value.DeepClone();
             introLanding=!introDone&&scene=="Tutorial_01"&&((bool?)packet["intro"]==true||!File.Exists(savePath));
@@ -131,7 +131,7 @@ namespace HollowCraft.Standalone
             foreach(JObject data in values) {
                 int id=(int)data["id"];present.Add(id);int generation=(int?)data["generation"]??0;
                 if(!enemies.TryGetValue(id,out var target)||(int?)target["generation"]!=generation) {target=(JObject)data.DeepClone();target["blockSerial"]=target["contactSerial"]=0;enemies[id]=target;enemyHurt.Remove(id);}
-                foreach(string field in new[]{"x","y","width","height","phaseFloor","nativeHurtTicks","nativeContact","nailBlock","spellBlock","kind","name","actor"})if(data[field]!=null)target[field]=data[field].DeepClone();
+                foreach(string field in new[]{"x","y","width","height","nativeMaxHealth","phaseFloor","nativeHurtTicks","nativeContact","nailBlock","spellBlock","kind","name","actor"})if(data[field]!=null)target[field]=data[field].DeepClone();
             }
             foreach(int id in enemies.Keys.Where(id=>!present.Contains(id)).ToArray()){enemies.Remove(id);enemyHurt.Remove(id);}
         }

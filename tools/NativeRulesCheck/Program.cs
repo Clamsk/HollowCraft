@@ -34,6 +34,7 @@ internal static partial class Program
         Additional(root);
         Rendering();
         if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));FontContracts(Path.GetFullPath(args[1]));TowerContracts(root,Path.GetFullPath(args[1]));NativeExpansion(root,Path.GetFullPath(args[1]));WorldMigration(root,Path.GetFullPath(args[1]));MechanicsMigration(root,Path.GetFullPath(args[1]));LauncherSettings(root,Path.GetFullPath(args[1]));FluidFood(root,Path.GetFullPath(args[1]));NativeGround(root,Path.GetFullPath(args[1]));}
+        if(args.Length>1)ZenithBalance(root,Path.GetFullPath(args[1]));
         Console.WriteLine("Native rule checks: "+checks+" passed. No Unity, Minecraft, Java, sockets or gameplay launched.");
     }
     private static void Rendering() {

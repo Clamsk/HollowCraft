@@ -14,6 +14,7 @@ namespace HollowCraft.Standalone
     }
     internal static class NativeCatalog
     {
+        internal const double ZenithDamage=200;
         internal static readonly Dictionary<string,NativeItem> Items=new Dictionary<string,NativeItem>(StringComparer.Ordinal);
         internal static bool RegistryLoaded;
         private static readonly HashSet<string> vanillaItems=new HashSet<string>();
@@ -48,7 +49,7 @@ namespace HollowCraft.Standalone
             foreach(string id in new[]{"shield","bow","crossbow","trident","elytra","flint_and_steel","shears","totem_of_undying","water_bucket","lava_bucket","milk_bucket","potion","splash_potion","lingering_potion","hollowcraft_bridge:zenith","hollowcraft_bridge:stardust_wings"})Get(id).Maximum=1;
             Get("bucket").Maximum=Get("ender_pearl").Maximum=Get("snowball").Maximum=Get("egg").Maximum=16;
             foreach(string mob in new[]{"zombie","skeleton","creeper","spider","pig","cow","sheep","chicken","villager"})Add(mob+"_spawn_egg").Group="creatures";
-            Get("bow").Durability=384;Get("crossbow").Durability=465;Get("shield").Durability=336;Get("trident").Durability=250;Get("trident").Attack=9;Get("trident").Speed=1.1;Get("elytra").Durability=432;Get("elytra").Equipment=Get("hollowcraft_bridge:stardust_wings").Equipment="chestplate";Get("hollowcraft_bridge:zenith").Attack=190;Get("hollowcraft_bridge:zenith").Speed=2;Get("flint_and_steel").Durability=64;Get("shears").Durability=238;
+            Get("bow").Durability=384;Get("crossbow").Durability=465;Get("shield").Durability=336;Get("trident").Durability=250;Get("trident").Attack=9;Get("trident").Speed=1.1;Get("elytra").Durability=432;Get("elytra").Equipment=Get("hollowcraft_bridge:stardust_wings").Equipment="chestplate";Get("hollowcraft_bridge:zenith").Attack=ZenithDamage;Get("hollowcraft_bridge:zenith").Speed=2;Get("flint_and_steel").Durability=64;Get("shears").Durability=238;
             foreach(string id in new[]{"torch","redstone_torch","soul_torch","redstone","lever","repeater","comparator"}) {Get(id).Block=true;Get(id).Solid=false;Get(id).Group="redstone";Get(id).Hardness=0;}
         }
         internal static void Import(JObject data) {

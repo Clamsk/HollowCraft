@@ -36,7 +36,7 @@ namespace HollowCraft
         private static object Entry(int id,Adapter adapter,Collider2D body) {
             var enemy=adapter.Enemy;
             var actor=enemy!=null?enemy.gameObject:adapter.Breakable.gameObject;
-            return new {id,maxHealth=adapter.Max,health=adapter.Health,generation=adapter.Generation,
+            return new {id,maxHealth=adapter.Max,nativeMaxHealth=adapter.NativeMax,health=adapter.Health,generation=adapter.Generation,
                 kind=adapter.Resource?"resource":enemy.name.IndexOf("ghost",StringComparison.OrdinalIgnoreCase)>=0||enemy.name.IndexOf("shade",StringComparison.OrdinalIgnoreCase)>=0?"undead":"arthropod",
                 name=adapter.Resource?adapter.Breakable.name:enemy.name,actor=body.attachedRigidbody!=null?body.attachedRigidbody.transform.GetInstanceID():actor.GetInstanceID(),x=body.bounds.center.x,y=body.bounds.min.y,width=body.bounds.size.x,height=body.bounds.size.y,
                 phaseFloor=enemy!=null?Math.Max(0,(NativeBossPhases.Floor(enemy,adapter.NativeMax)-.01f)/adapter.NativeMax*adapter.Max):0,

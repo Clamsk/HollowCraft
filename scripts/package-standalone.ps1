@@ -1,4 +1,4 @@
-﻿param([string]$Version='0.40.0-alpha.10')
+﻿param([string]$Version='0.40.0-alpha.11')
 $ErrorActionPreference='Stop'
 $nativeRootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $nativeRootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -19,6 +19,7 @@ $filesTask=@(
     'docs\NATIVE_MIGRATION.md','docs\NATIVE_MIGRATION.en.md','docs\NATIVE_LAUNCHER_FIX.md','docs\NATIVE_HANDS_LAUNCHER.md','docs\NATIVE_HANDS_LAUNCHER.en.md','docs\LAUNCHER_ARTWORK.md',
     'docs\NATIVE_RENDERING.md','docs\NATIVE_RENDERING.en.md','docs\NATIVE_INPUT_FIX.md','docs\NATIVE_INPUT_FIX.en.md','docs\NATIVE_ANIMATION_FIX.md','docs\NATIVE_ANIMATION_FIX.en.md',
     'docs\NATIVE_SYSTEMS.md','docs\NATIVE_SYSTEMS.en.md','docs\NATIVE_EXPANSION.md','docs\NATIVE_EXPANSION.en.md','docs\NATIVE_FLUID_FOOD.md','docs\NATIVE_FLUID_FOOD.en.md','docs\NATIVE_TERRAIN_TRIDENT.md','docs\NATIVE_TERRAIN_TRIDENT.en.md','tools\fixtures\tutorial-edge-floor.json',
+    'docs\NATIVE_ZENITH_BALANCE.md','docs\NATIVE_ZENITH_BALANCE.en.md',
     'release\THIRD_PARTY.md','release\THIRD_PARTY.en.md'
 )
 foreach($relativeTask in $filesTask){
@@ -28,8 +29,8 @@ foreach($relativeTask in $filesTask){
 }
 New-Item -ItemType Directory -Path (Join-Path $stageTask 'artifacts\HollowCraft') -Force | Out-Null
 Copy-Item -LiteralPath $dllTask -Destination (Join-Path $stageTask 'artifacts\HollowCraft\HollowCraft.dll')
-Set-Content -LiteralPath (Join-Path $stageTask 'README.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.10', '', '只运行空洞的独立 Mod 迁移预览。尚未完成全部功能移植，尚未验证完整通关。', '', '先运行 Install HollowCraft Native.cmd，再运行 Start HollowCraft Native.cmd。', '', '[完整安装与迁移说明](docs/NATIVE_MIGRATION.md) | [English](docs/NATIVE_MIGRATION.en.md)'
-Set-Content -LiteralPath (Join-Path $stageTask 'README.en.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.10', '', 'Hollow Knight-only migration preview. Feature parity and a full playthrough are not yet verified.', '', 'Run Install HollowCraft Native.cmd, then Start HollowCraft Native.cmd.', '', '[Installation and migration status](docs/NATIVE_MIGRATION.en.md) | [简体中文](docs/NATIVE_MIGRATION.md)'
+Set-Content -LiteralPath (Join-Path $stageTask 'README.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.11', '', '只运行空洞的独立 Mod 迁移预览。尚未完成全部功能移植，尚未验证完整通关。', '', '先运行 Install HollowCraft Native.cmd，再运行 Start HollowCraft Native.cmd。', '', '[完整安装与迁移说明](docs/NATIVE_MIGRATION.md) | [English](docs/NATIVE_MIGRATION.en.md)'
+Set-Content -LiteralPath (Join-Path $stageTask 'README.en.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.11', '', 'Hollow Knight-only migration preview. Feature parity and a full playthrough are not yet verified.', '', 'Run Install HollowCraft Native.cmd, then Start HollowCraft Native.cmd.', '', '[Installation and migration status](docs/NATIVE_MIGRATION.en.md) | [简体中文](docs/NATIVE_MIGRATION.md)'
 $manifestFilesTask=@(Get-ChildItem -LiteralPath $stageTask -Recurse -File | ForEach-Object {
     @{path=$_.FullName.Substring($stageTask.Length+1).Replace('\','/');sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}
 })

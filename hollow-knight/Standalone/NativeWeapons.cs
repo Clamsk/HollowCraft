@@ -7,11 +7,15 @@ namespace HollowCraft.Standalone
 {
     internal sealed partial class NativeGame
     {
+        // A complete use emits three visual swords. They share one accepted hit
+        // per target, including across native phase/generation reconciliation.
+        private sealed class ZenithVolley {internal readonly HashSet<long> Hit=new HashSet<long>();}
         private sealed class Flight
         {
-            internal int Id,Style,Steps;internal double Dx,Dy,Spin,Rate,Age;internal readonly Dictionary<long,int> NextHit=new Dictionary<long,int>();
+            internal int Id,Style,Steps;internal double Dx,Dy,Spin,Rate,Age;internal ZenithVolley Volley;internal readonly Dictionary<long,int> NextHit=new Dictionary<long,int>();
         }
         private readonly List<Flight> flights=new List<Flight>();
+        private ZenithVolley zenithVolley;
         private readonly Dictionary<int,JObject> projectiles=new Dictionary<int,JObject>(),primed=new Dictionary<int,JObject>();
         private readonly Dictionary<string,JObject> impacts=new Dictionary<string,JObject>();
         private readonly Random random=new Random();
@@ -140,22 +144,27 @@ namespace HollowCraft.Standalone
             if(Inventory.Hand.Id!="hollowcraft_bridge:zenith"||usingItem)zenithBurst=0;
             if(health<=0||rider!=null){flights.Clear();zenithHeld=false;zenithBurst=0;}
             for(int sub=0;sub<6;sub++) {
-                if((zenithHeld||zenithBurst>0)&&zenithClock%20==0&&flights.Count<24){double dx=zenithX-x,dy=zenithY-y-1;if(dx*dx+dy*dy<.01)dx=.12;double length=Math.Sqrt(dx*dx+dy*dy);if(length>48){dx*=48/length;dy*=48/length;}flights.Add(new Flight{Id=++serial,Dx=dx,Dy=dy,Spin=(random.Next(2)==0?1:-1)*(.65+random.NextDouble()*.35),Style=zenithClock%60==0?0:1+random.Next(10),Rate=.7+1.3*Math.Max(0,Math.Min(1,1-length*2/(900*.0375)))});}
-                if(zenithHeld||zenithBurst>0){zenithClock++;if(zenithBurst>0)zenithBurst--;if(zenithHeld&&zenithClock%60==0)zenithBurst=60;}
+                if((zenithHeld||zenithBurst>0)&&zenithClock%20==0&&flights.Count<24){if(zenithClock%60==0||zenithVolley==null){zenithVolley=new ZenithVolley();zenithBurst=60;}double dx=zenithX-x,dy=zenithY-y-1;if(dx*dx+dy*dy<.01)dx=.12;double length=Math.Sqrt(dx*dx+dy*dy);if(length>48){dx*=48/length;dy*=48/length;}flights.Add(new Flight{Id=++serial,Dx=dx,Dy=dy,Volley=zenithVolley,Spin=(random.Next(2)==0?1:-1)*(.65+random.NextDouble()*.35),Style=zenithClock%60==0?0:1+random.Next(10),Rate=.7+1.3*Math.Max(0,Math.Min(1,1-length*2/(900*.0375)))});}
+                if(zenithHeld||zenithBurst>0){zenithClock++;if(zenithBurst>0)zenithBurst--;}
                 foreach(var flight in flights.ToArray()) {
                     var a=SwordPoint(x,y,flight,flight.Age);flight.Age+=flight.Rate;if(flight.Age>=120){flights.Remove(flight);continue;}if(flight.Age>60)continue;var b=SwordPoint(x,y,flight,flight.Age);
                     foreach(var enemy in enemies.Values) {
-                        long id=((long)(int)enemy["id"])<<1;if(flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
+                        long id=((long)(int)enemy["id"])<<1;if(flight.Volley.Hit.Contains(id)||flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
                         double minX=Number(enemy,"x")-Number(enemy,"width",.6)/2-.55,maxX=Number(enemy,"x")+Number(enemy,"width",.6)/2+.55,minY=Number(enemy,"y")-.55,maxY=Number(enemy,"y")+Number(enemy,"height",1.8)+.55;
                         if(!SegmentBox(a.Item1,a.Item2,b.Item1,b.Item2,minX,minY,maxX,maxY))continue;
-                        flight.NextHit[id]=flight.Steps+7;HitEnemy(enemy,190*(random.NextDouble()<.14?2:1),"player",Math.Atan2(b.Item2-a.Item2,b.Item1-a.Item1)*180/Math.PI);
+                        // Proxy health is compressed for MC combat. Convert the requested
+                        // 200 HK HP before applying the existing native phase floor. Do not
+                        // carry clipped damage into the next phase or multiply it by crits.
+                        double maximum=Number(enemy,"maxHealth",1),nativeMaximum=Number(enemy,"nativeMaxHealth",maximum);
+                        double damage=NativeCatalog.ZenithDamage*maximum/Math.Max(1,nativeMaximum);
+                        flight.NextHit[id]=flight.Steps+7;if(HitEnemy(enemy,damage,"player",Math.Atan2(b.Item2-a.Item2,b.Item1-a.Item1)*180/Math.PI))flight.Volley.Hit.Add(id);
                     }
                     foreach(var mob in Room.Creatures.ToArray()) {
                         if(Number(mob,"health")<=0)continue;long id=(((long)(int)mob["entity"])<<1)|1;
-                        if(flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
+                        if(flight.Volley.Hit.Contains(id)||flight.NextHit.TryGetValue(id,out int until)&&flight.Steps<until)continue;
                         double half=Number(mob,"width",.6)/2+.55;
                         if(!SegmentBox(a.Item1,a.Item2,b.Item1,b.Item2,Number(mob,"x")-half,Number(mob,"y")-.55,Number(mob,"x")+half,Number(mob,"y")+Number(mob,"height",1.8)+.55))continue;
-                        flight.NextHit[id]=flight.Steps+7;HitCreature(mob,190*(random.NextDouble()<.14?2:1),true);
+                        flight.NextHit[id]=flight.Steps+7;if(HitCreature(mob,NativeCatalog.ZenithDamage,true))flight.Volley.Hit.Add(id);
                     }flight.Steps++;
                 }
             }
