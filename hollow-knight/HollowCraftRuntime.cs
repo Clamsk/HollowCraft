@@ -806,10 +806,10 @@ namespace HollowCraft
                 DontDestroyOnLoad(block);
                 block.transform.position = new Vector3((x+0.5f)*CellSize, (y+0.5f)*CellSize, 0.1f);
                 var renderer = block.AddComponent<SpriteRenderer>();
-                Texture2D texture = Texture(id);
+                Texture2D texture = Texture((string)cell["render"]??id);
                 if((bool?)cell["lit"]==true) texture=Texture(id+"_on") ?? texture;
                 if(id.EndsWith("_door")&&!id.EndsWith("_trapdoor")) texture=Texture(id+(state.Contains("half=upper") ? "_top":"_bottom")) ?? texture;
-                if(id=="minecraft:redstone_wire") texture=Texture("minecraft:redstone_dust_line0") ?? texture;
+                if(id=="minecraft:redstone_wire"||id=="minecraft:redstone") texture=Texture("minecraft:redstone_dust_line0") ?? texture;
                 if(id=="minecraft:moving_piston") texture=Texture("minecraft:piston_top") ?? texture;
                 renderer.sprite = texture != null ? Sprite.Create(texture, new Rect(0,0,texture.width,texture.height),
                     new Vector2(0.5f,0.5f), texture.width / CellSize) : Square(new Color(0.65f,0.5f,0.8f));
@@ -820,7 +820,7 @@ namespace HollowCraft
                     float height=(float?)cell["height"] ?? 1;block.transform.localScale=new Vector3(1,height,1);block.transform.position+=Vector3.down*(1-height)*.5f;
                     if(id=="minecraft:water") renderer.color=new Color(.25f,.5f,1,.7f);
                 }
-                if(id=="minecraft:redstone_wire") {block.transform.localScale=new Vector3(1,.12f,1);block.transform.position+=Vector3.down*.4f;renderer.color=Color.Lerp(new Color(.25f,0,0),Color.red,((float?)cell["power"] ?? 0)/15f);}
+                if(id=="minecraft:redstone_wire"||id=="minecraft:redstone") {block.transform.localScale=new Vector3(1,.12f,1);block.transform.position+=Vector3.down*.4f;renderer.color=Color.Lerp(new Color(.25f,0,0),Color.red,((float?)cell["power"] ?? 0)/15f);}
                 if ((bool?)cell["solid"] == true) {
                     var collision=cell["collision"] as JArray;
                     if(collision!=null) foreach(JArray box in collision) {

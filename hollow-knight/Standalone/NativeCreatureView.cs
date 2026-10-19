@@ -19,7 +19,7 @@ namespace HollowCraft.Standalone
         private void Create(string id,bool boat,float height) {
             DisposeModel();model=new GameObject("Native textured rig "+id);model.transform.SetParent(transform,false);model.transform.localPosition=new Vector3(0,-height/2,-.05f);kind=id;first=true;legs=arms=null;
             modelHeight=height;
-            var blueprint=NativeMobCatalog.Find(id);if(!boat&&blueprint!=null){imported=new NativeCreatureRig(model.transform,blueprint,height);CreateDisplay();return;}
+            var blueprint=NativeMobCatalog.Find(id);if(blueprint!=null){imported=new NativeCreatureRig(model.transform,blueprint,height);CreateDisplay();return;}
             string name=id.Substring(id.IndexOf(':')+1),file=boat?"boat_"+name.Replace("_chest_boat","").Replace("_boat","").Replace("_chest_raft","").Replace("_raft",""):name=="chicken"?"chicken":name+"_"+name;texture=NativeAssets.Texture("mob_"+file);
             if(boat){Part("Floor",16,3,28,0,0,new Vector3(0,24,0),new Vector3(-8,-3,-14));Part("Port",2,6,28,0,19,new Vector3(-8,21,0),new Vector3(-2,-3,-14));Part("Starboard",2,6,28,0,19,new Vector3(8,21,0),new Vector3(0,-3,-14));Part("Bow",16,6,2,0,27,new Vector3(0,21,-14),new Vector3(-8,-3,-2));Part("Stern",16,6,2,0,27,new Vector3(0,21,14),new Vector3(-8,-3,0));}
             else if(name=="zombie"||name=="skeleton"||name=="villager") {
@@ -41,7 +41,7 @@ namespace HollowCraft.Standalone
         private void CreateDisplay(){var shown=new GameObject("Native cached creature sprite");shown.transform.SetParent(model.transform,false);display=shown.AddComponent<SpriteRenderer>();display.sortingOrder=25;}
         internal void Apply(JObject data) {
             string next=(string)data["kind"];bool boat=(bool?)data["boat"]==true;float height=(float?)data["height"]??1;if(next!=kind||model==null||Math.Abs(height-modelHeight)>.01f)Create(next,boat,height);
-            float px=(float)data["x"],distance=first?0:Mathf.Abs(px-lastX);phase+=distance*4;first=false;lastX=px;var spec=NativeMobCatalog.Find(kind);int frame=boat?0:spec?.Motion=="fly"||spec?.Motion=="swim"?Mathf.FloorToInt(Time.time*12)%8:distance<.001f?8:Mathf.FloorToInt(phase)%8,facing=(int?)data["facing"]<0?-1:1;bool sitting=data["vehicle"]!=null;string key=kind+"/"+facing+"/"+frame+"/"+sitting;
+            float px=(float)data["x"],distance=first?0:Mathf.Abs(px-lastX);phase+=distance*4;first=false;lastX=px;var spec=NativeMobCatalog.Find(kind);int frame=boat?0:spec?.Motion=="fly"||spec?.Motion=="swim"?Mathf.FloorToInt(Time.time*12)%8:distance<.001f?8:Mathf.FloorToInt(phase)%8,facing=(int?)data["facing"]<0?-1:1;bool sitting=data["vehicle"]!=null||(bool?)data["sitting"]==true;string key=kind+"/"+facing+"/"+frame+"/"+sitting;
             key+="/"+((int?)data["attacking"]>0)+"/"+((bool?)data["sheared"]==true)+"/"+((bool?)data["baby"]==true);
             if(!frames.TryGetValue(key,out var sprite)) {
                 imported?.Pose(frame,sitting,data);

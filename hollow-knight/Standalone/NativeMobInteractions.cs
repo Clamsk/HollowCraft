@@ -21,6 +21,8 @@ namespace HollowCraft.Standalone
             var mob=Room.Creatures.FirstOrDefault(v=>(bool?)v["boat"]!=true&&Number(v,"health")>0&&Math.Abs(Number(v,"x")-tx)<Number(v,"width",.6)/2+.5&&ty>=Number(v,"y")-.5&&ty<=Number(v,"y")+Number(v,"height",1.8)+.5);
             if(mob==null||Math.Abs(Number(mob,"x")-x)>4.5||Math.Abs(Number(mob,"y")-y)>4.5)return false;
             var hand=!Inventory.Hand.Empty?Inventory.Hand:Inventory.Offhand;string kind=(string)mob["kind"];
+            if(OpenTrading(mob))return true;
+            if((bool?)mob["tamed"]==true&&(kind=="minecraft:wolf"||kind=="minecraft:cat"||kind=="minecraft:parrot")&&!BreedFood(kind,hand.Id)){mob["sitting"]=(bool?)mob["sitting"]!=true;return true;}
             if(hand.Id=="minecraft:bucket"&&(kind=="minecraft:cow"||kind=="minecraft:mooshroom"||kind=="minecraft:goat")) {
                 if(!Creative){hand.Count--;hand.Normalize();var milk=NativeStack.New("milk_bucket");if(hand.Empty){hand.Id=milk.Id;hand.Count=1;}else if(!Inventory.Insert(milk))DropAt(milk,x,y+.5);}else {var milk=NativeStack.New("milk_bucket");Inventory.Insert(milk);}Sound("minecraft:entity.cow.milk",.8);return true;
             }
@@ -36,6 +38,7 @@ namespace HollowCraft.Standalone
             return false;
         }
         private void TickMobLifecycle(JObject mob) {
+            TickTrading(mob);
             foreach(string field in new[]{"loveTicks","breedCooldown","growTicks"})if(Number(mob,field)>0)mob[field]=Number(mob,field)-1;
             if((bool?)mob["baby"]==true&&Number(mob,"growTicks")<=0){mob["baby"]=false;mob["width"]=Number(mob,"width")*2;mob["height"]=Number(mob,"height")*2;}
             if(Number(mob,"loveTicks")<=0||Room.Creatures.Count>=128)return;

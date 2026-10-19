@@ -1,4 +1,4 @@
-# HollowCraft Native 0.40.0-alpha.6
+﻿# HollowCraft Native 0.40.0-alpha.7
 
 [简体中文](NATIVE_MIGRATION.md) | English
 
@@ -33,19 +33,19 @@ Implemented means a local implementation exists, not exact vanilla fidelity or g
 | Inventory, offhand, starter equipment, durability and modes | Implemented with 1255 vanilla item records; special behaviors, complex NBT and complete enchantments pending |
 | Health, armor, hunger, regeneration, absorption, pearl damage | Implemented; full damage/enchantment parity pending |
 | Food, golden apples, shields, totems | Local rules, presentation and selected original audio; visual/audio acceptance pending |
-| Crafting, table, furnace/blast furnace/smoker, chest, brewing | 822 regular crafting recipes, 112 cooking recipes and 251 brewing conversions; dynamic recipes and full loot rules pending |
+| Crafting, table, furnace/blast furnace/smoker, chest, brewing | 822 regular crafting recipes, 112 cooking recipes and 251 brewing conversions; special crafting, packed/shared storage and common rules from 925 block loot tables added; full predicates/state rules pending |
 | Anvil, enchanting, grindstone, stonecutter, smithing, XP | Native rules and input/XP costs; random rolls are not Java-seed-identical; trim NBT is stored but not rendered |
 | Blocks, mining, bedrock and TNT | Blast resistance, decaying rays and occlusion damage added; special shapes and full 3D-to-2D parity pending |
-| Arrows, pearls, tridents, crossbows and potions | Lingering clouds, MC-creature effects and undead inversion added; special projectile/enchantment/custom-NBT details pending |
-| Fluids, landing water, swimming and drowning | Simplified 2D implementation; not the full vanilla fluid algorithm |
-| Redstone | Power, wire, lamp, doors and TNT; pistons, observers and advanced timing pending |
+| Arrows, pearls, tridents, crossbows and potions | Lingering clouds, MC-creature effects and undead inversion added; common custom potion NBT added; remaining special projectile/enchantment details pending |
+| Fluids, landing water, swimming and drowning | Persistent local source/flow clocks, recession, regeneration, mixing, sponges, waterlogged slabs and currents; full slope/physics rules pending |
+| Redstone | Power/dust, delayed relays, comparators, torches, plates, observers, pistons, hoppers, droppers/dispensers; slime/honey groups, quasi-connectivity and full connection/timing parity pending |
 | Elytra, rockets, Zenith and Stardust Wings | Clamsk grants, bridge wing structure, vanilla hand transforms and optional local Terraria art/audio; Bendy and full gameplay review pending |
-| Boats and mobs | 75 species with model descriptions, basic local behaviors, animal interactions and common rules from 97 loot tables; full AI, special abilities/variants/trading and remaining loot predicates pending |
+| Boats and mobs | 75 species with model descriptions, basic local behaviors, animal interactions and common rules from 97 loot tables; 2D navigation, original trade samples, 18 boat models and selected abilities added; full goals/variants/equipment/reputation and remaining loot predicates pending |
 | Creative menu | Original 13-tab data/layout, potion/enchantment NBT and saved hotbars; special behavior gaps remain and unported creature eggs are filtered |
 | Player and equipment rendering | Root mirroring, joint attachments, per-pixel depth, vanilla hand/GUI transforms, combo timing and transitions; Bendy/pose details and gameplay appearance review pending |
 | Textures, UI and sound | Static vanilla textures, authored fallbacks and optional local model import; visual/audio parity is incomplete |
 
-See [alpha.6 items, creatures and potions](NATIVE_EXPANSION.en.md), [alpha.5 animation, tower and font fixes](NATIVE_ANIMATION_FIX.en.md), [alpha.4 details](NATIVE_INPUT_FIX.en.md) and [alpha.3 rendering foundations](NATIVE_RENDERING.en.md) and [native-migration.json](../release/native-migration.json). Static registry coverage is not complete behavior coverage.
+See [alpha.7 world systems](NATIVE_SYSTEMS.en.md), [alpha.6 items, creatures and potions](NATIVE_EXPANSION.en.md), [alpha.5 animation, tower and font fixes](NATIVE_ANIMATION_FIX.en.md), [alpha.4 details](NATIVE_INPUT_FIX.en.md) and [alpha.3 rendering foundations](NATIVE_RENDERING.en.md) and [native-migration.json](../release/native-migration.json). Static registry coverage is not complete behavior coverage.
 
 ## Optional local resources
 
@@ -71,4 +71,4 @@ Checks cover save separation, corrupt-save protection, item conservation, idempo
 
 Remaining work proceeds through rendering fidelity, combat/playthrough fixes, complete items/recipes/workstations, entity models and AI, then sound, particles, redstone and fluid details. Full parity will not be claimed until migration and player acceptance are complete.
 
-Alpha.6 passed 415 pure rule/protocol checks including imported local data and 12 launcher checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.
+Alpha.7 passed 494 pure rule/protocol checks including imported local data and 12 launcher checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.

@@ -27,5 +27,14 @@
     <Compile Include="../../hollow-knight/Standalone/NativeWorld.cs" Link="NativeWorld.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeWeapons.cs" Link="NativeWeapons.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeCreatures.cs" Link="NativeCreatures.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeFluids.cs" Link="NativeFluids.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeRedstone.cs" Link="NativeRedstone.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeAutomation.cs" Link="NativeAutomation.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeNavigation.cs" Link="NativeNavigation.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeSpecialRecipes.cs" Link="NativeSpecialRecipes.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeBlockItems.cs" Link="NativeBlockItems.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativePlayerMechanics.cs" Link="NativePlayerMechanics.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeTrading.cs" Link="NativeTrading.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeMobAbilities.cs" Link="NativeMobAbilities.cs" />
   </ItemGroup>
 </Project>

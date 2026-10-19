@@ -48,7 +48,7 @@ namespace HollowCraft.Standalone
             float phase=frame==8?0:frame*Mathf.PI/4;bool moving=frame!=8;
             foreach(var bone in bones) {
                 string name=bone.Name;var a=bone.Angles;
-                bool hidden=(name.Contains("saddle")||name.Contains("rein"))&&(bool?)data["saddled"]!=true||name.Contains("chest")&&(bool?)data["chested"]!=true||name.Contains("baby")&&(bool?)data["baby"]!=true||name=="croaking_body"||name=="egg_belly"||name=="overlay"&&(bool?)data["sheared"]==true;
+                bool hidden=(name.Contains("saddle")||name.Contains("rein"))&&(bool?)data["saddled"]!=true||name.Contains("chest")&&(bool?)data["chested"]!=true&&definition.Motion!="boat"||name.Contains("baby")&&(bool?)data["baby"]!=true||name=="water_patch"||name=="croaking_body"||name=="egg_belly"||name=="overlay"&&(bool?)data["sheared"]==true;
                 bone.Transform.gameObject.SetActive(!hidden);if(hidden)continue;
                 if(name.Contains("leg")||name.Contains("hind")||name.Contains("front")) {
                     float opposite=name.Contains("left")?Mathf.PI:0;if(name.Contains("hind"))opposite+=Mathf.PI;

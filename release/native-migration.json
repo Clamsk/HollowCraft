@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.6",
+  "version": "0.40.0-alpha.7",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -51,9 +51,9 @@
       "id": "crafting-containers",
       "status": "partial",
       "remaining": [
-        "dynamic special crafting recipes",
+        "remaining special workstation rules",
         "full vanilla enchantment randomness and bookshelf occlusion",
-        "trim rendering",
+        "map/banner/trim visuals",
         "remaining workstation gestures"
       ]
     },
@@ -61,7 +61,7 @@
       "id": "building-mining-bedrock-tnt",
       "status": "partial",
       "remaining": [
-        "all block collision shapes",
+        "all block states, collision shapes and loot predicates",
         "complete 3D-to-2D explosion parity",
         "remaining explosion/knockback details"
       ]
@@ -71,26 +71,25 @@
       "status": "partial",
       "remaining": [
         "remaining projectile/enchantment details",
-        "custom potion NBT and complete immunities",
-        "remaining projectile and cloud presentation"
+        "complete custom potion effects and immunities",
+        "remaining projectile/cloud presentation"
       ]
     },
     {
       "id": "fluids",
-      "status": "simplified",
+      "status": "implemented-2d-core",
       "remaining": [
-        "full water/lava update rules",
-        "fluid interactions and physics details"
+        "full slope search and fluid tick parity",
+        "bucketed entities and remaining fluid physics"
       ]
     },
     {
       "id": "redstone",
-      "status": "simplified",
+      "status": "implemented-2d-core",
       "remaining": [
-        "pistons",
-        "observers",
-        "advanced timing",
-        "automation"
+        "slime/honey piston assemblies",
+        "quasi-connectivity and full dust connections",
+        "remaining machines and timing parity"
       ]
     },
     {
@@ -107,9 +106,8 @@
       "status": "partial",
       "species": 75,
       "remaining": [
-        "full vanilla pathfinding and AI",
-        "special abilities and ranged presentation",
-        "variants, equipment and trading",
+        "complete vanilla AI goals, abilities, variants and equipment",
+        "villager reputation, discounts and live-world-dependent trades",
         "remaining loot predicates/functions",
         "native visual/performance acceptance"
       ]
@@ -144,7 +142,7 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 415,
+    "ruleChecksPassed": 494,
     "launcherChecksPassed": 12,
     "originalPlayerAnimatorAxesCompared": 260232,
     "originalMatrixPointsCompared": 4782,
@@ -167,6 +165,10 @@
     "importedBitmapGlyphs": 2413,
     "nativeMobSpecies": 75,
     "entityLootTables": 97,
-    "nativeEntityTextures": 82
+    "nativeEntityTextures": 100,
+    "excludedTradeFactories": 3,
+    "nativeBoatModels": 18,
+    "tradeFactorySamples": 1148,
+    "blockLootTables": 925
   }
 }

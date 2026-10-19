@@ -1,6 +1,7 @@
 dependencies/
 artifacts/
 runtime/
+logs/
 **/bin/
 **/obj/
 **/build/

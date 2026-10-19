@@ -15,12 +15,23 @@ namespace HollowCraft.Standalone
         internal readonly List<JObject> Projectiles=new List<JObject>(),Primed=new List<JObject>();
         internal static string Key(int x,int y)=>x+":"+y;
         internal static JObject Cell(int x,int y,string id,bool source=true,int level=0)=>new JObject{["x"]=x,["y"]=y,["id"]=NativeCatalog.Id(id),["source"]=source,["level"]=level};
+        internal static JArray Shapes(JObject cell) {
+            string id=(string)cell["id"];var item=NativeCatalog.Get(id);if(!item.Solid||LiquidId(id)||(bool?)cell["open"]==true||(bool?)cell["crop"]==true)return new JArray();
+            if(cell["pistonHead"]!=null){int dx=(int?)cell["dx"]??1,dy=(int?)cell["dy"]??0;return new JArray(new JArray(dx<0?0:dx>0?.75:0,dy<0?0:dy>0?.75:0,dx<0?.25:1,dy<0?.25:1));}
+            if(id.EndsWith("_slab",StringComparison.Ordinal))return (bool?)cell["double"]==true?new JArray(new JArray(0,0,1,1)):(bool?)cell["top"]==true?new JArray(new JArray(0,.5,1,1)):new JArray(new JArray(0,0,1,.5));
+            return item.Collision!=null?new JArray(item.Collision.Cast<JArray>().Select(b=>new JArray(b[0].DeepClone(),b[1].DeepClone(),b[3].DeepClone(),b[4].DeepClone()))):new JArray(new JArray(0,0,1,1));
+        }
+        private static bool LiquidId(string id)=>id=="minecraft:water"||id=="minecraft:lava";
         internal JArray BlocksJson(int cx,int cy) {
             var result=new JArray();foreach(var cell in Blocks.Values.Where(cell=>Math.Abs((int)cell["x"]-cx)<=14&&Math.Abs((int)cell["y"]-cy)<=12)) {
                 var value=(JObject)cell.DeepClone();string id=(string)value["id"];var item=NativeCatalog.Get(id);bool fluid=id=="minecraft:water"||id=="minecraft:lava",open=(bool?)value["open"]==true;
-                bool solid=item.Solid&&!fluid&&!open;double height=id.EndsWith("_slab",StringComparison.Ordinal)?.5:1;
-                value["solid"]=solid;value["fluid"]=fluid;value["height"]=fluid?Math.Max(.125,1-((int?)value["level"]??0)/8.0):height;value["state"]=id+":"+open+":"+(int?)value["power"]+":"+(bool?)value["lit"];
-                value["collision"]=!solid?new JArray():item.Collision!=null?new JArray(item.Collision.Cast<JArray>().Select(b=>new JArray(b[0].DeepClone(),b[1].DeepClone(),b[3].DeepClone(),b[4].DeepClone()))):new JArray(new JArray(0,0,1,height));value["breakTicks"]=item.Hardness<0?int.MaxValue:Math.Max(1,(int)Math.Ceiling(item.Hardness*30));result.Add(value);
+                bool solid=item.Solid&&!fluid&&!open&&(bool?)cell["crop"]!=true;double height=id.EndsWith("_slab",StringComparison.Ordinal)?.5:1;
+                value["solid"]=solid;value["fluid"]=fluid;value["height"]=fluid?Math.Max(.125,(bool?)value["falling"]==true?1:1-((int?)value["level"]??0)/8.0):height;value["state"]=id+":"+open+":"+(int?)value["power"]+":"+(bool?)value["lit"];
+                value["collision"]=Shapes(cell);value["breakTicks"]=item.Hardness<0?int.MaxValue:Math.Max(1,(int)Math.Ceiling(item.Hardness*30));result.Add(value);
+                if((bool?)cell["crop"]==true){int age=(int?)cell["age"]??0;string crop=id.Split(':').Last();int stage=crop=="carrots"||crop=="potatoes"?age==7?3:age/2:age;value["render"]=crop+"_stage"+stage;}
+                if(id=="minecraft:redstone")value["render"]="redstone_dust_line0";
+                if(id=="minecraft:piston"||id=="minecraft:sticky_piston")value["render"]=cell["pistonHead"]!=null?"piston_top":id=="minecraft:sticky_piston"?"piston_top_sticky":"piston_side";
+                value["state"]=(string)value["state"]+"/"+value["render"]+"/"+cell["waterlogged"]+"/"+cell["extended"]+"/"+cell["dx"]+"/"+cell["dy"];
             }return result;
         }
         internal JObject Save() {var boxes=new JObject();foreach(var pair in Containers)boxes[pair.Key]=pair.Value.Save();return new JObject{["blocks"]=new JArray(Blocks.Values.Select(v=>v.DeepClone())),["containers"]=boxes,["drops"]=new JArray(Drops.Select(v=>v.DeepClone())),["creatures"]=new JArray(Creatures.Select(v=>v.DeepClone())),["clouds"]=new JArray(Clouds.Select(v=>v.DeepClone())),["projectiles"]=new JArray(Projectiles.Select(v=>v.DeepClone())),["primed"]=new JArray(Primed.Select(v=>v.DeepClone()))};}
@@ -50,7 +61,7 @@ namespace HollowCraft.Standalone
             bool foundation=tower&&(bool?)packet["nativeFoundation"]==true&&Number(packet,"supportY")>=by-.05&&Number(packet,"supportY")<by+1;
             bool body=held.Definition.Solid&&x+.3>bx+.001&&x-.3<bx+1-.001&&y<by+1-.001&&y+1.8>by+.001;
             bool allowed=!Spectator&&mode!="adventure"&&health>0&&!held.Empty&&held.Definition.Block&&Math.Abs(bx)<4096&&by>= -256&&by<=4096&&Reach(bx,by,Creative?5:4.5)&&!body&&!Room.Blocks.ContainsKey(NativeRoom.Key(bx,by))&&(!TerrainFull(bx,by)||foundation)&&Room.Blocks.Count<32768;
-            if(allowed){Room.Blocks[NativeRoom.Key(bx,by)]=NativeRoom.Cell(bx,by,held.Id);Sound(SurfaceSound(held.Id,"place"),.8,.9+random.NextDouble()*.2,bx+.5,by+.5);if(!Creative){held.Count--;held.Normalize();}}
+            if(allowed){Room.Blocks[NativeRoom.Key(bx,by)]=NativeRoom.Cell(bx,by,held.Id);InitializeBlockState(Room.Blocks[NativeRoom.Key(bx,by)],packet);RestorePlacedItem(held,Room.Blocks[NativeRoom.Key(bx,by)]);Sound(SurfaceSound(held.Id,"place"),.8,.9+random.NextDouble()*.2,bx+.5,by+.5);if(!Creative){held.Count--;held.Normalize();}}
             var reply=new JObject{["type"]=tower?"towerResult":"placeResult",["request"]=request,["x"]=bx,["y"]=by,["accepted"]=allowed,["reason"]=allowed?"native placement":"native placement rejected"};
             if(tower){towerResults[request]=(JObject)reply.DeepClone();if(towerResults.Count>128)towerResults.Remove(towerResults.Keys.First());}Emit(reply);
         }
@@ -58,20 +69,23 @@ namespace HollowCraft.Standalone
             if(mining==null)return;
             int bx=(int)Number(mining,"x"),by=(int)Number(mining,"y");string key=NativeRoom.Key(bx,by);
             if(Spectator||mode=="adventure"||health<=0||!Reach(bx,by,Creative?6:4.5)||!Room.Blocks.TryGetValue(key,out var cell)){mining=null;return;}
+            if(cell["pistonHead"]!=null){key=(string)cell["pistonHead"];if(!Room.Blocks.TryGetValue(key,out cell)){mining=null;return;}bx=(int)cell["x"];by=(int)cell["y"];mining["x"]=bx;mining["y"]=by;}
             var definition=NativeCatalog.Get((string)cell["id"]);if(definition.Hardness<0&&!Creative){mining=null;return;}
             var tool=Inventory.Hand.Definition;bool harvest=NativeCatalog.RegistryLoaded?!definition.RequiresTool||tool.Tool==definition.Tool&&tool.Harvest>=definition.Harvest:definition.Tool!="pickaxe"||tool.Tool=="pickaxe"&&tool.Harvest>=definition.Harvest;
             double speed=definition.Tool==tool.Tool?tool.MiningSpeed:1;int efficiency=NativeData.Enchantment(Inventory.Hand,"efficiency");if(speed>1&&efficiency>0)speed+=efficiency*efficiency+1;if(!grounded)speed/=5;if(InFluid("water")&&NativeData.Enchantment(Inventory.Armor[0],"aqua_affinity")==0)speed/=5;
-            if(effects.TryGetValue("haste",out var haste))speed*=1+.2*(haste.Item2+1);
-            double delta=Creative||definition.Hardness<=0?1:speed/definition.Hardness/(harvest?30:100);
+            if(effects.TryGetValue("haste",out var haste))speed*=1+.2*(haste.Item2+1);if(effects.TryGetValue("mining_fatigue",out var fatigue))speed*=Math.Pow(.3,Math.Min(4,fatigue.Item2+1));
+            double delta=Creative||definition.Hardness<=0||(bool?)cell["crop"]==true?1:speed/definition.Hardness/(harvest?30:100);
             mining["progress"]=Number(mining,"progress")+delta;
             if(Number(mining,"progress")<1)return;
-            Sound(SurfaceSound(definition.Id,"break"),.8,1,bx+.5,by+.5);Room.Blocks.Remove(key);if(Room.Containers.TryGetValue(key,out var box)){if(containerKey==key)CloseContainer();foreach(var item in box.Slots)DropAt(item,bx+.5,by+.5);Room.Containers.Remove(key);}
-            if(!Creative&&harvest){string drop=definition.Id=="minecraft:stone"?"minecraft:cobblestone":definition.Id=="minecraft:iron_ore"?"minecraft:raw_iron":definition.Id=="minecraft:gold_ore"?"minecraft:raw_gold":definition.Id=="minecraft:diamond_ore"?"minecraft:diamond":definition.Id=="minecraft:coal_ore"?"minecraft:coal":definition.Id;DropAt(NativeStack.New(drop),bx+.5,by+.5);}
+            Sound(SurfaceSound(definition.Id,"break"),.8,1,bx+.5,by+.5);Room.Blocks.Remove(key);Room.Containers.TryGetValue(key,out var box);if(containerKey==key)CloseContainer();DropMinedBlock(cell,box,harvest);Room.Containers.Remove(key);
+            if((bool?)cell["extended"]==true){var facing=Facing(cell);Room.Blocks.Remove(NativeRoom.Key(bx+facing[0],by+facing[1]));}
             Inventory.Wear(Inventory.Hand,tool.Tool=="sword"?2:1,Creative);mining=null;
         }
         private void Drop(NativeStack item,int count) {if(item.Empty||count<=0||scene.Length==0)return;count=Math.Min(count,item.Count);DropAt(item.Copy(count),x,y+.5);item.Count-=count;item.Normalize();}
         private void DropAt(NativeStack item,double px,double py) {if(item.Empty)return;var value=item.Json();value["entity"]=++serial;value["x"]=px;value["y"]=py;value["ready"]=tick+20;Room.Drops.Add(value);}
         private void TickWorld() {
+            navigationBudget=384;
+            if(container!=null){if(tradingMob!=null&&(Number(tradingMob,"health")<=0||Math.Abs(Number(tradingMob,"x")-x)>6||Math.Abs(Number(tradingMob,"y")-y)>6))CloseContainer();else if(containerKey!=null&&(!Room.Blocks.TryGetValue(containerKey,out var openBlock)||Math.Abs(Number(openBlock,"x")-x)>8||Math.Abs(Number(openBlock,"y")-y)>8))CloseContainer();}
             if(landingWater!=null&&tick>=collectWater){string key=NativeRoom.Key((int)landingWater["x"],(int)landingWater["y"]);if(Room.Blocks.TryGetValue(key,out var value)&&(string)value["id"]=="minecraft:water")Room.Blocks.Remove(key);landingWater=null;Emit(new JObject{["type"]="waterCollected",["recovered"]=true,["hand"]=0});}
             foreach(var drop in Room.Drops.ToArray())if(health>0&&tick>=((int?)drop["ready"]??0)&&Math.Pow(Number(drop,"x")-x,2)+Math.Pow(Number(drop,"y")-y-.8,2)<2.25){var stack=NativeStack.Read(drop);Inventory.Insert(stack);if(stack.Empty)Room.Drops.Remove(drop);else drop["count"]=stack.Count;}
             foreach(var entry in Room.Containers) {
@@ -82,36 +96,10 @@ namespace HollowCraft.Standalone
                 if(can&&box.Burn>0){box.Cook++;if(box.Cook>=recipe.Ticks){box.Cook=0;box.Slots[0].Count--;box.Slots[0].Normalize();if(box.Slots[2].Empty)box.Slots[2]=NativeStack.New(output);else box.Slots[2].Count++;}}else box.Cook=Math.Max(0,box.Cook-2);
                 if(Room.Blocks.TryGetValue(entry.Key,out var cell))cell["lit"]=box.Burn>0;
             }
-            TickCreatures();TickClouds();if(tick%4==0)FluidStep();if(tick%2==0)RedstoneStep();
+            TickCreatures();TickClouds();TickPlants();FluidStep();RedstoneStep();
             if(tick%10==0&&InFluid("lava")&&!effects.ContainsKey("fire_resistance"))Damage(4,"lava",x,y);
         }
-        private bool InFluid(string id)=>scene.Length>0&&Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+.4)),out var block)&&(string)block["id"]=="minecraft:"+id;
-        private void FluidStep() {
-            var sources=Room.Blocks.Values.Where(c=>((string)c["id"]=="minecraft:water"||(string)c["id"]=="minecraft:lava")&&(bool?)c["source"]==true).Select(c=>(JObject)c.DeepClone()).ToArray();
-            foreach(var key in Room.Blocks.Where(p=>((string)p.Value["id"]=="minecraft:water"||(string)p.Value["id"]=="minecraft:lava")&&(bool?)p.Value["source"]!=true).Select(p=>p.Key).ToArray())Room.Blocks.Remove(key);
-            var queue=new Queue<Tuple<int,int,string,int,int>>();foreach(var source in sources)queue.Enqueue(Tuple.Create((int)source["x"],(int)source["y"],(string)source["id"],0,0));
-            int budget=2048;var visited=new Dictionary<string,int>();
-            while(queue.Count>0&&budget-->0) {
-                var cell=queue.Dequeue();int bx=cell.Item1,by=cell.Item2,level=cell.Item4,fall=cell.Item5;string id=cell.Item3,key=NativeRoom.Key(bx,by);
-                string seen=id+":"+key;if(visited.TryGetValue(seen,out int prior)&&prior<=level)continue;visited[seen]=level;
-                if(by< -60||Math.Abs(bx-x)>32||Math.Abs(by-y)>24||TerrainFull(bx,by))continue;
-                if(Room.Blocks.TryGetValue(key,out var old)){string other=(string)old["id"];if((other=="minecraft:water"||other=="minecraft:lava")&&other!=id){Room.Blocks[key]=NativeRoom.Cell(bx,by,(other=="minecraft:lava"&&(bool?)old["source"]==true)?"obsidian":"cobblestone");continue;}if(other!=id)continue;if((bool?)old["source"]!=true&&((int?)old["level"]??8)<=level)continue;}
-                bool source=sources.Any(s=>(int)s["x"]==bx&&(int)s["y"]==by);Room.Blocks[key]=NativeRoom.Cell(bx,by,id,source,level);
-                if(!Solid(bx,by-1)&&fall<20)queue.Enqueue(Tuple.Create(bx,by-1,id,0,fall+1));
-                else if(level<(id=="minecraft:lava"?3:7))foreach(int direction in new[]{-1,1})if(!Solid(bx+direction,by))queue.Enqueue(Tuple.Create(bx+direction,by,id,level+1,fall));
-            }
-        }
-        private void RedstoneStep() {
-            var powered=new Dictionary<string,int>();var queue=new Queue<Tuple<string,int>>();
-            foreach(var cell in Room.Blocks.Values){string id=(string)cell["id"];if(id=="minecraft:redstone_block"||id=="minecraft:redstone_torch"||id=="minecraft:lever"&&(bool?)cell["powered"]==true||id.EndsWith("_button",StringComparison.Ordinal)&&(bool?)cell["powered"]==true)queue.Enqueue(Tuple.Create(NativeRoom.Key((int)cell["x"],(int)cell["y"]),15));if((int?)cell["until"]>0&&(int)cell["until"]<=tick)cell["powered"]=false;}
-            while(queue.Count>0){var current=queue.Dequeue();if(powered.TryGetValue(current.Item1,out int value)&&value>=current.Item2)continue;powered[current.Item1]=current.Item2;var at=Room.Blocks[current.Item1];foreach(var delta in new[]{Tuple.Create(-1,0),Tuple.Create(1,0),Tuple.Create(0,-1),Tuple.Create(0,1)}){string key=NativeRoom.Key((int)at["x"]+delta.Item1,(int)at["y"]+delta.Item2);if(current.Item2>1&&Room.Blocks.TryGetValue(key,out var next)&&((string)next["id"]=="minecraft:redstone"||(string)next["id"]=="minecraft:repeater"))queue.Enqueue(Tuple.Create(key,current.Item2-1));}}
-            foreach(var cell in Room.Blocks.Values.ToArray()) {
-                string id=(string)cell["id"];int value=0;foreach(var delta in new[]{Tuple.Create(0,0),Tuple.Create(-1,0),Tuple.Create(1,0),Tuple.Create(0,-1),Tuple.Create(0,1)})if(powered.TryGetValue(NativeRoom.Key((int)cell["x"]+delta.Item1,(int)cell["y"]+delta.Item2),out int found))value=Math.Max(value,found);
-                if(id=="minecraft:redstone")cell["power"]=value;if(id=="minecraft:redstone_lamp")cell["lit"]=value>0;
-                if(id.EndsWith("_door",StringComparison.Ordinal)||id.EndsWith("_trapdoor",StringComparison.Ordinal)||id.EndsWith("_fence_gate",StringComparison.Ordinal)){if((bool?)cell["redstoneOpen"]==true||value>0)cell["open"]=value>0;cell["redstoneOpen"]=value>0;}
-                if(id=="minecraft:tnt"&&value>0){Room.Blocks.Remove(NativeRoom.Key((int)cell["x"],(int)cell["y"]));Prime((int)cell["x"]+.5,(int)cell["y"]);}
-            }
-        }
+        private bool InFluid(string id)=>scene.Length>0&&Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+.4)),out var block)&&(id=="water"?WaterCell(block):(string)block["id"]=="minecraft:"+id);
         private void Land(JObject p) {
             if(p["teleport"]!=null&&(int)p["teleport"]!=teleport)return;
             int sequence=(int?)p["landing"]??lastLanding+1;if(sequence<=lastLanding)return;lastLanding=sequence;

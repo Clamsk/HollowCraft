@@ -33,7 +33,7 @@ namespace HollowCraft.Standalone
             if(Directory.Exists(tagRoot))foreach(string file in Directory.GetFiles(tagRoot,"*.json",SearchOption.AllDirectories)){string id="minecraft:"+file.Substring(tagRoot.Length+1).Replace('\\','/');raw[id.Substring(0,id.Length-5)]=(JArray)JObject.Parse(File.ReadAllText(file))["values"];}
             foreach(string id in raw.Keys)ResolveTag(id,raw,new HashSet<string>());
             NativeRecipes.Load(root);loaded=root;
-            NativeLoot.Load(root);
+            NativeLoot.Load(root);NativeTradeData.Load(root);
         }
         private static HashSet<string> ResolveTag(string id,Dictionary<string,JArray> raw,HashSet<string> visiting) {
             if(Tags.TryGetValue(id,out var cached))return cached;var result=new HashSet<string>();if(!visiting.Add(id))return result;
@@ -49,6 +49,12 @@ namespace HollowCraft.Standalone
             if(item==null||item.Empty)return 0;int result=(int?)item.Data[id]??0;
             foreach(JObject entry in item.Data["Enchantments"] as JArray??new JArray())if(NativeCatalog.Id((string)entry["id"])==NativeCatalog.Id(id))result=Math.Max(result,(int?)entry["lvl"]??0);
             return Math.Max(0,Math.Min(255,result));
+        }
+        private static readonly string[] effectIds={"","speed","slowness","haste","mining_fatigue","strength","instant_health","instant_damage","jump_boost","nausea","regeneration","resistance","fire_resistance","water_breathing","invisibility","blindness","night_vision","hunger","weakness","poison","wither","health_boost","absorption","saturation","glowing","levitation","luck","unluck","slow_falling","conduit_power","dolphins_grace","bad_omen","hero_of_the_village","darkness"};
+        internal static string EffectName(JToken id) {if(id==null)return "";if(id.Type==JTokenType.Integer){int index=(int)id;return index>0&&index<effectIds.Length?effectIds[index]:"";}return ((string)id).Split(':').Last();}
+        internal static JArray PotionEffects(NativeStack item) {
+            var list=new JArray();if(Potions.TryGetValue((string)item.Data["Potion"]??"minecraft:water",out var potion))foreach(var effect in potion["effects"] as JArray??new JArray())list.Add(effect.DeepClone());
+            foreach(JObject custom in item.Data["CustomPotionEffects"] as JArray??new JArray()){string id=EffectName(custom["Id"]??custom["id"]);if(id.Length==0)continue;list.Add(new JObject{["id"]="minecraft:"+id,["amplifier"]=Math.Max(0,Math.Min(8,(int?)custom["Amplifier"]??(int?)custom["amplifier"]??0)),["ticks"]=Math.Max(1,Math.Min(1200000,(int?)custom["Duration"]??(int?)custom["duration"]??1))});}return list;
         }
     }
 }

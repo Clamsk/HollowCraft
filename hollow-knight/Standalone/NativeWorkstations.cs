@@ -10,11 +10,11 @@ namespace HollowCraft.Standalone
         private int experienceTotal,enchantSeed=1;private string enchantKey="";private JArray enchantChoices=new JArray();private readonly List<Dictionary<string,int>> enchantPlans=new List<Dictionary<string,int>>();
         private sealed class WorkResult {internal NativeStack Stack=new NativeStack();internal int Cost,Experience;internal int[] Consume;}
         private bool Anvil=>container?.Id.EndsWith("anvil",StringComparison.Ordinal)==true;
-        private int WorkOutput=>Anvil||container?.Id=="minecraft:grindstone"?2:container?.Id=="minecraft:stonecutter"?1:container?.Id=="minecraft:smithing_table"?3:-1;
+        private int WorkOutput=>Anvil||container?.Id=="minecraft:grindstone"||container?.Id=="hollowcraft:trader"?2:container?.Id=="minecraft:stonecutter"?1:container?.Id=="minecraft:smithing_table"?3:-1;
         private static int ExperienceAt(int level)=>(int)(level<=16?level*level+6*level:level<=31?2.5*level*level-40.5*level+360:4.5*level*level-162.5*level+2220);
         private int ExperienceLevel {get{int level=0;while(level<1000&&ExperienceAt(level+1)<=experienceTotal)level++;return level;}}
         private double ExperienceProgress {get{int level=ExperienceLevel;return (experienceTotal-ExperienceAt(level))/(double)(ExperienceAt(level+1)-ExperienceAt(level));}}
-        private void AddExperience(int value){experienceTotal=Math.Max(0,Math.Min(4000000,experienceTotal+value));}
+        private void AddExperience(int value){var choices=Inventory.Armor.Concat(new[]{Inventory.Hand,Inventory.Offhand}).Where(s=>!s.Empty&&s.Damage>0&&NativeData.Enchantment(s,"mending")>0).ToList();while(value>0&&choices.Count>0){var item=choices[random.Next(choices.Count)];int repair=Math.Min(item.Damage,value*2);item.Damage-=repair;value-=repair/2;choices.Remove(item);}experienceTotal=Math.Max(0,Math.Min(4000000,experienceTotal+value));}
         private void SpendLevels(int count){int level=Math.Max(0,ExperienceLevel-count);experienceTotal=ExperienceAt(level)+(int)(ExperienceProgress*(ExperienceAt(level+1)-ExperienceAt(level)));}
         private static Dictionary<string,int> Enchants(NativeStack item) {var result=new Dictionary<string,int>();foreach(JObject value in item.Data[item.Id=="minecraft:enchanted_book"?"StoredEnchantments":"Enchantments"] as JArray??new JArray()){string id=NativeCatalog.Id((string)value["id"]);result[id]=Math.Max(0,(int?)value["lvl"]??0);}return result;}
         private static void SetEnchants(NativeStack item,Dictionary<string,int> values){item.Data[item.Id=="minecraft:enchanted_book"?"StoredEnchantments":"Enchantments"]=new JArray(values.Select(p=>new JObject{["id"]=p.Key,["lvl"]=p.Value}));}
@@ -22,7 +22,7 @@ namespace HollowCraft.Standalone
         private static bool AcceptEnchantment(NativeStack item,JObject data)=>item.Id=="minecraft:book"||item.Id=="minecraft:enchanted_book"||(data["acceptedItems"] as JArray??new JArray()).Values<string>().Contains(item.Id);
         private IEnumerable<JObject> StoneRecipes()=>NativeRecipes.WorkRecipes.Where(r=>(string)r["type"]=="minecraft:stonecutting"&&NativeRecipes.Accepts(r["ingredient"],container.Slots[0]));
         private WorkResult WorkPreview() {
-            var plan=new WorkResult();if(container==null||WorkOutput<0)return plan;var left=container.Slots[0];if(left.Empty)return plan;
+            var plan=new WorkResult();if(container==null||WorkOutput<0)return plan;if(container.Id=="hollowcraft:trader")return TradePreview();var left=container.Slots[0];if(left.Empty)return plan;
             if(container.Id=="minecraft:stonecutter"){var recipes=StoneRecipes().ToArray();if(container.Choice<0||container.Choice>=recipes.Length)return plan;var recipe=recipes[container.Choice];plan.Stack=NativeStack.New((string)recipe["result"],(int?)recipe["count"]??1);plan.Consume=new[]{1};return plan;}
             if(container.Id=="minecraft:smithing_table") {
                 var template=left;var basis=container.Slots[1];var addition=container.Slots[2];foreach(var recipe in NativeRecipes.WorkRecipes)if(((string)recipe["type"]).StartsWith("minecraft:smithing_",StringComparison.Ordinal)&&NativeRecipes.Accepts(recipe["template"],template)&&NativeRecipes.Accepts(recipe["base"],basis)&&NativeRecipes.Accepts(recipe["addition"],addition)) {
@@ -58,10 +58,11 @@ namespace HollowCraft.Standalone
         private bool TakeWorkOnce(bool quick) {
             var plan=WorkPreview();if(plan.Stack.Empty||!Creative&&(plan.Cost>=40||ExperienceLevel<plan.Cost))return false;
             if(quick){if(Inventory.Capacity(plan.Stack)<plan.Stack.Count)return false;Inventory.Insert(plan.Stack.Copy());}else {if(!Inventory.Carried.Empty&&(!Inventory.Carried.Matches(plan.Stack)||Inventory.Carried.Count+plan.Stack.Count>plan.Stack.Definition.Maximum))return false;if(Inventory.Carried.Empty)Inventory.Carried=plan.Stack.Copy();else Inventory.Carried.Count+=plan.Stack.Count;}
-            for(int i=0;i<plan.Consume.Length;i++){container.Slots[i].Count-=plan.Consume[i];container.Slots[i].Normalize();}if(!Creative&&plan.Cost>0)SpendLevels(plan.Cost);if(plan.Experience>0)AddExperience(plan.Experience);container.Rename=null;return true;
+            for(int i=0;i<plan.Consume.Length;i++){container.Slots[i].Count-=plan.Consume[i];container.Slots[i].Normalize();}if(container.Id=="hollowcraft:trader")TradeTaken();if(!Creative&&plan.Cost>0)SpendLevels(plan.Cost);if(plan.Experience>0)AddExperience(plan.Experience);container.Rename=null;return true;
         }
         private void ContainerButton(JObject packet) {
             if(container==null||(int?)packet["syncId"]!=container.Sync)return;int button=(int?)packet["button"]??-1;
+            if(container.Id=="hollowcraft:trader"){if(button>=0&&button<((JArray)tradingMob["trades"]).Count)container.Choice=button;return;}
             if(container.Id=="minecraft:stonecutter"){if(button>=0&&button<StoneRecipes().Count())container.Choice=button;return;}
             if(container.Id!="minecraft:enchanting_table"||button<0||button>=3)return;UpdateEnchanting();var choice=enchantChoices[button];int required=(int)choice["cost"],consume=button+1;
             if(required==0||!Creative&&(ExperienceLevel<required||container.Slots[1].Id!="minecraft:lapis_lazuli"||container.Slots[1].Count<consume))return;
@@ -78,7 +79,8 @@ namespace HollowCraft.Standalone
         }
         private void WorkstationInfo(JObject json,JArray slots) {
             int[] xs=null,ys=null;
-            if(Anvil){xs=new[]{27,76,134};ys=new[]{47,47,47};json["cost"]=WorkPreview().Cost;json["texture"]="gui_anvil";}
+            if(container.Id=="hollowcraft:trader"){xs=new[]{95,118,143};ys=new[]{28,28,54};json["texture"]="gui_generic_54";json["selector"]="trades";json["selectedChoice"]=container.Choice;json["title"]=((string)tradingMob["profession"]).Split(':').Last()+" "+tradingMob["tradeLevel"];int index=0;json["choices"]=new JArray(((JArray)tradingMob["trades"]).OfType<JObject>().Select(t=>new JObject{["button"]=index++,["buy"]=NativeStack.Read(t["buy"]).Json(),["sell"]=NativeStack.Read(t["sell"]).Json(),["soldOut"]=(int)t["uses"]>=(int)t["maxUses"]}));}
+            else if(Anvil){xs=new[]{27,76,134};ys=new[]{47,47,47};json["cost"]=WorkPreview().Cost;json["texture"]="gui_anvil";}
             else if(container.Id=="minecraft:grindstone"){xs=new[]{49,49,129};ys=new[]{19,40,34};}
             else if(container.Id=="minecraft:smithing_table"){xs=new[]{8,26,44,98};ys=new[]{48,48,48,48};json["texture"]="gui_smithing";}
             else if(container.Id=="minecraft:stonecutter"){xs=new[]{20,143};ys=new[]{33,33};json["selector"]="stonecutter";json["selectedChoice"]=container.Choice;int index=0;json["choices"]=new JArray(StoneRecipes().Select(r=>{var item=NativeStack.New((string)r["result"],(int?)r["count"]??1).Json();item["button"]=index++;return item;}));}

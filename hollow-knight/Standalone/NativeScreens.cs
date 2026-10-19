@@ -18,6 +18,7 @@ namespace HollowCraft.Standalone
             if(index==0)return NativeRecipes.Result(Inventory.Craft,2);if(index>=1&&index<=4)return Inventory.Craft[index-1];if(index>=5&&index<=8)return Inventory.Armor[index-5];if(index>=9&&index<=35)return Inventory.Slots[index];if(index>=36&&index<=44)return Inventory.Slots[index-36];return index==45?Inventory.Offhand:null;
         }
         private bool CanInsert(int index,NativeStack item) {
+            if(container?.Id.EndsWith("shulker_box",StringComparison.Ordinal)==true&&item.Id.EndsWith("shulker_box",StringComparison.Ordinal)&&index<27)return false;
             if(container!=null&&index==WorkOutput)return false;
             if(container?.Id=="minecraft:enchanting_table"&&index<2)return index==0?item.Empty||item.Definition.Enchantability>0:item.Empty||item.Id=="minecraft:lapis_lazuli";
             if(container?.Id=="minecraft:smithing_table"&&index<3){string field=index==0?"template":index==1?"base":"addition";return item.Empty||NativeRecipes.WorkRecipes.Any(r=>((string)r["type"]).StartsWith("minecraft:smithing_",StringComparison.Ordinal)&&NativeRecipes.Accepts(r[field],item));}
@@ -37,6 +38,7 @@ namespace HollowCraft.Standalone
             bool targetContainer=(string)packet["handler"]=="container";if(targetContainer!=(container!=null))return;
             int index=(int?)packet["slot"]??-999,button=(int?)packet["button"]??0;string action=(string)packet["action"]??"PICKUP";
             var at=Slot(index);if(action=="QUICK_CRAFT") {QuickCraft(index,button);return;}
+            if(container==null&&index>=5&&index<=8&&!Creative&&NativeData.Enchantment(at,"binding_curse")>0)return;
             if(index==-999){if(action=="PICKUP"||action=="THROW")Drop(Inventory.Carried,button==1?1:Inventory.Carried.Count);return;}if(at==null)return;
             if(Crafting&&index==0) {TakeResult(action=="QUICK_MOVE");return;}
             if(container!=null&&index==WorkOutput){if(action=="PICKUP"||action=="QUICK_MOVE")TakeWork(action=="QUICK_MOVE");return;}
@@ -63,7 +65,7 @@ namespace HollowCraft.Standalone
                 case "PICKUP_ALL":
                     if(Inventory.Carried.Empty)break;
                     int last=container==null?45:(Crafting?10:container.Slots.Length)+35;
-                    for(int i=1;i<=last&&Inventory.Carried.Count<Inventory.Carried.Definition.Maximum;i++){var item=Slot(i);if(item==null||!item.Matches(Inventory.Carried))continue;int count=Math.Min(item.Count,Inventory.Carried.Definition.Maximum-Inventory.Carried.Count);Inventory.Carried.Count+=count;item.Count-=count;item.Normalize();}break;
+                    for(int i=1;i<=last&&Inventory.Carried.Count<Inventory.Carried.Definition.Maximum;i++){if(container!=null&&i==WorkOutput)continue;var item=Slot(i);if(item==null||!item.Matches(Inventory.Carried)||container==null&&i>=5&&i<=8&&!Creative&&NativeData.Enchantment(item,"binding_curse")>0)continue;int count=Math.Min(item.Count,Inventory.Carried.Definition.Maximum-Inventory.Carried.Count);Inventory.Carried.Count+=count;item.Count-=count;item.Normalize();}break;
             }
         }
         private void QuickCraft(int index,int button) {
@@ -80,7 +82,7 @@ namespace HollowCraft.Standalone
                 var result=NativeRecipes.Result(Grid,GridWidth);if(result.Empty)return;
                 if(quick){if(Inventory.Capacity(result)<result.Count)return;Inventory.Insert(result.Copy());}
                 else {if(!Inventory.Carried.Empty&&(!Inventory.Carried.Matches(result)||Inventory.Carried.Count+result.Count>result.Definition.Maximum))return;if(Inventory.Carried.Empty)Inventory.Carried=result.Copy();else Inventory.Carried.Count+=result.Count;}
-                for(int slot=0;slot<Grid.Length;slot++){var item=Grid[slot];if(item.Empty)continue;string remainder=item.Definition.Remainder;item.Count--;item.Normalize();if(remainder!=null){var left=NativeStack.New(remainder);if(item.Empty)Grid[slot]=left;else if(!Inventory.Insert(left))DropAt(left,x,y+.5);}}
+                var remainders=NativeRecipes.SpecialRemainders(Grid);for(int slot=0;slot<Grid.Length;slot++){var item=Grid[slot];if(item.Empty)continue;var left=remainders[slot];item.Count--;item.Normalize();if(!left.Empty){if(item.Empty)Grid[slot]=left;else if(!Inventory.Insert(left))DropAt(left,x,y+.5);}}
             }
         }
         private void CloseContainer() {
@@ -88,17 +90,19 @@ namespace HollowCraft.Standalone
             if(container?.Id=="minecraft:crafting_table")foreach(var item in container.Slots){Inventory.Insert(item);if(!item.Empty)Drop(item,item.Count);}
             foreach(var item in Inventory.Craft){Inventory.Insert(item);if(!item.Empty)Drop(item,item.Count);}
             if(container!=null&&(WorkOutput>=0||container.Id=="minecraft:enchanting_table")){int inputs=WorkOutput>=0?WorkOutput:2;for(int i=0;i<inputs;i++){var item=container.Slots[i];Inventory.Insert(item);if(!item.Empty)Drop(item,item.Count);}container.Choice=-1;container.Rename=null;}
-            container=null;containerKey=null;dragMode=-1;dragSlots.Clear();syncId++;
+            container=null;containerKey=null;tradingMob=null;dragMode=-1;dragSlots.Clear();syncId++;
         }
         private bool TryInteractBlock(JObject packet) {
             int bx=(int)Number(packet,"x"),by=(int)Number(packet,"y");string key=NativeRoom.Key(bx,by);if(!Room.Blocks.TryGetValue(key,out var cell)||!Reach(bx,by,Creative?5:4.5))return false;
             string id=(string)cell["id"];
-            if(id.EndsWith("_door",StringComparison.Ordinal)||id.EndsWith("_trapdoor",StringComparison.Ordinal)||id.EndsWith("_fence_gate",StringComparison.Ordinal)){cell["open"]=(bool?)cell["open"]!=true;return true;}
-            if(id=="minecraft:lever"||id.EndsWith("_button",StringComparison.Ordinal)){cell["powered"]=(bool?)cell["powered"]!=true;cell["until"]=id=="minecraft:lever"?0:tick+20;return true;}
+            if(id=="minecraft:repeater"){cell["delay"]=((int?)cell["delay"]??1)%4+1;return true;}
+            if(id=="minecraft:comparator"){cell["subtract"]=(bool?)cell["subtract"]!=true;return true;}
+            if(id.EndsWith("_door",StringComparison.Ordinal)||id.EndsWith("_trapdoor",StringComparison.Ordinal)||id.EndsWith("_fence_gate",StringComparison.Ordinal)){if(id.StartsWith("minecraft:iron_",StringComparison.Ordinal))return true;cell["open"]=(bool?)cell["open"]!=true;return true;}
+            if(id=="minecraft:lever"||id.EndsWith("_button",StringComparison.Ordinal)){cell["powered"]=id=="minecraft:lever"?(bool?)cell["powered"]!=true:true;cell["until"]=id=="minecraft:lever"?0:tick+(id.Contains("stone")||id.Contains("polished")?20:30);return true;}
             if(id=="minecraft:tnt"&&Inventory.Hand.Id=="minecraft:flint_and_steel"){Room.Blocks.Remove(key);Prime(bx+.5,by);Inventory.Wear(Inventory.Hand,1,Creative);return true;}
-            int count=id=="minecraft:crafting_table"?9:id.Contains("furnace")||id=="minecraft:smoker"||id.EndsWith("anvil",StringComparison.Ordinal)||id=="minecraft:grindstone"?3:id=="minecraft:enchanting_table"||id=="minecraft:stonecutter"?2:id=="minecraft:smithing_table"?4:id=="minecraft:chest"||id=="minecraft:barrel"||id=="minecraft:ender_chest"?27:id=="minecraft:hopper"||id=="minecraft:brewing_stand"?5:id=="minecraft:dispenser"||id=="minecraft:dropper"?9:0;
+            int count=StorageSize(id);
             if(count==0)return false;
-            CloseContainer();if(!Room.Containers.TryGetValue(key,out var box))Room.Containers[key]=box=new NativeContainer(id,count);container=box;containerKey=key;box.Sync=++syncId;return true;
+            CloseContainer();var box=StorageAt(bx,by);container=box;containerKey=key;box.Sync=++syncId;return true;
         }
         private JObject ContainerJson() {
             bool craft=container.Id=="minecraft:crafting_table",furnace=container.Id.Contains("furnace")||container.Id=="minecraft:smoker";int count=craft?10:container.Slots.Length;

@@ -83,7 +83,7 @@ namespace HollowCraft.Standalone
         private bool LooseMatch(List<string> remaining,int at,bool[] used) {if(at==Loose.Length)return true;for(int i=0;i<remaining.Count;i++)if(!used[i]&&Loose[at].Any(key=>Ingredient(key,remaining[i]))){used[i]=true;if(LooseMatch(remaining,at+1,used))return true;used[i]=false;}return false;}
         private static bool Ingredient(string ingredient,string id)=>NativeData.Ingredient(ingredient,id);
     }
-    internal static class NativeRecipes
+    internal static partial class NativeRecipes
     {
         internal static readonly List<NativeRecipe> All=new List<NativeRecipe>();
         internal static readonly List<JObject> WorkRecipes=new List<JObject>();
@@ -127,7 +127,7 @@ namespace HollowCraft.Standalone
             if(cooking.Count>0)return cooking.TryGetValue(type+":"+id,out var value)?value:null;
             string output=Smelt(id);return output==null?null:new Cooking{Output=NativeCatalog.Id(output),Ticks=station=="minecraft:furnace"?200:100};
         }
-        internal static NativeStack Result(NativeStack[] grid,int width) {if(grid.All(item=>item.Empty))return new NativeStack();foreach(var recipe in All){var result=recipe.Match(grid,width);if(result!=null)return result;}return new NativeStack();}
+        internal static NativeStack Result(NativeStack[] grid,int width) {if(grid.All(item=>item.Empty))return new NativeStack();var special=Special(grid,width);if(special!=null)return special;foreach(var recipe in All){var result=recipe.Match(grid,width);if(result!=null)return result;}return new NativeStack();}
         internal static string Smelt(string id) {switch(id){case "minecraft:raw_iron":case "minecraft:iron_ore":return "iron_ingot";case "minecraft:raw_gold":case "minecraft:gold_ore":return "gold_ingot";case "minecraft:raw_copper":return "copper_ingot";case "minecraft:cobblestone":return "stone";case "minecraft:sand":case "minecraft:red_sand":return "glass";default:return id.EndsWith("_log",StringComparison.Ordinal)?"charcoal":null;}}
         internal static int Fuel(NativeStack item)=>NativeCatalog.RegistryLoaded?item.Definition.Fuel:item.Id=="minecraft:coal"||item.Id=="minecraft:charcoal"?1600:item.Id=="minecraft:lava_bucket"?20000:item.Id.EndsWith("_log",StringComparison.Ordinal)||item.Id.EndsWith("_planks",StringComparison.Ordinal)?300:item.Id=="minecraft:stick"?100:0;
     }

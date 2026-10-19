@@ -74,6 +74,12 @@ if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.
     @{profiles=$countTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.json') -Encoding UTF8
 }
 $registryTask=Join-Path $nativeRootTask 'release/native-registry.json'
+Copy-Item -LiteralPath (Join-Path $nativeRootTask 'release/native-trades.json') -Destination (Join-Path $assetsTask 'native-trades.json') -Force
+if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-block-loot-v7.json'))) {
+    $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask);$countTask=0
+    try{foreach($entryTask in $zipTask.Entries){if($entryTask.FullName -match '^data/minecraft/loot_tables/blocks/([a-z0-9_/]+\.json)$'){$destinationTask=Join-Path $assetsTask ('vanilla/loot_tables/blocks/'+$Matches[1]);New-Item -ItemType Directory -Path (Split-Path $destinationTask -Parent) -Force | Out-Null;[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,$destinationTask,$true);$countTask++}}}finally{$zipTask.Dispose()}
+    @{tables=$countTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'native-block-loot-v7.json') -Encoding UTF8
+}
 if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-entity-loot-v6.json'))) {
     $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask);$countTask=0
     try{foreach($entryTask in $zipTask.Entries){if($entryTask.FullName -match '^data/minecraft/loot_tables/entities/([a-z0-9_/]+\.json)$'){$destinationTask=Join-Path $assetsTask ('vanilla/loot_tables/entities/'+$Matches[1]);New-Item -ItemType Directory -Path (Split-Path $destinationTask -Parent) -Force | Out-Null;[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,$destinationTask,$true);$countTask++}}}finally{$zipTask.Dispose()}
@@ -85,7 +91,8 @@ if(Test-Path -LiteralPath $creatureModelsTask) {
     $creatureHashTask=(Get-FileHash -LiteralPath $creatureModelsTask -Algorithm SHA256).Hash;$creatureMarkerTask=Join-Path $assetsTask 'native-creature-textures-v6.json';$creatureOldHashTask=if(Test-Path -LiteralPath $creatureMarkerTask){(Get-Content -LiteralPath $creatureMarkerTask -Raw | ConvertFrom-Json).sourceSha256}else{$null}
     if($creatureOldHashTask -ne $creatureHashTask) {
         $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask);$countTask=0
-        try{foreach($creatureTask in (Get-Content -LiteralPath $creatureModelsTask -Raw | ConvertFrom-Json).types){foreach($layerTask in @($creatureTask)+@($creatureTask.layers)){
+        $creatureDataTask=Get-Content -LiteralPath $creatureModelsTask -Raw | ConvertFrom-Json
+        try{foreach($creatureTask in @($creatureDataTask.types)+@($creatureDataTask.boats)){foreach($layerTask in @($creatureTask)+@($creatureTask.layers)){
             if(-not $layerTask.sourceTexture){continue};$entryTask=$zipTask.GetEntry($layerTask.sourceTexture);if(-not $entryTask){throw ('Missing native entity texture: '+$layerTask.sourceTexture)}
             [IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask ($layerTask.texture+'.png')),$true);$countTask++
         }}}finally{$zipTask.Dispose()}

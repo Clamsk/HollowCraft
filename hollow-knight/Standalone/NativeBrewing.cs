@@ -17,8 +17,8 @@ namespace HollowCraft.Standalone
             if(can&&box.BrewFuel>0){box.BrewFuel--;box.Brew=400;box.BrewKey=key;}
         }
         private void ApplyPotion(NativeStack item,double factor=1,double? instantFactor=null) {
-            string id=(string)item.Data["Potion"]??"minecraft:water";if(!NativeData.Potions.TryGetValue(id,out var potion))return;
-            foreach(JObject effect in potion["effects"] as JArray??new JArray()) {
+
+            foreach(JObject effect in NativeData.PotionEffects(item)) {
                 string kind=((string)effect["id"]).Split(':').Last();int level=(int?)effect["amplifier"]??0;
                 if(kind=="instant_health")health=Math.Min(20,health+(4<<level)*(instantFactor??factor));
                 else if(kind=="instant_damage")Damage((6<<level)*(instantFactor??factor),"magic",x,y);
@@ -27,10 +27,10 @@ namespace HollowCraft.Standalone
             }
         }
         private void ApplyPotionEnemy(JObject enemy,NativeStack item,double factor,double? instantFactor=null) {
-            if((string)enemy["kind"]=="npc"||Number(enemy,"health")<=0)return;string id=(string)item.Data["Potion"]??"minecraft:water";if(!NativeData.Potions.TryGetValue(id,out var potion))return;
+            if((string)enemy["kind"]=="npc"||Number(enemy,"health")<=0)return;
             string species=(string)enemy["kind"]??"";bool undead=species=="undead"||species.Contains("zombie")||species.Contains("skeleton")||species.Contains("zombified")||species=="minecraft:phantom"||species=="minecraft:zoglin";
             if(!(enemy["nativeEffects"] is JObject active))enemy["nativeEffects"]=active=new JObject();
-            foreach(JObject effect in potion["effects"] as JArray??new JArray()) {string kind=((string)effect["id"]).Split(':').Last();int level=(int?)effect["amplifier"]??0;
+            foreach(JObject effect in NativeData.PotionEffects(item)) {string kind=((string)effect["id"]).Split(':').Last();int level=(int?)effect["amplifier"]??0;
                 if(kind=="instant_damage"&&!undead||kind=="instant_health"&&undead)PotionDamage(enemy,(6<<level)*(instantFactor??factor));
                 else if(kind=="instant_health"||kind=="instant_damage")enemy["health"]=Math.Min(Number(enemy,"maxHealth",Number(enemy,"health")),Number(enemy,"health")+(4<<level)*(instantFactor??factor));
                 else if((kind=="poison"||kind=="regeneration")&&undead||kind=="poison"&&species.Contains("spider"))continue;

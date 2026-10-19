@@ -17,15 +17,10 @@ namespace HollowCraft.Standalone
             double height=boat?.5625:kind=="minecraft:chicken"?.7:kind=="minecraft:spider"?.9:kind=="minecraft:cow"||kind=="minecraft:pig"||kind=="minecraft:sheep"?1.3:1.95,width=boat?1.375:kind=="minecraft:spider"?1.4:.6;
             var value=new JObject{["entity"]=++serial,["uuid"]=Guid.NewGuid().ToString("N"),["kind"]=kind,["boat"]=boat,["x"]=bx+.5,["y"]=by+.01,["width"]=width,["height"]=height,["health"]=boat?6:kind=="minecraft:chicken"?4:kind=="minecraft:pig"||kind=="minecraft:cow"||kind=="minecraft:sheep"?10:20,["vx"]=0,["vy"]=0,["facing"]=1,["nextAttack"]=0};
             if(!boat&&NativeData.Entities.TryGetValue(kind,out var definition)){value["width"]=definition["width"].DeepClone();value["height"]=definition["height"].DeepClone();if(definition["health"]!=null)value["health"]=definition["health"].DeepClone();}
-            value["maxHealth"]=value["health"].DeepClone();
+            if(kind=="minecraft:slime"||kind=="minecraft:magma_cube"){value["size"]=2;value["width"]=value["height"]=1.04;value["health"]=4;}value["maxHealth"]=value["health"].DeepClone();
             Room.Creatures.Add(value);if(!Creative){item.Count--;item.Normalize();}return true;
         }
-        private IEnumerable<double[]> CollisionBoxes(double px,double py) {
-            for(int bx=(int)Math.Floor(px)-3;bx<=(int)Math.Floor(px)+3;bx++)for(int by=(int)Math.Floor(py)-4;by<=(int)Math.Floor(py)+4;by++){
-                string key=NativeRoom.Key(bx,by);if(terrain.TryGetValue(key,out var cells))foreach(JArray cell in cells)yield return cell.Count>=6?new[]{bx+(double)cell[2],by+(double)cell[3],bx+(double)cell[4],by+(double)cell[5]}:new[]{(double)bx,by,bx+1,by+1};
-                if(Room.Blocks.TryGetValue(key,out var block)&&NativeCatalog.Get((string)block["id"]).Solid&&(bool?)block["open"]!=true)yield return new[]{(double)bx,by,bx+1,by+(((string)block["id"]).EndsWith("_slab",StringComparison.Ordinal)?.5:1)};
-            }
-        }
+        private IEnumerable<double[]> CollisionBoxes(double px,double py) {for(int bx=(int)Math.Floor(px)-3;bx<=(int)Math.Floor(px)+3;bx++)for(int by=(int)Math.Floor(py)-4;by<=(int)Math.Floor(py)+4;by++)foreach(var box in ShapesAt(bx,by))yield return box;}
         private void MoveCreature(JObject mob,double dx,double dy) {
             double px=Number(mob,"x"),py=Number(mob,"y"),half=Number(mob,"width",.6)/2,height=Number(mob,"height",1.8),moveY=dy,moveX=dx;
             var boxes=CollisionBoxes(px,py).ToArray();
@@ -46,19 +41,19 @@ namespace HollowCraft.Standalone
                 bool boat=(bool?)mob["boat"]==true;string kind=(string)mob["kind"];
                 if(Math.Abs(Number(mob,"x")-x)>32||Math.Abs(Number(mob,"y")-y)>24)continue;
                 if(mob["vehicle"]!=null){var vehicle=Room.Creatures.FirstOrDefault(v=>(int)v["entity"]==(int)mob["vehicle"]&&(bool?)v["boat"]==true);if(vehicle!=null){mob["x"]=vehicle["x"].DeepClone();mob["y"]=Number(vehicle,"y")+.3;mob["vx"]=mob["vy"]=0;continue;}mob.Remove("vehicle");}
-                var spec=NativeMobCatalog.Find(kind);bool hostile=spec!=null?spec.Disposition=="hostile"||Number(mob,"angryUntil")>tick:kind=="minecraft:zombie"||kind=="minecraft:skeleton"||kind=="minecraft:creeper"||kind=="minecraft:spider";
+                if(TickMobAbility(mob))continue;var spec=NativeMobCatalog.Find(kind);bool hostile=spec!=null?spec.Disposition=="hostile"||Number(mob,"angryUntil")>tick:kind=="minecraft:zombie"||kind=="minecraft:skeleton"||kind=="minecraft:creeper"||kind=="minecraft:spider";
                 bool target=hostile&&!Creative&&!Spectator&&health>0;double px=Number(mob,"x"),py=Number(mob,"y"),distance=Math.Abs(px-x);
                 double attribute=NativeData.Entities.TryGetValue(kind,out var stats)?Number(stats,"speed",.2):.2;
                 double speed=boat?0:target?Math.Sign(x-px)*Math.Min(.18,attribute*.5):Math.Sin(((int)mob["entity"])*7+tick*.009)*Math.Min(.045,attribute*.16);
                 if(Number(mob,"panicUntil")>tick)speed=Math.Sign(px-x)*.16;
                 if(!hostile&&distance<8&&BreedFood(kind,Inventory.Hand.Id))speed=distance>1.5?Math.Sign(x-px)*Math.Min(.12,attribute*.5):0;
                 if((bool?)mob["baby"]==true)speed*=1.3;
-                speed*=Number(mob,"moveFactor",1);
+                speed*=Number(mob,"moveFactor",1);if(target)speed=Navigate(mob,x,y,speed);else if((bool?)mob["tamed"]==true){if((bool?)mob["sitting"]==true)speed=0;else if(distance>3)speed=Navigate(mob,x,y,.13);}
                 bool inWater=FluidAt(px,py+.4,"water"),inLava=FluidAt(px,py+.4,"lava");
                 bool fireImmune=new[]{"minecraft:blaze","minecraft:ghast","minecraft:magma_cube","minecraft:zombified_piglin","minecraft:strider","minecraft:wither_skeleton"}.Contains(kind);
                 if(inWater){mob["fireTicks"]=0;mob["fallDistance"]=0;}
-                else if(inLava&&!fireImmune){mob["fireTicks"]=300;if(tick%10==0)HitCreature(mob,4,true,false);}
-                else if(Number(mob,"fireTicks")>0){mob["fireTicks"]=Number(mob,"fireTicks")-1;if(!fireImmune&&tick%20==0)HitCreature(mob,1,true,false);}
+                else if(inLava&&!fireImmune&&!MobBuff(mob,"fire_resistance")){mob["fireTicks"]=300;if(tick%10==0)HitCreature(mob,4,true,false);}
+                else if(Number(mob,"fireTicks")>0){mob["fireTicks"]=Number(mob,"fireTicks")-1;if(!fireImmune&&!MobBuff(mob,"fire_resistance")&&tick%20==0)HitCreature(mob,1,true,false);}
                 if(Number(mob,"health")<=0)continue;
                 if(spec?.Motion=="fly"||(spec?.Motion=="swim"&&inWater)) {
                     double desired=target?y+1-Math.Min(1,Number(mob,"height")/2):Number(mob,"homeY",py)+Math.Sin(tick*.04+(int)mob["entity"])*.7;
@@ -78,8 +73,8 @@ namespace HollowCraft.Standalone
                     if(fuse==1)Sound("minecraft:entity.creeper.primed",.8,1,px,py);
                     if(fuse>=30){mob["health"]=0;Explode(px,py,3,false);}
                 }else if(target&&tick>=Number(mob,"nextAttack")&&distance<16&&Math.Abs(py-y)<12) {
-                    string ranged=spec?.Ranged;if(!string.IsNullOrEmpty(ranged)&&distance>1.8&&!BedrockShield(px,py+.8,x,y+.8)){mob["nextAttack"]=tick+40;mob["attacking"]=8;MobRanged(mob,ranged);}
-                    else if(distance<Number(mob,"width",.6)/2+.8&&Math.Abs(py-y)<Math.Max(1.8,Number(mob,"height"))){mob["nextAttack"]=tick+20;mob["attacking"]=8;Damage(stats!=null?Number(stats,"attack",3):3,"mob",px,py,(int)mob["entity"]);if(kind=="minecraft:wither_skeleton")Effect("wither",200,0);if(kind=="minecraft:cave_spider")Effect("poison",140,0);}
+                    string ranged=spec?.Ranged;if(!string.IsNullOrEmpty(ranged)&&distance>1.8&&ClearSight(px,py+Number(mob,"height",1.8)*.8,x,y+1)&&!BedrockShield(px,py+.8,x,y+.8)){mob["nextAttack"]=tick+40;mob["attacking"]=8;MobRanged(mob,ranged);}
+                    else if(distance<Number(mob,"width",.6)/2+.8&&Math.Abs(py-y)<Math.Max(1.8,Number(mob,"height"))&&ClearSight(px,py+.8,x,y+.8)){mob["nextAttack"]=tick+20;mob["attacking"]=8;Damage(stats!=null?Number(stats,"attack",3):3,"mob",px,py,(int)mob["entity"]);if(kind=="minecraft:wither_skeleton")Effect("wither",200,0);if(kind=="minecraft:cave_spider")Effect("poison",140,0);}
                 }
             }
             if(rider!=null){var boat=Room.Creatures.FirstOrDefault(v=>(int)v["entity"]==(int)rider["entity"]);if(boat==null||Number(boat,"health")<=0)rider=null;else {rider["x"]=boat["x"].DeepClone();rider["y"]=Number(boat,"y")+.35;x=Number(rider,"x");y=Number(rider,"y");}}
@@ -102,14 +97,14 @@ namespace HollowCraft.Standalone
             var mob=Room.Creatures.First(v=>(int)v["entity"]==(int)target["entity"]);if(Number(mob,"health")<=0||!ranged&&(Math.Abs(Number(mob,"x")-x)>(Creative?7:4)||Math.Abs(Number(mob,"y")-y)>4))return false;
             var spec=NativeMobCatalog.Find((string)mob["kind"]);if(playerOwned)mob["lastPlayerHit"]=tick;if(spec?.Disposition=="neutral"&&playerOwned)mob["angryUntil"]=tick+600;else if(spec?.Disposition=="passive")mob["panicUntil"]=tick+100;
             if(!ranged){string kind=(string)mob["kind"];if(kind=="minecraft:zombie"||kind=="minecraft:skeleton")amount+=2.5*NativeData.Enchantment(Inventory.Hand,"smite");else if(kind=="minecraft:spider")amount+=2.5*NativeData.Enchantment(Inventory.Hand,"bane_of_arthropods");}
-            mob["health"]=Math.Max(0,Number(mob,"health")-amount);if(Number(mob,"health")<=0)DropCreatureLoot(mob);return true;
+            if(!ranged&&playerOwned&&NativeData.Enchantment(Inventory.Hand,"fire_aspect")>0)mob["fireTicks"]=80*NativeData.Enchantment(Inventory.Hand,"fire_aspect");mob["health"]=Math.Max(0,Number(mob,"health")-amount);if(Number(mob,"health")<=0){DropCreatureLoot(mob);SlimeChildren(mob);}return true;
         }
         private bool FluidAt(double px,double py,string fluid)=>Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(px),(int)Math.Floor(py)),out var cell)&&(string)cell["id"]=="minecraft:"+fluid;
-        private void MobRanged(JObject mob,string kind) {
-            double px=Number(mob,"x"),py=Number(mob,"y")+Number(mob,"height",1.8)*.75,dx=x-px,dy=y+1-py,distance=Math.Sqrt(dx*dx+dy*dy);
-            px+=(dx<0?-1:1)*(Number(mob,"width",.6)/2+.3);dx=x-px;distance=Math.Sqrt(dx*dx+dy*dy);
+        private void MobRanged(JObject mob,string kind,double? targetX=null,double? targetY=null) {
+            double px=Number(mob,"x"),py=Number(mob,"y")+Number(mob,"height",1.8)*.75,dx=(targetX??x)-px,dy=(targetY??y+1)-py,distance=Math.Sqrt(dx*dx+dy*dy);
+            px+=(dx<0?-1:1)*(Number(mob,"width",.6)/2+.3);dx=(targetX??x)-px;distance=Math.Sqrt(dx*dx+dy*dy);
             int id=++serial;double speed=kind=="arrow"?.8:kind.Contains("fireball")?.3:.45;
-            var value=new JObject{["entity"]=id,["uuid"]=Guid.NewGuid().ToString("N"),["kind"]="minecraft:"+(kind=="arrow"?"arrow":kind=="potion"?"splash_potion":"snowball"),["item"]="minecraft:"+(kind=="arrow"?"arrow":kind=="potion"?"splash_potion":"fire_charge"),["hostile"]=true,["mobKind"]=kind,["owner"]=(int)mob["entity"],["x"]=px,["y"]=py,["vx"]=dx/Math.Max(.01,distance)*speed,["vy"]=dy/Math.Max(.01,distance)*speed,["damage"]=kind=="arrow"?4:kind=="beam"?6:5,["age"]=0,["stuck"]=false,["hits"]=new JArray()};
+            var value=new JObject{["entity"]=id,["uuid"]=Guid.NewGuid().ToString("N"),["kind"]="minecraft:"+(kind=="arrow"?"arrow":kind=="potion"?"splash_potion":"snowball"),["item"]="minecraft:"+(kind=="arrow"?"arrow":kind=="potion"?"splash_potion":"fire_charge"),["hostile"]=!targetX.HasValue,["mobKind"]=kind,["owner"]=(int)mob["entity"],["x"]=px,["y"]=py,["vx"]=dx/Math.Max(.01,distance)*speed,["vy"]=dy/Math.Max(.01,distance)*speed,["damage"]=kind=="arrow"?4:kind=="beam"?6:5,["age"]=0,["stuck"]=false,["hits"]=new JArray()};
             value["stepRequired"]=true;value["grounded"]=false;value["noClip"]=false;
             if(kind=="potion"){var potion=NativeStack.New("splash_potion");potion.Data["Potion"]="minecraft:poison";value["stack"]=potion.Json();}
             projectiles[id]=value;Sound(kind=="arrow"?"minecraft:entity.skeleton.shoot":"minecraft:entity.blaze.shoot",.6,1,px,py);

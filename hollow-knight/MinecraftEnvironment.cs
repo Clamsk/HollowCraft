@@ -143,7 +143,7 @@ namespace HollowCraft
                 if(!fluidActive) {fluidY=body.linearVelocity.y/20;fluidPhase=0;fluidActive=true;}
                 body.gravityScale=0;float remaining=Time.fixedDeltaTime,displacement=0;
                 while(remaining>.00001f) {
-                    if(fluidPhase<.00001f) {if(Application.isFocused&&!runtime.GameplayBlocked&&Input.GetKey(KeyCode.Space))fluidY+=.04f;fluidVelocity=fluidY;}
+                    if(fluidPhase<.00001f) {fluidY+=(float?)runtime.Stats?["currentY"]??0;if(Application.isFocused&&!runtime.GameplayBlocked&&Input.GetKey(KeyCode.Space))fluidY+=.04f;fluidVelocity=fluidY;}
                     float segment=Math.Min(remaining,.05f-fluidPhase);displacement+=fluidVelocity*20*segment;remaining-=segment;fluidPhase+=segment;
                     if(fluidPhase>=.04999f) {fluidPhase=0;float gravityStep=Effect("slow_falling")>=0&&fluidY<=0?.01f:.08f;bool shallow=((float?)runtime.Stats?["lavaHeight"]??1)<=((float?)runtime.Stats?["swimHeight"]??.4f);fluidY=fluidVelocity*(water?.8f:shallow?.8f:.5f)-gravityStep/(water?16:4);}
                 }
@@ -236,7 +236,7 @@ namespace HollowCraft
             float multiplier=Flying?1:Mathf.Clamp((float?)runtime.Stats?["velocityMultiplier"]??1,0,4);
             float remaining=Time.fixedDeltaTime,displacement=0;
             while(remaining>.00001f) {
-                if(walkPhase<.00001f) {if(Math.Abs(motionX)<.003f)motionX=0;walkVelocity=motionX+acceleration*input;}
+                if(walkPhase<.00001f) {if(Math.Abs(motionX)<.003f)motionX=0;walkVelocity=motionX+acceleration*input+(water||lava?((float?)runtime.Stats?["currentX"]??0):0);}
                 float segment=Math.Min(remaining,.05f-walkPhase);displacement+=walkVelocity*20*segment;remaining-=segment;walkPhase+=segment;
                 if(walkPhase>=.04999f) {walkPhase=0;motionX=walkVelocity*drag*multiplier;}
             }

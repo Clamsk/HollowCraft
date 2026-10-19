@@ -328,6 +328,7 @@ namespace HollowCraft
         }
         private void ContainerButton(JObject container,int button) {CancelDrag();runtime.Send(new {type="containerButton",scene=runtime.Room,button,syncId=(int?)container["syncId"]??-1});}
         private void DrawContainerChoices(JObject container) {
+            if((string)container["selector"]=="trades"){DrawTradeChoices(container);return;}
             string kind=(string)container["selector"];if(kind!="loom"&&kind!="stonecutter")return;
             string key=container["syncId"]+"|"+container["slots"]?[0]?["id"];
             if(key!=choiceKey) {choiceKey=key;choiceRow=0;}
@@ -355,6 +356,13 @@ namespace HollowCraft
                 if(!hover)continue;hovered=choice;
                 if(e.type==EventType.MouseDown&&e.button==0) {ContainerButton(container,(int)choice["button"]);e.Use();}
             }
+        }
+        private void DrawTradeChoices(JObject container) {
+            string key="trades|"+container["syncId"];if(key!=choiceKey){choiceKey=key;choiceRow=0;}
+            var offers=container["choices"] as JArray??new JArray();var area=new Rect(left+7*scale,top+16*scale,76*scale,64*scale);var e=Event.current;int maximum=Math.Max(0,offers.Count-4);
+            if(e.type==EventType.ScrollWheel&&area.Contains(pointer)){choiceRow=Mathf.Clamp(choiceRow+(e.delta.y>0?1:-1),0,maximum);e.Use();}
+            GUI.color=new Color(.35f,.35f,.35f);GUI.DrawTexture(area,Texture2D.whiteTexture);GUI.color=Color.white;
+            for(int row=0;row<4&&row+choiceRow<offers.Count;row++){var offer=offers[row+choiceRow];var rect=new Rect(area.x,area.y+row*16*scale,area.width,16*scale);bool hover=rect.Contains(pointer),selected=(int?)offer["button"]==(int?)container["selectedChoice"],sold=(bool?)offer["soldOut"]==true;GUI.color=sold?new Color(.55f,.3f,.3f):selected?new Color(.65f,.8f,.55f):hover?new Color(.8f,.8f,.8f):new Color(.65f,.65f,.65f);GUI.DrawTexture(rect,Texture2D.whiteTexture);GUI.color=Color.white;Item(offer["buy"],new Rect(rect.x+2*scale,rect.y,16*scale,16*scale));Text(sold?"X":">",rect.x+32*scale,rect.y+4*scale,scale,Color.black);Item(offer["sell"],new Rect(rect.x+48*scale,rect.y,16*scale,16*scale));if(!hover)continue;hovered=offer["sell"];if(e.type==EventType.MouseDown&&e.button==0){ContainerButton(container,(int)offer["button"]);e.Use();}}
         }
         private void DrawCatalog()
         {

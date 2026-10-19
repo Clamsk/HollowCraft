@@ -11,5 +11,9 @@ if(-not(Test-Path -LiteralPath $taskMapped)){throw 'Run tools/export-native-rule
 $taskClasspath=$taskMapped+';'+$taskArgs[$taskIndex+1].Trim('"')
 & (Join-Path $JavaHome 'bin/javac.exe') --release 17 -proc:none -cp $taskClasspath -d $taskOutput (Join-Path $PSScriptRoot 'NativeCreatureModelExporter.java')
 if($LASTEXITCODE -ne 0){throw 'Model exporter compilation failed.'}
+Push-Location $taskOutput
+try {
 & (Join-Path $JavaHome 'bin/java.exe') -cp ($taskOutput+';'+$taskClasspath) NativeCreatureModelExporter (Join-Path $taskRoot 'artifacts/native-creature-export/models.json')
 if($LASTEXITCODE -ne 0){throw 'Model export failed.'}
+
+}finally{Pop-Location}
