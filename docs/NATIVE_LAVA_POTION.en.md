@@ -1,0 +1,13 @@
+# Native alpha.12: armored bosses, lava and potions
+
+English | [简体中文](NATIVE_LAVA_POTION.md)
+
+False Knight and Failed Champion use separate body and head health pools. Depleting the head refills its pool and sends the native body a stun-ending event. Early depletion during opening/recovery animations can lose that event; logs show repeated head refills, rather than proving numerical overflow. The adapter now follows the head's native Body reference to FalseyControl and protects its pool until the current body state accepts STUN END, including head pools below 100 HP. No boss state or victory condition is forced. Attack the exposed head after the armor opens.
+
+Lava previously affected players and Minecraft mobs but omitted native enemies. Native enemy hit bounds now intersect actual visible fluid polygons, including edge contact when the origin lies outside the source cell. Clipped terrain and space above the liquid surface do not count. Lava applies four proxy HP every ten ticks and ignites enemies, followed by burning outside lava. Water extinguishes flames; fire resistance and native phase floors remain authoritative. Friendly NPCs and breakable resources are excluded.
+
+Lava, burning and potion/environment damage retain health loss, sounds and hurt feedback without directional knockback or lift. Native enemies no longer receive an extra horizontal impulse from these sources. Ordinary enemy contact retains knockback. Placement preview, prediction and backend rules allow replacing source or flowing water/lava with blocks. Covered sources cannot be restored by fluid updates. Waterlogged solid blocks remain occupied.
+
+Splash/lingering potions now play original throw and glass-break sounds, plus colored droplets and animated effect particles at the impact position. Instant potions use their corresponding frames; lingering clouds remain. Twenty original static particle frames are imported locally, with authored fallbacks and no Minecraft runtime. Particle objects and animation arrays are reused with a fixed active limit. Duplicate impact acknowledgements cannot replay effects or sounds. Existing audio manifests upgrade to include three potion sound events.
+
+The main build and 630 offline rule/protocol checks pass, including 35 new checks for fluid contact, immunity, extinguishing, absent recoil, replacement placement and potion event deduplication. No game was launched, closed or played automatically. Full native boss progression and visual acceptance remain for player testing. Saves, loadouts, settings and blocks are preserved. Restart an encounter already stuck in the old version.

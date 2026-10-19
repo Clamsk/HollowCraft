@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.11",
+  "version": "0.40.0-alpha.12",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -142,7 +142,7 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 595,
+    "ruleChecksPassed": 630,
     "launcherChecksPassed": 29,
     "originalPlayerAnimatorAxesCompared": 334584,
     "originalMatrixPointsCompared": 4782,
@@ -150,7 +150,8 @@
     "animationReferenceIsGameplayAcceptance": false,
     "originalHandGripPointsCompared": 1594,
     "nativeGroundAndTridentChecksPassed": 28,
-    "nativeZenithBalanceChecksPassed": 18
+    "nativeZenithBalanceChecksPassed": 18,
+    "nativeLavaAndPotionChecksPassed": 35
   },
   "dataCoverage": {
     "craftingRecipes": 822,
@@ -163,8 +164,9 @@
     "entityMetadata": 124,
     "creativeTabs": 13,
     "sourceCreativeStacks": 1523,
-    "soundEventMappings": 76,
+    "soundEventMappings": 79,
     "localAudioFiles": 149,
+    "importedPotionParticleFrames": 20,
     "importedBitmapGlyphs": 2413,
     "nativeMobSpecies": 75,
     "entityLootTables": 97,

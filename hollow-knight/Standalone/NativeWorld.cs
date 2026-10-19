@@ -68,7 +68,8 @@ namespace HollowCraft.Standalone
             int bx=(int)Number(packet,"x"),by=(int)Number(packet,"y");var held=Inventory.Hand.Definition.Block?Inventory.Hand:Inventory.Offhand;
             bool foundation=tower&&(bool?)packet["nativeFoundation"]==true&&Number(packet,"supportY")>=by-.05&&Number(packet,"supportY")<by+1;
             bool body=held.Definition.Solid&&x+.3>bx+.001&&x-.3<bx+1-.001&&y<by+1-.001&&y+1.8>by+.001;
-            bool allowed=!Spectator&&mode!="adventure"&&health>0&&!held.Empty&&held.Definition.Block&&Math.Abs(bx)<4096&&by>= -256&&by<=4096&&Reach(bx,by,Creative?5:4.5)&&!body&&!Room.Blocks.ContainsKey(NativeRoom.Key(bx,by))&&(!TerrainFull(bx,by)||foundation)&&Room.Blocks.Count<32768;
+            bool replaceable=!Room.Blocks.TryGetValue(NativeRoom.Key(bx,by),out var previous)||NativeDamageRules.ReplacesFluid((string)previous["id"]);
+            bool allowed=!Spectator&&mode!="adventure"&&health>0&&!held.Empty&&held.Definition.Block&&Math.Abs(bx)<4096&&by>= -256&&by<=4096&&Reach(bx,by,Creative?5:4.5)&&!body&&replaceable&&(!TerrainFull(bx,by)||foundation)&&(Room.Blocks.Count<32768||previous!=null);
             if(allowed){Room.Blocks[NativeRoom.Key(bx,by)]=NativeRoom.Cell(bx,by,held.Id);InitializeBlockState(Room.Blocks[NativeRoom.Key(bx,by)],packet);RestorePlacedItem(held,Room.Blocks[NativeRoom.Key(bx,by)]);Sound(SurfaceSound(held.Id,"place"),.8,.9+random.NextDouble()*.2,bx+.5,by+.5);if(!Creative){held.Count--;held.Normalize();}}
             var reply=new JObject{["type"]=tower?"towerResult":"placeResult",["request"]=request,["x"]=bx,["y"]=by,["accepted"]=allowed,["reason"]=allowed?"native placement":"native placement rejected"};
             if(tower){towerResults[request]=(JObject)reply.DeepClone();if(towerResults.Count>128)towerResults.Remove(towerResults.Keys.First());}Emit(reply);

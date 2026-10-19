@@ -62,6 +62,7 @@ namespace HollowCraft.Standalone
         }
         private void SpawnProjectile(string kind,double dx,double dy,double speed,double damage,NativeStack stack) {
             if(kind=="minecraft:arrow")Sound("minecraft:entity.arrow.shoot",.8,.9+random.NextDouble()*.2);
+            if(kind=="minecraft:splash_potion"||kind=="minecraft:lingering_potion")Sound(kind=="minecraft:lingering_potion"?"minecraft:entity.lingering_potion.throw":"minecraft:entity.splash_potion.throw",.5,.8+random.NextDouble()*.4);
             double length=Math.Sqrt(dx*dx+dy*dy);if(length<.001){dx=1;dy=0;length=1;}
             int id=++serial;projectiles[id]=new JObject{["entity"]=id,["uuid"]=Guid.NewGuid().ToString("N"),["kind"]=kind,["item"]=kind=="minecraft:arrow"?"minecraft:arrow":kind,["x"]=x,["y"]=y+1.4,["vx"]=dx/length*speed,["vy"]=dy/length*speed,["nextVx"]=dx/length*speed,["nextVy"]=dy/length*speed,["age"]=0,["damage"]=damage,["stepRequired"]=true,["grounded"]=false,["noClip"]=false,["stack"]=stack?.Json()};
         }
@@ -90,7 +91,7 @@ namespace HollowCraft.Standalone
             double angle=Math.Atan2(Number(value,"vy"),Number(value,"vx"))*180/Math.PI;
             if(target!=0&&enemies.TryGetValue(target,out var enemy)&&(kind=="minecraft:trident"||kind=="minecraft:arrow")){HitEnemy(enemy,propPass?999:Math.Max(1,Number(value,"damage")),kind=="minecraft:trident"?"trident":"arrow",angle);if(kind=="minecraft:arrow"&&value["stack"] is JObject carried){var ammo=NativeStack.Read(carried);if(ammo.Id=="minecraft:tipped_arrow")ApplyPotionEnemy(enemy,ammo,.125);}}
             if(kind=="minecraft:ender_pearl") {x=Number(packet,"landingX",Number(packet,"x"));y=Number(packet,"landingY",Number(packet,"y"));teleport++;hurtTicks=0;Damage(3,"pearl",x,y);Emit(new JObject{["type"]="teleport",["x"]=x,["y"]=y,["normalX"]=Number(packet,"normalX"),["normalY"]=Number(packet,"normalY",1),["teleport"]=teleport});removed=true;}
-            else if(kind.Contains("potion")){var potion=NativeStack.Read(value["stack"]);double px=Number(packet,"x"),py=Number(packet,"y");if(kind=="minecraft:lingering_potion")SpawnCloud(potion,px,py);else {foreach(var enemy2 in enemies.Values.Concat(Room.Creatures).ToArray()){double distance=Math.Sqrt(Math.Pow(Number(enemy2,"x")-px,2)+Math.Pow(Number(enemy2,"y")-py,2));if(distance<4)ApplyPotionEnemy(enemy2,potion,(int?)enemy2["id"]==target?1:1-distance/4);}double playerDistance=Math.Sqrt((x-px)*(x-px)+(y-py)*(y-py));if(playerDistance<4)ApplyPotion(potion,1-playerDistance/4);}removed=true;}
+            else if(kind.Contains("potion")){PotionImpact(value,Number(packet,"x"),Number(packet,"y"),target,(int?)packet["creature"]?["entity"]??0);removed=true;}
             else if(kind=="minecraft:trident"){var stack=NativeStack.Read(value["stack"]);Inventory.Wear(stack,1,Creative);value["stack"]=stack.Json();value["x"]=Number(packet,"x");value["y"]=Number(packet,"y");value["vx"]=value["vy"]=0;value["stepRequired"]=false;bool loyalty=NativeData.Enchantment(stack,"loyalty")>0;value["returning"]=loyalty;value["noClip"]=loyalty;value["grounded"]=!loyalty;}
             else if(kind=="minecraft:snowball"||kind=="minecraft:egg")removed=true;
             else if(!pass){value["x"]=Number(packet,"x");value["y"]=Number(packet,"y");value["vx"]=value["vy"]=0;value["grounded"]=true;value["stepRequired"]=false;}
@@ -173,7 +174,7 @@ namespace HollowCraft.Standalone
         private void MobProjectilePlayer(JObject value,double px,double py) {
             string type=(string)value["mobKind"];
             if(type=="fireball")Explode(px,py,1,false);
-            else if(type=="potion"){var potion=NativeStack.Read(value["stack"]);if((string)value["kind"]=="minecraft:lingering_potion")SpawnCloud(potion,px,py);else ApplyPotion(potion);}
+            else if(type=="potion")PotionImpact(value,px,py);
             else if(type!="snowball"&&type!="egg"){Damage(Number(value,"damage",3),type=="arrow"?"arrow":"magic",Number(value,"x"),Number(value,"y"),(int?)value["owner"]??0);if(type=="small_fireball")fireTicks=100;if(type=="bullet")Effect("levitation",200,0);}
         }
         private static bool SegmentBox(double ax,double ay,double bx,double by,double minX,double minY,double maxX,double maxY) {

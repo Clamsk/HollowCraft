@@ -6,6 +6,26 @@ namespace HollowCraft.Standalone
 {
     internal sealed partial class NativeGame
     {
+        private void PotionImpact(JObject projectile,double px,double py,int nativeTarget=0,int creatureTarget=0) {
+            var potion=NativeStack.Read(projectile["stack"]);string type=(string)potion.Data["Potion"]??"minecraft:water";
+            var effects=NativeData.PotionEffects(potion).ToArray();
+            int color=(int?)potion.Data["CustomPotionColor"]??(NativeData.Potions.TryGetValue(type,out var metadata)?(int?)metadata["color"]??3694022:3694022);
+            Emit(new JObject{["type"]="potionSplash",["entity"]=projectile["entity"]?.DeepClone(),["x"]=px,["y"]=py,["color"]=color,["instant"]=effects.Any(e=>(string)e["id"]=="minecraft:instant_health"||(string)e["id"]=="minecraft:instant_damage"),["water"]=effects.Length==0,["lingering"]=(string)projectile["kind"]=="minecraft:lingering_potion"});
+            Sound("minecraft:entity.splash_potion.break",1,.9+random.NextDouble()*.1,px,py);
+            if((string)projectile["kind"]=="minecraft:lingering_potion"){SpawnCloud(potion,px,py);return;}
+            foreach(var enemy in enemies.Values.Concat(Room.Creatures).ToArray()) {
+                double distance=PotionDistance(enemy,px,py);if(distance>=4)continue;
+                bool direct=enemy["entity"]!=null?(int?)enemy["entity"]==creatureTarget:(int?)enemy["id"]==nativeTarget;
+                ApplyPotionEnemy(enemy,potion,direct?1:1-distance/4);
+                if(effects.Length==0){enemy["fireTicks"]=0;enemy["onFire"]=false;}
+            }
+            double playerDistance=PotionDistance(new JObject{["x"]=x,["y"]=y,["width"]=.6,["height"]=1.8},px,py);
+            if(playerDistance<4){ApplyPotion(potion,1-playerDistance/4);if(effects.Length==0)fireTicks=0;}
+        }
+        private static double PotionDistance(JObject target,double px,double py) {
+            double half=Number(target,"width",.6)/2,bottom=Number(target,"y"),closestX=Math.Max(Number(target,"x")-half,Math.Min(px,Number(target,"x")+half)),closestY=Math.Max(bottom,Math.Min(py,bottom+Number(target,"height",1.8)));
+            return Math.Sqrt((closestX-px)*(closestX-px)+(closestY-py)*(closestY-py));
+        }
         private void TickBrew(NativeContainer box) {
             var reagent=box.Slots[3];bool can=Enumerable.Range(0,3).Any(i=>NativeData.Brew(box.Slots[i],reagent)!=null);
             string key=reagent.Empty?"":reagent.Id;

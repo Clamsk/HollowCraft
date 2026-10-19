@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace HollowCraft.Standalone
 {
-    internal sealed class NativePresentation : MonoBehaviour
+    internal sealed partial class NativePresentation : MonoBehaviour
     {
         private float totemAt=-100;
         internal void Totem(){totemAt=Time.unscaledTime;}

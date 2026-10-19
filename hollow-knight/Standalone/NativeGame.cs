@@ -171,7 +171,7 @@ namespace HollowCraft.Standalone
             enemyHurt[(int)enemy["id"]]=tick+Math.Max(0,(int?)enemy["nativeHurtTicks"]??0);return true;
         }
         private void TickPlayer() {
-            TickEnemyEffects();TickAdditionalPlayer();
+            TickNativeEnvironment();TickEnemyEffects();TickAdditionalPlayer();
             if(hurtTicks>0)hurtTicks--;
             foreach(string id in effects.Keys.ToArray()){var value=effects[id];if(value.Item1<=1){effects.Remove(id);if(id=="absorption")absorption=0;}else effects[id]=Tuple.Create(value.Item1-1,value.Item2);}
             if(effects.TryGetValue("regeneration",out var regen)&&tick%Math.Max(1,50>>regen.Item2)==0&&health>0)health=Math.Min(20,health+1);
@@ -202,7 +202,7 @@ namespace HollowCraft.Standalone
             if(health<=0)DropDeathInventory();
             Emit(new JObject{["type"]="hurt",["ticks"]=10});
             Sound(health>0?"minecraft:entity.player.hurt":"minecraft:entity.player.death",.7);
-            if(kind!="fall"&&kind!="pearl"&&kind!="starve")Emit(new JObject{["type"]="impulse",["x"]=attackerX<x?.4:-.4,["y"]=.4});
+            if(NativeDamageRules.Knockback(kind))Emit(new JObject{["type"]="impulse",["x"]=attackerX<x?.4:-.4,["y"]=.4});
         }
         private void Effect(string id,int duration,int level) {if(effects.TryGetValue(id,out var previous)&&(previous.Item2>level||previous.Item2==level&&previous.Item1>=duration))return;effects[id]=Tuple.Create(duration,level);if(id=="absorption")absorption=Math.Max(absorption,4*(level+1));}
         private void FinishFood() {

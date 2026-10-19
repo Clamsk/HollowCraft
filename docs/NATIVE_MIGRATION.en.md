@@ -1,8 +1,8 @@
-# HollowCraft Native 0.40.0-alpha.11
+# HollowCraft Native 0.40.0-alpha.12
 
 [简体中文](NATIVE_MIGRATION.md) | English
 
-This release rebalances complete Zenith attacks and prevents repeated damage after phase reconciliation. See [Zenith damage and phase protection](NATIVE_ZENITH_BALANCE.en.md).
+This release repairs armored boss head transitions, lava damage and replacement placement, and potion splash/sounds. See [Lava and potion fixes](NATIVE_LAVA_POTION.en.md).
 
 HollowCraft is transitioning to a **Hollow Knight-only mod**. The default backend now runs C# rules inside the Hollow Knight process. Native mode does not launch Minecraft or Java, open a bridge socket, or receive live Minecraft-rendered frames. The v0.30.18 bridge remains available as a comparison and fallback.
 
@@ -73,4 +73,4 @@ Checks cover save separation, corrupt-save protection, item conservation, idempo
 
 Remaining work proceeds through rendering fidelity, combat/playthrough fixes, complete items/recipes/workstations, entity models and AI, then sound, particles, redstone and fluid details. Full parity will not be claimed until migration and player acceptance are complete.
 
-Alpha.11 passed 595 pure rule/protocol checks including imported local data, 12 launcher process checks and 17 loadout/offscreen UI interaction checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.
+Alpha.12 passed 630 pure rule/protocol checks including imported local data, 12 launcher process checks and 17 loadout/offscreen UI interaction checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.

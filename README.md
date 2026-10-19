@@ -1,8 +1,8 @@
 # HollowCraft Native · 独立 Mod 迁移
 
-0.40.0-alpha.11 将天顶剑调整为每轮完整攻击对每个目标最多造成 200 点空洞原生伤害，消除多飞剑反复命中和暴击叠加，并保留 Boss 阶段保护；[本版说明](docs/NATIVE_ZENITH_BALANCE.md)。
+0.40.0-alpha.12 修复假骑士／失败冠军头部过早归零的阶段衔接，接入岩浆对空洞敌人的伤害，取消岩浆受伤拉扯，允许方块覆盖流体，并补齐药水喷溅粒子与音效；[本版说明](docs/NATIVE_LAVA_POTION.md)。
 
-现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.11 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
+现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.12 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
 
 - [独立版安装、启动和迁移清单](docs/NATIVE_MIGRATION.md)
 - 独立启动入口：**Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@
 
 以下是旧桥接版文档和历史记录，其双游戏依赖不适用于 Native。
 
-- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.11)
+- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.12)
 
 ---
 

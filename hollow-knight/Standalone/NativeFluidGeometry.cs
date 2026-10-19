@@ -38,6 +38,14 @@ namespace HollowCraft.Standalone
             foreach(var b in polygon){bool insideB=greater?b[axis]>=edge-1e-9:b[axis]<=edge+1e-9;if(insideA!=insideB){double t=(edge-a[axis])/(b[axis]-a[axis]);result.Add(new[]{a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t});}if(insideB)result.Add(b);a=b;insideA=insideB;}return result;
         }
         private static bool Area(List<double[]> polygon) {double sum=0;for(int i=0;i<polygon.Count;i++){var a=polygon[i];var b=polygon[(i+1)%polygon.Count];sum+=a[0]*b[1]-a[1]*b[0];}return Math.Abs(sum)>.000001;}
+        internal static bool Intersects(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell,double left,double bottom,double right,double top) {
+            double x=(int)cell["x"],y=(int)cell["y"];
+            foreach(JArray polygon in Polygons(room,terrain,cell)) {
+                var clipped=polygon.OfType<JArray>().Select(p=>new[]{(double)p[0],(double)p[1]}).ToList();
+                clipped=Clip(Clip(Clip(Clip(clipped,0,left-x,true),0,right-x,false),1,bottom-y,true),1,top-y,false);
+                if(Area(clipped))return true;
+            }return false;
+        }
         internal static JArray Polygons(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell) {
             var top=Tops(room,terrain,cell);var floors=Floors(terrain,(int)cell["x"],(int)cell["y"]);var cuts=floors.SelectMany(r=>new[]{r[0],r[2]}).Concat(new[]{0.0,1}).Distinct().OrderBy(v=>v).ToArray();var polygons=new List<List<double[]>>();
             for(int i=0;i+1<cuts.Length;i++){double left=cuts[i],right=cuts[i+1],bottom=floors.Where(r=>r[0]<right&&r[2]>left).Select(r=>r[3]).DefaultIfEmpty(0).Max();polygons.Add(new List<double[]>{new[]{left,bottom},new[]{right,bottom},new[]{right,Math.Max(bottom,top[0]+(top[1]-top[0])*right)},new[]{left,Math.Max(bottom,top[0]+(top[1]-top[0])*left)}});}

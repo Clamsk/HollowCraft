@@ -104,7 +104,7 @@ namespace HollowCraft
         private PlacementBlocker PlacementBlockedBy(Vector2Int cell,HeroController hero,bool foundation=false,float supportY=0) {
             if(!GameCursor.BlockInReach(cell,hero))return PlacementBlocker.Reach;
             if(Spectator||Mode=="adventure")return PlacementBlocker.Mode;
-            if(blocks.ContainsKey(Key(cell.x,cell.y)))return PlacementBlocker.Occupied;
+            if(PlacementOccupied(cell))return PlacementBlocker.Occupied;
             bool floorFoundation=foundation&&supportY>=cell.y-.05f&&supportY<cell.y+1&&Math.Abs(hero.transform.position.x-cell.x-.5f)<=.85f;
             if(!floorFoundation&&terrainCells.Any(p=>p[0]==cell.x&&p[1]==cell.y&&(p.Length<6||p[5]>=.999f)))return PlacementBlocker.Terrain;
             var body=hero.GetComponent<Collider2D>();
@@ -123,7 +123,7 @@ namespace HollowCraft
                 if(PlacementAllowed(pointed,hero))return pointed;
                 var above=pointed+Vector2Int.up;
                 if(Math.Abs(pointed.x+.5f-hero.transform.position.x)<.8f&&pointed.y+1<=hero.GetComponent<Collider2D>().bounds.min.y+.04f)
-                    for(int step=0;step<5&&blocks.ContainsKey(Key(above.x,above.y));step++)above+=Vector2Int.up;
+                    for(int step=0;step<5&&PlacementOccupied(above);step++)above+=Vector2Int.up;
                 if(PlacementAllowed(above,hero))return above;
             }
             return pointed;
@@ -141,10 +141,11 @@ namespace HollowCraft
             // Unity's contact skin can leave the feet just below a voxel edge. A
             // placed MC block is also a support, so resolve its upper face before
             // deciding whether this jump's new block can be queued.
-            if(blocks.ContainsKey(Key(candidate.x,candidate.y))||terrainCells.Any(p=>p[0]==candidate.x&&p[1]==candidate.y&&(p.Length<6||p[5]>=.999f)))candidate+=Vector2Int.up;
+            if(PlacementOccupied(candidate)||terrainCells.Any(p=>p[0]==candidate.x&&p[1]==candidate.y&&(p.Length<6||p[5]>=.999f)))candidate+=Vector2Int.up;
             cell=candidate;
-            return !blocks.ContainsKey(Key(cell.x,cell.y));
+            return !PlacementOccupied(cell);
         }
+        private bool PlacementOccupied(Vector2Int cell)=>blocks.TryGetValue(Key(cell.x,cell.y),out var block)&&block!=null&&block.name!="HollowCraft.Block.minecraft:water"&&block.name!="HollowCraft.Block.minecraft:lava";
         private void Preview(Vector2Int cell,HeroController hero) {
             var item=PlacementItem;
             bool visible=!inventoryOpen && !paused && !Dead && item!=null&&(bool?)Stats?["using"]!=true;
@@ -366,6 +367,7 @@ namespace HollowCraft
                 if((string)message["type"]=="impulse"&&(string)message["scene"]==scene&&cachedHero!=null) PlayerSystem.ApplyImpulse(cachedHero,new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="hurt"&&(string)message["scene"]==scene) PlayerSystem.HurtFeedback((int?)message["ticks"]??10);
                 if((string)message["type"]=="totem"&&(string)message["scene"]==scene)GetComponent<HollowCraft.Standalone.NativePresentation>()?.Totem();
+                if((string)message["type"]=="potionSplash"&&(string)message["scene"]==scene)GetComponent<HollowCraft.Standalone.NativePresentation>()?.PotionSplash(message);
                 if((string)message["type"]=="shieldRecoil"&&(string)message["scene"]==scene)
                     EnemySystem.ShieldRecoil((int)message["id"],new Vector2((float)message["x"],(float)message["y"]));
                 if((string)message["type"]=="landing"&&(string)message["scene"]==scene) {
@@ -575,7 +577,8 @@ namespace HollowCraft
         private void PredictPlacement(Vector2Int cell,JObject item) {
             if((bool?)item?["predictSolid"]!=true)return;
             string id=(string)item["id"];
-            string key=Key(cell.x,cell.y);if(blocks.ContainsKey(key))return;
+            string key=Key(cell.x,cell.y);if(PlacementOccupied(cell))return;
+            if(blocks.TryGetValue(key,out var replaced)&&replaced!=null){replaced.SetActive(false);Destroy(replaced);blocks.Remove(key);blockStates.Remove(key);}
             var block=new GameObject("HollowCraft.Block."+id);DontDestroyOnLoad(block);
             block.transform.position=new Vector3(cell.x+.5f,cell.y+.5f,.1f);block.layer=Math.Max(0,LayerMask.NameToLayer("Terrain"));
             block.AddComponent<BoxCollider2D>().size=Vector2.one;

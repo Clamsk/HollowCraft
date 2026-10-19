@@ -12,9 +12,11 @@ namespace HollowCraft
     internal static class NativeBossPhases
     {
         private static readonly Dictionary<int,Gate> gates=new Dictionary<int,Gate>();
-        internal static void Clear()=>gates.Clear();
+        internal static void Clear(){gates.Clear();NativeKnightStages.Clear();}
         internal static int Floor(HealthManager enemy,int maximum) {
-            if(enemy==null||enemy.isDead||maximum<100)return 0;
+            if(enemy==null||enemy.isDead)return 0;
+            int multipartFloor=NativeKnightStages.Floor(enemy);if(multipartFloor>0)return multipartFloor;
+            if(maximum<100)return 0;
             int id=enemy.GetInstanceID();if(!gates.TryGetValue(id,out var gate))gates[id]=gate=new Gate();
             try{return gate.Floor(enemy,maximum);}catch(Exception error){if(!gate.Warned){gate.Warned=true;Debug.LogWarning("[HollowCraft] Native phase inspection "+enemy.name+": "+error.Message);}return 0;}
         }

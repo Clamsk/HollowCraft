@@ -148,6 +148,7 @@ namespace HollowCraft
                 }
                 Vector2 direction=((Vector2)enemy.transform.position-(Vector2)hero.transform.position).normalized;
                 string kind=(string)value["damageKind"];
+                bool knockback=Standalone.NativeDamageRules.Knockback(kind);
                 bool ranged=kind=="arrow"||kind=="trident"||kind=="thrown"||kind=="indirectMagic"||kind=="magic"||kind=="explosion.player"||kind=="explosion"||kind=="fireworks"||kind=="inFire"||kind=="onFire"||kind=="lava"||kind=="hotFloor"||kind=="wither";
                 if(!ranged)direction=HollowCraftRuntime.Instance.Combat.Aim;
                 var attackType=ranged?AttackTypes.Spell:AttackTypes.Nail;
@@ -158,7 +159,7 @@ namespace HollowCraft
                 // Clear only HK's extra evasion timer; scripted shields/phases still go through Hit.
                 evasionField?.SetValue(enemy,0f);
                 enemy.Hit(new HitInstance {Source=sourceObject,AttackType=attackType,DamageDealt=damage,Multiplier=1,
-                    Direction=angle,MagnitudeMultiplier=1.2f,IgnoreInvulnerable=true});
+                    Direction=angle,MagnitudeMultiplier=knockback?1.2f:0,IgnoreInvulnerable=true});
                 // Native recoil timers must not heal an already accepted MC hit. A genuine
                 // boss phase refill increases HP above the pre-hit value and stays native-owned.
                 bool specialDeath=(bool)(specialDeathField?.GetValue(enemy)??true);
@@ -174,7 +175,7 @@ namespace HollowCraft
                 adapter.LastNative=enemy.hp;
                 if(health<=0&&enemy.isDead) HollowCraftRuntime.Instance.Send(new {type="nativeDeath",scene=HollowCraftRuntime.Instance.Room,id,generation=adapter.Generation});
                 if(!enemy.isDead&&(gated||blocked||enemy.hp>before||health<=0&&enemy.hp>0)) {adapter.Health=adapter.Max*enemy.hp/adapter.NativeMax;adapter.Generation++;adapter.BlockSerial=adapter.ContactSerial=0;}
-                var body=enemy.GetComponent<Rigidbody2D>();if(body!=null && !enemy.isDead && body.bodyType==RigidbodyType2D.Dynamic) body.linearVelocity+=direction*3;
+                var body=enemy.GetComponent<Rigidbody2D>();if(knockback&&body!=null && !enemy.isDead && body.bodyType==RigidbodyType2D.Dynamic) body.linearVelocity+=direction*3;
             }
         }
     }
