@@ -24,6 +24,7 @@ if($null -ne $existingTask) {
 }
 if(-not(Test-Path -LiteralPath $executableTask)){throw 'Native game files are missing. Run Install HollowCraft Native.cmd.'}
 $env:HOLLOWCRAFT_BACKEND='standalone'
+$env:HOLLOWCRAFT_SETTINGS=Join-Path $nativeRootTask 'hollowcraft.native.settings.json'
 $env:HOLLOWCRAFT_SAVE_ROOT=Join-Path $nativeRootTask 'runtime\hk-native-saves'
 $env:HOLLOWCRAFT_BOSS_REQUEST=$null;$env:HOLLOWCRAFT_BOSS_CATALOG=$null;$env:HOLLOWCRAFT_BOSS_STATUS=$null;$env:HOLLOWCRAFT_RECORD_SESSION=$null
 if($BossId) {

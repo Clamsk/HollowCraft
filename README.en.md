@@ -1,8 +1,8 @@
-﻿# HollowCraft Native · Standalone migration
+# HollowCraft Native · Standalone migration
 
-0.40.0-alpha.7 adds persistent fluids, redstone machines, local navigation/trading, original boat models, special crafting, packed/shared storage, block loot and enchantment paths. [Release details](docs/NATIVE_SYSTEMS.en.md).
+0.40.0-alpha.8 adds Better Combat item tracks, original shield geometry, a redesigned loadout launcher, death-item rules and configurable landing water. [Release details](docs/NATIVE_HANDS_LAUNCHER.en.md).
 
-The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.7 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
+The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.8 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
 
 - [Native installation, launch and migration checklist](docs/NATIVE_MIGRATION.en.md)
 - **Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@ The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.7 i
 
 The following documents the legacy bridge. Its two-game requirements do not apply to Native.
 
-- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.7)
+- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.8)
 
 ---
 

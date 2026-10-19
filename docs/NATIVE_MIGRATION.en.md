@@ -1,4 +1,4 @@
-﻿# HollowCraft Native 0.40.0-alpha.7
+# HollowCraft Native 0.40.0-alpha.8
 
 [简体中文](NATIVE_MIGRATION.md) | English
 
@@ -45,7 +45,7 @@ Implemented means a local implementation exists, not exact vanilla fidelity or g
 | Player and equipment rendering | Root mirroring, joint attachments, per-pixel depth, vanilla hand/GUI transforms, combo timing and transitions; Bendy/pose details and gameplay appearance review pending |
 | Textures, UI and sound | Static vanilla textures, authored fallbacks and optional local model import; visual/audio parity is incomplete |
 
-See [alpha.7 world systems](NATIVE_SYSTEMS.en.md), [alpha.6 items, creatures and potions](NATIVE_EXPANSION.en.md), [alpha.5 animation, tower and font fixes](NATIVE_ANIMATION_FIX.en.md), [alpha.4 details](NATIVE_INPUT_FIX.en.md) and [alpha.3 rendering foundations](NATIVE_RENDERING.en.md) and [native-migration.json](../release/native-migration.json). Static registry coverage is not complete behavior coverage.
+See [alpha.8 hands and launcher](NATIVE_HANDS_LAUNCHER.en.md), [alpha.7 world systems](NATIVE_SYSTEMS.en.md), [alpha.6 items, creatures and potions](NATIVE_EXPANSION.en.md), [alpha.5 animation, tower and font fixes](NATIVE_ANIMATION_FIX.en.md), [alpha.4 details](NATIVE_INPUT_FIX.en.md) and [alpha.3 rendering foundations](NATIVE_RENDERING.en.md) and [native-migration.json](../release/native-migration.json). Static registry coverage is not complete behavior coverage.
 
 ## Optional local resources
 
@@ -71,4 +71,4 @@ Checks cover save separation, corrupt-save protection, item conservation, idempo
 
 Remaining work proceeds through rendering fidelity, combat/playthrough fixes, complete items/recipes/workstations, entity models and AI, then sound, particles, redstone and fluid details. Full parity will not be claimed until migration and player acceptance are complete.
 
-Alpha.7 passed 494 pure rule/protocol checks including imported local data and 12 launcher checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.
+Alpha.8 passed 511 pure rule/protocol checks including imported local data, 12 launcher process checks and 17 loadout/offscreen UI interaction checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.

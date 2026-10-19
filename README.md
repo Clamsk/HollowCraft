@@ -1,8 +1,8 @@
-﻿# HollowCraft Native · 独立 Mod 迁移
+# HollowCraft Native · 独立 Mod 迁移
 
-0.40.0-alpha.7 继续迁移流体、红石与自动化、二维寻路、村民交易、原版船模型、特殊合成、潜影盒与末影箱、方块掉落及附魔；[本版说明](docs/NATIVE_SYSTEMS.md)。
+0.40.0-alpha.8 补齐 Better Combat 手持物品轨道与原版盾牌模型，加入融合风格启动器、初始配装物品库、死亡物品规则和可配置落地水；[本版说明](docs/NATIVE_HANDS_LAUNCHER.md)。
 
-现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.7 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
+现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.8 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
 
 - [独立版安装、启动和迁移清单](docs/NATIVE_MIGRATION.md)
 - 独立启动入口：**Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@
 
 以下是旧桥接版文档和历史记录，其双游戏依赖不适用于 Native。
 
-- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.7)
+- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.8)
 
 ---
 

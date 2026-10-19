@@ -46,7 +46,7 @@ namespace HollowCraft.Standalone
             if(string.IsNullOrEmpty(id)||!id.StartsWith("minecraft:",StringComparison.Ordinal)&&id!="hollowcraft_bridge:zenith"&&id!="hollowcraft_bridge:stardust_wings")return false;
             string space=id.Split(':')[0],item=id.Substring(id.IndexOf(':')+1),modelId=space+":item/"+(item=="trident"?"trident_in_hand":item);var model=Read(modelId);if(model==null)return false;
             bool grip=holder.name=="HollowCraft.HeldItem3D"||holder.name=="HollowCraft.Offhand3D";var transform=Transform(model,grip,left,gui);if(gui&&model.Builtin)return false;
-            if(model.Builtin){if(!item.StartsWith("shield",StringComparison.Ordinal)&&item!="trident"&&item!="chest")return false;var matrix=grip?transform*Matrix4x4.Translate(new Vector3(-.5f,-.5f,-.5f))*Matrix4x4.Scale(new Vector3(1,-1,-1)):Matrix4x4.identity;var values=new JArray();for(int column=0;column<4;column++)for(int row=0;row<4;row++)values.Add(matrix[row,column]);return MinecraftMeshes.Builtin(holder,id,NativeAssets.Root,layer,order,grip?values:null);}
+            if(model.Builtin){if(!item.StartsWith("shield",StringComparison.Ordinal)&&item!="trident"&&item!="chest")return false;var matrix=grip?transform*Matrix4x4.Translate(new Vector3(-.5f,-.5f,-.5f))*Matrix4x4.Scale(new Vector3(1,-1,-1)):Matrix4x4.identity;if(grip&&NativeBuiltinItems.Draw(holder,id,matrix,layer,order,left))return true;var values=new JArray();for(int column=0;column<4;column++)for(int row=0;row<4;row++)values.Add(matrix[row,column]);return MinecraftMeshes.Builtin(holder,id,NativeAssets.Root,layer,order,grip?values:null);}
             string key=id+":"+grip+":"+left+":"+gui;
             if(!meshes.TryGetValue(key,out var parts)) {
                 parts=new List<Part>();

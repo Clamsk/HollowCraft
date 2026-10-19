@@ -38,7 +38,7 @@ namespace HollowCraft.Standalone
         private bool Creative=>mode=="creative";
         private bool Spectator=>mode=="spectator";
         private readonly NativeCombatProfiles combatProfiles;private int combo,lastComboTick=-100;private string comboItem="";
-        internal NativeGame(string path,string resourceRoot=null) {NativeData.Load(resourceRoot);combatProfiles=new NativeCombatProfiles(resourceRoot);root=Path.GetFullPath(path);Directory.CreateDirectory(root);}
+        internal NativeGame(string path,string resourceRoot=null,string settingsPath=null) {NativeData.Load(resourceRoot);settings=NativeSettings.Read(settingsPath);combatProfiles=new NativeCombatProfiles(resourceRoot);root=Path.GetFullPath(path);Directory.CreateDirectory(root);}
         internal void Enqueue(JObject packet) {if(closed)return;if(commands.Count>=4096)throw new InvalidOperationException("Native command queue overflow");commands.Enqueue((JObject)packet.DeepClone());}
         internal bool TryRead(out JObject packet) {if(events.Count>0){packet=events.Dequeue();return true;}packet=snapshot;snapshot=null;return packet!=null;}
         internal void Pump(double elapsed) {
@@ -101,7 +101,7 @@ namespace HollowCraft.Standalone
                 case "teleportAck":if((int?)p["teleport"]==teleport){x=Number(p,"x",x);y=Number(p,"y",y);}break;
                 case "rest":health=20;food=20;saturation=5;Save();break;
                 case "checkpoint":Save();break;
-                case "respawn":if(health<=0){health=20;food=20;saturation=5;hurtTicks=fireTicks=0;air=300;effects.Clear();absorption=0;Publish();}break;
+                case "respawn":if(health<=0){deathDropped=false;health=20;food=20;saturation=5;hurtTicks=fireTicks=0;air=300;effects.Clear();absorption=0;Publish();}break;
                 case "projectileStep":ProjectileSteps(p);break;
                 case "nativeProjectileHit":ProjectileHit(p);break;
                 case "tntStep":TntSteps(p);break;
@@ -123,7 +123,7 @@ namespace HollowCraft.Standalone
             enemies.Clear();enemyHurt.Clear();attackReplies.Clear();spentAttacks.Clear();towerResults.Clear();flights.Clear();projectiles.Clear();primed.Clear();terrain.Clear();rider=null;mining=null;usingItem=false;usingTicks=0;accumulator=0;teleport=0;lastLanding=-1;landingWater=null;lastVisual=null;
             foreach(var value in Room.Projectiles)projectiles[(int)value["entity"]]=(JObject)value.DeepClone();
             foreach(var value in Room.Primed)primed[(int)value["id"]]=(JObject)value.DeepClone();
-            introLanding=!introDone&&scene=="Tutorial_01"&&(bool?)packet["intro"]==true;
+            introLanding=!introDone&&scene=="Tutorial_01"&&((bool?)packet["intro"]==true||!File.Exists(savePath));
             cancelledAttackRequest=0;Emit(new JObject{["type"]="hello",["protocol"]=1,["backend"]="native-csharp"});WarmSounds();Publish();
         }
         private void Observe(JObject p) {
@@ -199,6 +199,7 @@ namespace HollowCraft.Standalone
             if(kind!="starve"){int protection=Inventory.Armor.Sum(s=>NativeData.Enchantment(s,"protection")+(kind=="fall"||kind=="pearl"?3*NativeData.Enchantment(s,"feather_falling"):0)+(kind=="explosion"?2*NativeData.Enchantment(s,"blast_protection"):0)+(kind=="onFire"||kind=="lava"?2*NativeData.Enchantment(s,"fire_protection"):0)+(kind=="arrow"||kind=="trident"?2*NativeData.Enchantment(s,"projectile_protection"):0));amount*=1-Math.Min(20,protection)/25.0;}
             Thorns(enemyId,kind);double absorbed=Math.Min(absorption,amount);absorption-=absorbed;health=Math.Max(0,health-(amount-absorbed));exhaustion+=.1;
             if(health<=0){var totem=Inventory.Hand.Id=="minecraft:totem_of_undying"?Inventory.Hand:Inventory.Offhand.Id=="minecraft:totem_of_undying"?Inventory.Offhand:null;if(totem!=null){totem.Count--;totem.Normalize();health=1;effects.Clear();absorption=0;fireTicks=0;Effect("regeneration",900,1);Effect("absorption",100,1);Effect("fire_resistance",800,0);Emit(new JObject{["type"]="totem"});Sound("minecraft:item.totem.use",.8);Notice("Totem of Undying");}}
+            if(health<=0)DropDeathInventory();
             Emit(new JObject{["type"]="hurt",["ticks"]=10});
             Sound(health>0?"minecraft:entity.player.hurt":"minecraft:entity.player.death",.7);
             if(kind!="fall"&&kind!="pearl"&&kind!="starve")Emit(new JObject{["type"]="impulse",["x"]=attackerX<x?.4:-.4,["y"]=.4});
@@ -231,13 +232,13 @@ namespace HollowCraft.Standalone
         }
         private static string Hash(string value) {using(var hash=SHA256.Create())return string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(value)).Select(b=>b.ToString("x2")));}
         private void Load() {
-            enderSlots=NativeInventory.Empty(27);Inventory=new NativeInventory();Inventory.Starter();rooms.Clear();effects.Clear();mode="survival";health=food=20;saturation=5;exhaustion=absorption=0;tick=serial=0;introDone=false;
+            deathDropped=false;appliedLoadout=settings.Revision;enderSlots=NativeInventory.Empty(27);Inventory=new NativeInventory();settings.Starter(Inventory);rooms.Clear();effects.Clear();mode="survival";health=food=20;saturation=5;exhaustion=absorption=0;tick=serial=0;introDone=false;
             lastSwing=-100;combo=0;comboItem="";lastComboTick=-100;experienceTotal=0;enchantSeed=1;enchantKey="";hurtTicks=regenTicks=fireTicks=0;air=300;lastDamage=0;zenithHeld=false;zenithBurst=zenithClock=0;zenithInput=-100;
             savePath=Path.Combine(root,Hash(campaign)+".json");saveBlocked=File.Exists(savePath);if(!saveBlocked)return;
             var data=JObject.Parse(File.ReadAllText(savePath));if((int?)data["schema"]!=1)throw new InvalidDataException("Unsupported native save schema");
             tick=Math.Max(0,(int?)data["tick"]??0);introDone=(bool?)data["introDone"]??false;
             experienceTotal=Math.Max(0,Math.Min(4000000,(int?)data["experience"]??0));enchantSeed=(int?)data["enchantSeed"]??1;
-            Inventory.Load((JObject)data["inventory"]);mode=(string)data["mode"]??"survival";health=Math.Max(0,Math.Min(20,Number(data,"health",20)));food=Math.Max(0,Math.Min(20,Number(data,"food",20)));saturation=Math.Max(0,Math.Min(food,Number(data,"saturation",5)));absorption=Math.Max(0,Number(data,"absorption"));
+            Inventory.Load((JObject)data["inventory"]);appliedLoadout=(string)data["loadoutRevision"]??"";if(settings.ApplyExisting&&settings.Revision.Length>0&&appliedLoadout!=settings.Revision){settings.Starter(Inventory);appliedLoadout=settings.Revision;}deathDropped=(bool?)data["deathDropped"]??false;mode=(string)data["mode"]??"survival";health=Math.Max(0,Math.Min(20,Number(data,"health",20)));food=Math.Max(0,Math.Min(20,Number(data,"food",20)));saturation=Math.Max(0,Math.Min(food,Number(data,"saturation",5)));absorption=Math.Max(0,Number(data,"absorption"));
             foreach(var property in (JObject)data["rooms"])rooms[property.Key]=NativeRoom.Read((JObject)property.Value);
             if(data["enderInventory"] is JArray ender){for(int i=0;i<Math.Min(27,ender.Count);i++)enderSlots[i]=NativeStack.Read(ender[i]);}else {var legacy=rooms.Values.SelectMany(r=>r.Containers.Values).FirstOrDefault(b=>b.Id=="minecraft:ender_chest");if(legacy!=null)enderSlots=legacy.Slots;}
             foreach(JObject value in data["effects"] as JArray??new JArray())effects[(string)value["id"]]=Tuple.Create((int)value["ticks"],(int)value["amplifier"]);
@@ -248,7 +249,7 @@ namespace HollowCraft.Standalone
             CaptureTransients();
             var world=new JObject();foreach(var room in rooms)world[room.Key]=room.Value.Save();
             var data=new JObject{["schema"]=1,["campaign"]=campaign,["inventory"]=Inventory.Save(),["mode"]=mode,["health"]=health,["food"]=food,["saturation"]=saturation,["absorption"]=absorption,["rooms"]=world,["effects"]=new JArray(effects.Select(e=>new JObject{["id"]=e.Key,["ticks"]=e.Value.Item1,["amplifier"]=e.Value.Item2}))};
-            data["enderInventory"]=new JArray(enderSlots.Select(s=>s.Json()));data["tick"]=tick;data["introDone"]=introDone;
+            data["deathDropped"]=deathDropped;data["loadoutRevision"]=appliedLoadout;data["enderInventory"]=new JArray(enderSlots.Select(s=>s.Json()));data["tick"]=tick;data["introDone"]=introDone;
             data["experience"]=experienceTotal;data["enchantSeed"]=enchantSeed;
             string temporary=savePath+"."+Guid.NewGuid().ToString("N")+".tmp";File.WriteAllText(temporary,data.ToString(Newtonsoft.Json.Formatting.None),new UTF8Encoding(false));if(File.Exists(savePath))File.Replace(temporary,savePath,savePath+".bak");else File.Move(temporary,savePath);
         }

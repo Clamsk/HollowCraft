@@ -39,3 +39,11 @@ foreach(JObject row in JArray.Parse(File.ReadAllText(rigPath))) {
 }
 Console.WriteLine($"{rigCount} articulated points compared against JOML/Minecraft matrices; {rigErrors} differ, max error {rigMax:E3} blocks.");
 if(rigErrors>0)Environment.ExitCode=1;
+
+string handsPath=Path.Combine(Path.GetDirectoryName(args[1]),"hand-samples.json");int handCount=0,handErrors=0;double handMax=0;
+if(File.Exists(handsPath))foreach(JObject row in JArray.Parse(File.ReadAllText(handsPath))) {
+    var clip=clips[(string)row["clip"]];string bone=(string)row["bone"];float tick=(float)row["tick"];
+    var pos=new NativeRigVector(clip.Sample(bone,"x",tick),clip.Sample(bone,"y",tick),clip.Sample(bone,"z",tick));var angles=new NativeRigVector(clip.Sample(bone,"pitch",tick),clip.Sample(bone,"yaw",tick),clip.Sample(bone,"roll",tick));
+    var pose=NativeHandMotion.Pose(bone=="leftItem",pos,angles);var point=pose.Rotation.Apply(new NativeRigVector(-3f/16,-5f/16,-2f/16));double error=Math.Max(Math.Abs(point.X+pose.Position.X-(float)row["point"][0]),Math.Max(Math.Abs(point.Y+pose.Position.Y-(float)row["point"][1]),Math.Abs(point.Z+pose.Position.Z-(float)row["point"][2])));handCount++;handMax=Math.Max(handMax,error);if(error>.0001)handErrors++;
+}
+Console.WriteLine($"{handCount} item-track grip points compared against original/JOML matrices; {handErrors} differ, max {handMax:E3} blocks.");if(handErrors>0)Environment.ExitCode=1;

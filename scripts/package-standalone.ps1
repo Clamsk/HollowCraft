@@ -1,4 +1,4 @@
-﻿param([string]$Version='0.40.0-alpha.7')
+﻿param([string]$Version='0.40.0-alpha.8')
 $ErrorActionPreference='Stop'
 $nativeRootTask=Split-Path $PSScriptRoot -Parent
 $dllTask=Join-Path $nativeRootTask 'artifacts\HollowCraft\HollowCraft.dll'
@@ -11,11 +11,12 @@ $filesTask=@(
     'Install HollowCraft Native.cmd','Start HollowCraft Native.cmd','Stop HollowCraft Native.cmd',
     'scripts\hollowcraft-common.ps1','scripts\build-hollow-knight.ps1','scripts\prepare-hk-test.ps1',
     'scripts\install-standalone.ps1','scripts\start-standalone.ps1','scripts\stop-standalone.ps1',
-    'scripts\launcher-native.ps1','scripts\native-launcher-run.ps1','scripts\native-launcher-process.ps1',
+    'scripts\launcher-native.ps1','scripts\native-launcher-run.ps1','scripts\native-launcher-process.ps1','scripts\native-launcher-settings.ps1',
+    'release\launcher\launcher.xaml','release\launcher\cavern-voxel-v1.png','release\launcher\NativeLauncherIcons.cs','release\native-held-models.json',
     'scripts\import-native-assets.ps1','scripts\prepare-native-resources.ps1','scripts\prepare-native-audio.ps1','scripts\prepare-native-font.ps1','scripts\prepare-terraria-assets.ps1',
     'tools\TerrariaAssetImporter\Importer.cs','tools\TerrariaAssetImporter\LzxDecoder.cs','tools\TerrariaAssetImporter\LzxDecoderStream.cs','tools\TerrariaAssetImporter\LICENSE.txt','tools\TerrariaAssetImporter\SOURCE.md',
     'release\native-dependencies.lock.json','release\native-migration.json','release\native-registry.json','release\native-creature-models.json','release\native-trades.json','release\bosses.json',
-    'docs\NATIVE_MIGRATION.md','docs\NATIVE_MIGRATION.en.md','docs\NATIVE_LAUNCHER_FIX.md',
+    'docs\NATIVE_MIGRATION.md','docs\NATIVE_MIGRATION.en.md','docs\NATIVE_LAUNCHER_FIX.md','docs\NATIVE_HANDS_LAUNCHER.md','docs\NATIVE_HANDS_LAUNCHER.en.md','docs\LAUNCHER_ARTWORK.md',
     'docs\NATIVE_RENDERING.md','docs\NATIVE_RENDERING.en.md','docs\NATIVE_INPUT_FIX.md','docs\NATIVE_INPUT_FIX.en.md','docs\NATIVE_ANIMATION_FIX.md','docs\NATIVE_ANIMATION_FIX.en.md',
     'docs\NATIVE_SYSTEMS.md','docs\NATIVE_SYSTEMS.en.md','docs\NATIVE_EXPANSION.md','docs\NATIVE_EXPANSION.en.md',
     'release\THIRD_PARTY.md','release\THIRD_PARTY.en.md'
@@ -27,18 +28,19 @@ foreach($relativeTask in $filesTask){
 }
 New-Item -ItemType Directory -Path (Join-Path $stageTask 'artifacts\HollowCraft') -Force | Out-Null
 Copy-Item -LiteralPath $dllTask -Destination (Join-Path $stageTask 'artifacts\HollowCraft\HollowCraft.dll')
-Set-Content -LiteralPath (Join-Path $stageTask 'README.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.7', '', '只运行空洞的独立 Mod 迁移预览。尚未完成全部功能移植，尚未验证完整通关。', '', '先运行 Install HollowCraft Native.cmd，再运行 Start HollowCraft Native.cmd。', '', '[完整安装与迁移说明](docs/NATIVE_MIGRATION.md) | [English](docs/NATIVE_MIGRATION.en.md)'
-Set-Content -LiteralPath (Join-Path $stageTask 'README.en.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.7', '', 'Hollow Knight-only migration preview. Feature parity and a full playthrough are not yet verified.', '', 'Run Install HollowCraft Native.cmd, then Start HollowCraft Native.cmd.', '', '[Installation and migration status](docs/NATIVE_MIGRATION.en.md) | [简体中文](docs/NATIVE_MIGRATION.md)'
+Set-Content -LiteralPath (Join-Path $stageTask 'README.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.8', '', '只运行空洞的独立 Mod 迁移预览。尚未完成全部功能移植，尚未验证完整通关。', '', '先运行 Install HollowCraft Native.cmd，再运行 Start HollowCraft Native.cmd。', '', '[完整安装与迁移说明](docs/NATIVE_MIGRATION.md) | [English](docs/NATIVE_MIGRATION.en.md)'
+Set-Content -LiteralPath (Join-Path $stageTask 'README.en.md') -Encoding UTF8 -Value '# HollowCraft Native 0.40.0-alpha.8', '', 'Hollow Knight-only migration preview. Feature parity and a full playthrough are not yet verified.', '', 'Run Install HollowCraft Native.cmd, then Start HollowCraft Native.cmd.', '', '[Installation and migration status](docs/NATIVE_MIGRATION.en.md) | [简体中文](docs/NATIVE_MIGRATION.md)'
 $manifestFilesTask=@(Get-ChildItem -LiteralPath $stageTask -Recurse -File | ForEach-Object {
     @{path=$_.FullName.Substring($stageTask.Length+1).Replace('\','/');sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}
 })
 @{schema=1;version=$Version;backend='standalone';gameVersion='1.5.12620';files=$manifestFilesTask} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stageTask 'release\native-package-manifest.json') -Encoding UTF8
 # Explicit file list above excludes original game files, extracted assets, dependencies,
 # all Java/JAR binaries, frame caches, accounts, logs and player saves.
-Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression,System.IO.Compression.FileSystem
 $zipTask=Join-Path $nativeRootTask ('artifacts\HollowCraft-Native-Windows-'+$Version+'.zip')
 if(Test-Path -LiteralPath $zipTask){throw 'Package exists. Choose a new alpha version or archive it before packaging.'}
-[IO.Compression.ZipFile]::CreateFromDirectory((Split-Path $stageTask -Parent),$zipTask,[IO.Compression.CompressionLevel]::Optimal,$false)
+$archiveTask=[IO.Compression.ZipFile]::Open($zipTask,[IO.Compression.ZipArchiveMode]::Create)
+try{foreach($fileTask in Get-ChildItem -LiteralPath $stageTask -Recurse -File){$entryNameTask='HollowCraft-Native/'+$fileTask.FullName.Substring($stageTask.Length+1).Replace('\','/');$null=[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archiveTask,$fileTask.FullName,$entryNameTask,[IO.Compression.CompressionLevel]::Optimal)}}finally{$archiveTask.Dispose()}
 $hashTask=(Get-FileHash -LiteralPath $zipTask -Algorithm SHA256).Hash
 [IO.File]::WriteAllText($zipTask+'.sha256',$hashTask.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($zipTask)+[Environment]::NewLine,[Text.UTF8Encoding]::new($false))
 Write-Output $zipTask

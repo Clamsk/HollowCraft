@@ -1,4 +1,4 @@
-﻿# 第三方组件与素材来源
+# 第三方组件与素材来源
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
@@ -24,3 +24,6 @@ Windows 发布包仅包含 HollowCraft 自编译的两端 Mod、安装脚本、�
 ## 泰拉瑞亚素材导入
 
 泰拉瑞亚贴图与音效属于 Re-Logic，只从玩家自己的安装目录导入，不随 Git 或发布包分发。可选导入工具以源码随包提供；其中 MonoGame LZX 解码器保留 Stuart Caie / Ali Scissons 原始声明并采用 MS-PL 许可选项，流封装使用 MonoGame 的 MS-PL，仅替换一处异常类型以独立编译。见 [代码来源](../tools/TerrariaAssetImporter/SOURCE.md) 与 [完整许可](../tools/TerrariaAssetImporter/LICENSE.txt)。
+
+
+alpha.8 启动器另附生成的装饰背景和可编辑界面源码，见[插画来源与提示词](../docs/LAUNCHER_ARTWORK.md)。release/native-held-models.json 仅包含盾牌／三叉戟静态部件、关节和 UV 数值，原版纹理像素仍只在本地准备。

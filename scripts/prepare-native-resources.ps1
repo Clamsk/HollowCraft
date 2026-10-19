@@ -74,6 +74,20 @@ if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.
     @{profiles=$countTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.json') -Encoding UTF8
 }
 $registryTask=Join-Path $nativeRootTask 'release/native-registry.json'
+Copy-Item -LiteralPath (Join-Path $nativeRootTask 'release/native-held-models.json') -Destination (Join-Path $assetsTask 'native-held-models.json') -Force
+if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-launcher-resources-v8.json'))) {
+    $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask)
+    try{$entryTask=$zipTask.GetEntry('assets/minecraft/textures/entity/shield_base_nopattern.png');if(-not $entryTask){throw 'Missing original unpatterned shield texture'};[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask 'shield_model.png'),$true)}finally{$zipTask.Dispose()}
+    $languageLocalTask=@((Join-Path ${env:ProgramFiles(x86)} 'MC/.minecraft/assets'),(Join-Path $env:APPDATA '.minecraft/assets')) | Where-Object {Test-Path -LiteralPath (Join-Path $_ 'indexes/5.json')} | Select-Object -First 1
+    $languageIndexTask=if($languageLocalTask){Join-Path $languageLocalTask 'indexes/5.json'}else{NativeResourceArchiveTask $lockTask.minecraftSoundsIndex $null 'minecraft-sounds-index-5.json'}
+    $languageHashTask=(Get-Content -LiteralPath $languageIndexTask -Raw|ConvertFrom-Json).objects.'minecraft/lang/zh_cn.json'.hash
+    if($languageHashTask -notmatch '^[a-f0-9]{40}$'){throw 'Missing language asset index record'}
+    $languageObjectTask=if($languageLocalTask){Join-Path $languageLocalTask ('objects/'+$languageHashTask.Substring(0,2)+'/'+$languageHashTask)}else{Join-Path $cacheTask ('language-object-'+$languageHashTask)}
+    if(-not(Test-Path -LiteralPath $languageObjectTask)){$languageObjectTask=Join-Path $cacheTask ('language-object-'+$languageHashTask);Invoke-WebRequest -UseBasicParsing -Uri ('https://resources.download.minecraft.net/'+$languageHashTask.Substring(0,2)+'/'+$languageHashTask) -OutFile $languageObjectTask -TimeoutSec 60}
+    if((Get-FileHash -LiteralPath $languageObjectTask -Algorithm SHA1).Hash -ne $languageHashTask){throw 'Language asset checksum mismatch'}
+    Copy-Item -LiteralPath $languageObjectTask -Destination (Join-Path $assetsTask 'native-zh_cn.json') -Force
+    @{schema=1} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'native-launcher-resources-v8.json') -Encoding UTF8
+}
 Copy-Item -LiteralPath (Join-Path $nativeRootTask 'release/native-trades.json') -Destination (Join-Path $assetsTask 'native-trades.json') -Force
 if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-block-loot-v7.json'))) {
     $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask);$countTask=0

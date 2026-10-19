@@ -86,7 +86,7 @@ namespace HollowCraft.Standalone
         private void TickWorld() {
             navigationBudget=384;
             if(container!=null){if(tradingMob!=null&&(Number(tradingMob,"health")<=0||Math.Abs(Number(tradingMob,"x")-x)>6||Math.Abs(Number(tradingMob,"y")-y)>6))CloseContainer();else if(containerKey!=null&&(!Room.Blocks.TryGetValue(containerKey,out var openBlock)||Math.Abs(Number(openBlock,"x")-x)>8||Math.Abs(Number(openBlock,"y")-y)>8))CloseContainer();}
-            if(landingWater!=null&&tick>=collectWater){string key=NativeRoom.Key((int)landingWater["x"],(int)landingWater["y"]);if(Room.Blocks.TryGetValue(key,out var value)&&(string)value["id"]=="minecraft:water")Room.Blocks.Remove(key);landingWater=null;Emit(new JObject{["type"]="waterCollected",["recovered"]=true,["hand"]=0});}
+            CollectLandingWater();
             foreach(var drop in Room.Drops.ToArray())if(health>0&&tick>=((int?)drop["ready"]??0)&&Math.Pow(Number(drop,"x")-x,2)+Math.Pow(Number(drop,"y")-y-.8,2)<2.25){var stack=NativeStack.Read(drop);Inventory.Insert(stack);if(stack.Empty)Room.Drops.Remove(drop);else drop["count"]=stack.Count;}
             foreach(var entry in Room.Containers) {
                 var box=entry.Value;if(box.Id=="minecraft:brewing_stand"){TickBrew(box);continue;}if(!box.Id.Contains("furnace")&&box.Id!="minecraft:smoker")continue;
@@ -106,9 +106,7 @@ namespace HollowCraft.Standalone
             x=Number(p,"x",x);y=Number(p,"y",y);
             double distance=Number(p,"distance");bool intro=introLanding;
             string kind=Creative&&distance>12?"hero":"normal";
-            if(!Creative&&!Spectator&&(distance>=12||intro)&&(Inventory.Hand.Id=="minecraft:water_bucket"||Inventory.Slots.Any(s=>s.Id=="minecraft:water_bucket")||Inventory.Offhand.Id=="minecraft:water_bucket")) {
-                int bx=(int)Math.Floor(x),by=(int)Math.Floor(y+.01);string key=NativeRoom.Key(bx,by);if(!Room.Blocks.ContainsKey(key)){landingWater=NativeRoom.Cell(bx,by,"water");Room.Blocks[key]=landingWater;collectWater=tick+30;kind="water";}
-            }
+            if(mode=="survival"&&settings.AutomaticWater&&(distance>=12||intro)&&Inventory.Slots.Concat(new[]{Inventory.Hand,Inventory.Offhand}).Any(s=>s.Id=="minecraft:water_bucket")&&DeployLandingWater())kind="water";
             bool wings=Inventory.Armor[1].Id=="hollowcraft_bridge:stardust_wings";
             int safe=3+(effects.TryGetValue("jump_boost",out var boost)?boost.Item2+1:0);if(kind=="normal"&&!wings&&!effects.ContainsKey("slow_falling")&&!effects.ContainsKey("levitation")&&!InFluid("water")&&distance>safe)Damage(Math.Ceiling(distance-safe),"fall",x,y);
             Emit(new JObject{["type"]="landing",["kind"]=kind,["intro"]=intro,["distance"]=distance,["hand"]=0});

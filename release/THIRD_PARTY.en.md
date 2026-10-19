@@ -1,4 +1,4 @@
-﻿# Third-party Components and Asset Sources
+# Third-party Components and Asset Sources
 
 [简体中文](THIRD_PARTY.md) | [English](THIRD_PARTY.en.md)
 
@@ -24,3 +24,6 @@ Game assets are extracted locally from the player's own Minecraft 1.20.1 install
 ## Terraria import support
 
 Terraria sprites and sounds belong to Re-Logic and are imported only from the player's local installation; none are included in Git or the release ZIP. The optional importer ships as source. Its MonoGame LZX decoder retains the Stuart Caie/Ali Scissons notices and is distributed under the MS-PL option; the stream wrapper uses MonoGame's MS-PL, with one documented exception-type change. See the [source notices](../tools/TerrariaAssetImporter/SOURCE.md) and [complete license](../tools/TerrariaAssetImporter/LICENSE.txt).
+
+
+The alpha.8 launcher also includes a generated decorative background and its editable UI source; see [artwork provenance and prompt](../docs/LAUNCHER_ARTWORK.md). release/native-held-models.json contains only static shield/trident part, pivot and UV descriptions; original texture pixels remain local.

@@ -12,7 +12,7 @@ namespace HollowCraft.Standalone
         public string Campaign {get;set;}="";
         public int SceneVisit {get;set;}
         public string LastError {get;private set;}="Native C# backend";
-        internal LocalBackend(string root) {game=new NativeGame(System.IO.Path.Combine(root,"hollowcraft-native"),NativeAssets.Root);}
+        internal LocalBackend(string root) {game=new NativeGame(System.IO.Path.Combine(root,"hollowcraft-native"),NativeAssets.Root,Environment.GetEnvironmentVariable("HOLLOWCRAFT_SETTINGS"));}
         public void Send(object value) {
             if(!Connected)return;
             var packet=JObject.FromObject(value);

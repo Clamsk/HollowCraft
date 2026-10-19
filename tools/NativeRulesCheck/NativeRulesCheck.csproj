@@ -36,5 +36,9 @@
     <Compile Include="../../hollow-knight/Standalone/NativePlayerMechanics.cs" Link="NativePlayerMechanics.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeTrading.cs" Link="NativeTrading.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeMobAbilities.cs" Link="NativeMobAbilities.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeSettings.cs" Link="NativeSettings.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeAutoWater.cs" Link="NativeAutoWater.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeHandMotion.cs" Link="NativeHandMotion.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeRigSpace.cs" Link="NativeRigSpace.cs" />
   </ItemGroup>
 </Project>

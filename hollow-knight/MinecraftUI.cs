@@ -216,7 +216,7 @@ namespace HollowCraft
             }
             if(!connected) Text("Connecting to Minecraft...",16,16,2);
             }
-            if(PlayerData.instance!=null) Text("Geo: "+PlayerData.instance.geo,16,connected?16:38,scale*.75f);
+            if(PlayerData.instance!=null) Text("Geo: "+PlayerData.instance.geo,16,Math.Max(connected?16:38,BossRecording.HelpBottom+8),scale*.75f);
             if(!string.IsNullOrEmpty(CampaignBridge.DialogueText) && !dead && !paused) {
                 if(dialogueFont==null) dialogueFont=Font.CreateDynamicFontFromOSFont("Microsoft YaHei",18);
                 var box=new Rect(Screen.width*.15f,Screen.height*.72f,Screen.width*.7f,Screen.height*.2f);

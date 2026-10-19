@@ -9,6 +9,7 @@ logs/
 local.json
 hollowcraft.local.json
 hollowcraft.native.local.json
+hollowcraft.native.settings.json*
 *.log
 
 # Local investigation, personal state and disassembled game code.

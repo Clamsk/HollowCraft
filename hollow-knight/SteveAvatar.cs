@@ -27,6 +27,7 @@ namespace HollowCraft
         private readonly Dictionary<string,Standalone.NativeAnimationClip> nativeAnimations=new Dictionary<string,Standalone.NativeAnimationClip>();
         private readonly Vector3[] transitionPositions=new Vector3[7];private readonly Quaternion[] transitionRotations=new Quaternion[7];private int transitionSerial=-1;private bool transitionValid,renderedPose;
         private readonly Vector3[] nativeAngles=new Vector3[7],transitionAngles=new Vector3[7];private bool nativePoseValid,nativeFrameRecorded;
+        private readonly Vector3[] itemPositions=new Vector3[2],itemAngles=new Vector3[2],previousItemPositions=new Vector3[2],previousItemAngles=new Vector3[2];
         private Transform animationRoot;
         private readonly Dictionary<Transform,Tuple<string,GameObject>> armor=new Dictionary<Transform,Tuple<string,GameObject>>();
         private readonly Dictionary<string,Tuple<string,GameObject>> nativeArmor=new Dictionary<string,Tuple<string,GameObject>>();
@@ -74,8 +75,9 @@ namespace HollowCraft
             // InventoryScreen's camera flips X relative to the old cuboid adapter.
             // Reflect the whole rig once: bones, skin, armor and hand matrices agree.
             avatar.transform.localScale=GameplayBackend.Standalone?new Vector3(-.9f,.9f,.9f):Vector3.one*.9f;
-            if(GameplayBackend.Standalone&&combat?.Current!=null&&transitionSerial!=combat.AnimationSerial){transitionSerial=combat.AnimationSerial;transitionValid=renderedPose;var bones=new[]{head,torso,rightArm,leftArm,rightLeg,leftLeg,animationRoot};for(int i=0;i<bones.Length;i++){transitionPositions[i]=bones[i].localPosition;transitionRotations[i]=bones[i].localRotation;transitionAngles[i]=nativePoseValid?nativeAngles[i]:ModelAngles(bones[i].localRotation,i==6);}}
+            if(GameplayBackend.Standalone&&combat?.Current!=null&&transitionSerial!=combat.AnimationSerial){transitionSerial=combat.AnimationSerial;transitionValid=renderedPose;var bones=new[]{head,torso,rightArm,leftArm,rightLeg,leftLeg,animationRoot};for(int i=0;i<bones.Length;i++){transitionPositions[i]=bones[i].localPosition;transitionRotations[i]=bones[i].localRotation;transitionAngles[i]=nativePoseValid?nativeAngles[i]:ModelAngles(bones[i].localRotation,i==6);}for(int i=0;i<2;i++){previousItemPositions[i]=itemPositions[i];previousItemAngles[i]=itemAngles[i];}}
             nativeFrameRecorded=false;
+            for(int i=0;i<2;i++){var hand=i==0?held:offhand;hand.localPosition=Vector3.zero;hand.localRotation=Quaternion.identity;hand.localScale=Vector3.one;itemPositions[i]=itemAngles[i]=Vector3.zero;}
             if(animationRoot!=null){animationRoot.localPosition=Vector3.zero;animationRoot.localRotation=Quaternion.identity;}
             // Vanilla BipedEntityModel pivots and radians; Better Combat overlays these
             // same shoulder/body pivots rather than rotating cuboids around their centers.
@@ -227,6 +229,12 @@ namespace HollowCraft
             var clip=NativeAnimation((string)combat.Current["move"]?["animation"]);
             if(clip==null){if(combat.AnimationAge<1)rightArm.localRotation=Quaternion.Euler(-Mathf.Sin(combat.AnimationAge*Mathf.PI)*110,Mathf.Sin(combat.AnimationAge*Mathf.PI*2)*25,0);return;}
             float tick=Standalone.NativeCombatTimeline.Tick(combat.AnimationAge,clip.End,(float?)combat.Current["upswing"]??.5f);float fade=clip.Fade(tick),recovery=Standalone.NativeCombatTimeline.Recovery(combat.AnimationAge,(float)combat.Current["duration"]);
+            for(int i=0;i<2;i++){
+                string name=i==0?"rightItem":"leftItem";var pos=new Vector3(clip.Sample(name,"x",tick),clip.Sample(name,"y",tick),clip.Sample(name,"z",tick));var angles=new Vector3(clip.Sample(name,"pitch",tick),clip.Sample(name,"yaw",tick),clip.Sample(name,"roll",tick));
+                itemPositions[i]=Vector3.Lerp(transitionValid?previousItemPositions[i]:Vector3.zero,pos,fade)*recovery;itemAngles[i]=Vector3.Lerp(transitionValid?previousItemAngles[i]:Vector3.zero,angles,fade)*recovery;
+                var pose=Standalone.NativeHandMotion.Pose(i==1,new Standalone.NativeRigVector(itemPositions[i].x,itemPositions[i].y,itemPositions[i].z),new Standalone.NativeRigVector(itemAngles[i].x,itemAngles[i].y,itemAngles[i].z));var holder=i==0?held:offhand;
+                holder.localPosition=new Vector3(pose.Position.X,pose.Position.Y,pose.Position.Z);holder.localRotation=new Quaternion(pose.Rotation.X,pose.Rotation.Y,pose.Rotation.Z,pose.Rotation.W);
+            }
             nativeAngles[4]=ModelAngles(rightLeg.localRotation);nativeAngles[5]=ModelAngles(leftLeg.localRotation);
             NativeBone(clip,"torso",torso,1,tick,fade,recovery);NativeBone(clip,"head",head,0,tick,fade,recovery);NativeBone(clip,"rightArm",rightArm,2,tick,fade,recovery);NativeBone(clip,"leftArm",leftArm,3,tick,fade,recovery);
             if(!WorldCreatures.Riding){NativeBone(clip,"rightLeg",rightLeg,4,tick,fade,recovery);NativeBone(clip,"leftLeg",leftLeg,5,tick,fade,recovery);}

@@ -3,6 +3,7 @@
   <ItemGroup>
     <Compile Include="../../hollow-knight/Standalone/NativeAnimationClip.cs" Link="NativeAnimationClip.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeRigSpace.cs" Link="NativeRigSpace.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeHandMotion.cs" Link="NativeHandMotion.cs" />
     <Reference Include="Newtonsoft.Json"><HintPath>$(MSBuildSDKsPath)/../Newtonsoft.Json.dll</HintPath></Reference>
   </ItemGroup>
 </Project>

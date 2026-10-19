@@ -118,12 +118,17 @@ namespace HollowCraft
                 if(File.Exists(statusPath))File.Replace(temp,statusPath,null);else File.Move(temp,statusPath);
             } catch(IOException error) {Debug.LogWarning("[HollowCraft] Recording status: "+error.Message);}
         }
+        internal static float HelpBottom {get;private set;}
+        private Font helpFont;
+        private void OnDisable() {HelpBottom=0;}
+        private void OnDestroy() {if(instance==this)instance=null;if(helpFont!=null)Destroy(helpFont);HelpBottom=0;}
         private void OnGUI() {
-            if(!showHelp)return;
-            var style=new GUIStyle(GUI.skin.label) {fontSize=Math.Max(12,Screen.height/64)};style.normal.textColor=Color.white;
-            GUI.Box(new Rect(12,12,Math.Min(640,Screen.width-24),64),"");
-            GUI.Label(new Rect(24,18,600,24),"Boss Recording  |  F5 Retry  |  F6 Hall of Gods  |  F8 Hide",style);
-            GUI.Label(new Rect(24,44,600,24),message,style);
+            HelpBottom=0;if(!showHelp)return;
+            if(helpFont==null)helpFont=Font.CreateDynamicFontFromOSFont(new[]{"Microsoft YaHei","Arial"},16);
+            var style=new GUIStyle(GUI.skin.label){font=helpFont,fontSize=Mathf.Clamp(Screen.height/60,12,20),wordWrap=true,richText=false,padding=new RectOffset(0,0,0,0)};style.normal.textColor=Color.white;
+            float width=Math.Min(Screen.width-32,Math.Max(420,Screen.width*.58f));string heading="Boss Recording  |  F5 Retry  |  F6 Hall of Gods  |  F8 Hide";
+            float first=style.CalcHeight(new GUIContent(heading),width-24),second=style.CalcHeight(new GUIContent(message??""),width-24),height=first+second+32;
+            GUI.Box(new Rect(12,12,width,height),"");GUI.Label(new Rect(24,22,width-24,first+4),heading,style);GUI.Label(new Rect(24,28+first,width-24,second+4),message,style);HelpBottom=12+height;
         }
     }
 }

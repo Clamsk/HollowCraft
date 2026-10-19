@@ -1,4 +1,4 @@
-﻿# HollowCraft Native 0.40.0-alpha.7
+# HollowCraft Native 0.40.0-alpha.8
 
 [English](NATIVE_MIGRATION.en.md) | 简体中文
 
@@ -46,10 +46,10 @@
 | 船与生物捕获 | 18 套原版船／运输船／竹筏模型数据和纹理，沿用捕获与乘坐 | 全部船实体细节和实机外观仍需验收 |
 | MC 生物 | 75 种模型／生成蛋、地面／飞行／水生基础行为、动物交互；97 张实体掉落表通用规则 | 二维寻路、职业交易和部分技能已接入；完整 AI 目标、变种／装备、村民声望和复杂掉落条件仍未齐全 |
 | 创造物品菜单 | 原版 13 页布局与堆栈数据，药水／附魔书变体，快捷栏保存 | 特殊物品行为仍有缺项；未迁移模型／AI 的生成蛋不展示为可用生物 |
-| 第三人称人物和装备 | 统一镜像、关节绑定、逐像素深度、原版手持与 GUI 参数、Better Combat 三连招时序和过渡 | 独立 C# 兼容实现；Bendy 弯曲、姿势细节和实机外观仍待完善 |
+| 第三人称人物和装备 | 统一镜像、关节绑定、逐像素深度、原版手持与 GUI 参数、Better Combat 三连招时序、物品轨道和过渡 | 独立 C# 兼容实现；Bendy 弯曲、姿势细节和实机外观仍待完善 |
 | UI、贴图、音效 | 静态原版贴图／音效 + 自有占位资源 + 可选本机模型导入 | 部分外观和声音尚不等价桥接版 |
 
-本版详情见 [世界规则与生物交互](NATIVE_SYSTEMS.md)、[Clamsk、生物与药水移植](NATIVE_EXPANSION.md) 和 [动作、跳搭与字体修复](NATIVE_ANIMATION_FIX.md)，前版基础见 [输入与工作站修复](NATIVE_INPUT_FIX.md) 及 [渲染与规则迁移说明](NATIVE_RENDERING.md)，机器可读清单见 [native-migration.json](../release/native-migration.json)。静态目录覆盖不等于特殊行为覆盖。
+本版详情见 [武器绑定与启动器配装](NATIVE_HANDS_LAUNCHER.md)、[世界规则与生物交互](NATIVE_SYSTEMS.md)、[Clamsk、生物与药水移植](NATIVE_EXPANSION.md) 和 [动作、跳搭与字体修复](NATIVE_ANIMATION_FIX.md)，前版基础见 [输入与工作站修复](NATIVE_INPUT_FIX.md) 及 [渲染与规则迁移说明](NATIVE_RENDERING.md)，机器可读清单见 [native-migration.json](../release/native-migration.json)。静态目录覆盖不等于特殊行为覆盖。
 
 ## 本机静态资源复用
 
@@ -73,6 +73,6 @@ dotnet run --project tools/NativeRulesCheck/NativeRulesCheck.csproj -c Release
 
 纯规则检查工具需要 .NET 9 SDK，其测试不启动 Unity、空洞、MC 或 Java。主 Mod 面向游戏内的 .NET Framework/Mono，不要求玩家安装 .NET 9。
 
-本版通过 494 项纯规则／协议检查（含本机静态数据导入），以及 12 项启动器检查。检查覆盖逐像素深度与透明像素、动画骨骼与恢复、配方和标签、酿药、弩、药水，以及已有存档和战斗规则。渲染外观、碰撞手感、实际帧率、Boss 全流程和完整通关仍由玩家试玩验收；没有启动或关闭游戏。
+本版通过 511 项纯规则／协议检查（含本机静态数据导入）、12 项启动器进程检查和 17 项配装／离屏界面交互检查。检查覆盖逐像素深度与透明像素、动画骨骼与恢复、配方和标签、酿药、弩、药水，以及已有存档和战斗规则。渲染外观、碰撞手感、实际帧率、Boss 全流程和完整通关仍由玩家试玩验收；没有启动或关闭游戏。
 
 接下来的迁移顺序是：人物装备与透明材质保真 → 战斗及通关回归修复 → 完整物品、配方和工作站 → 生物模型与行为 → 声音、粒子、红石及流体细节。直到清单全部迁移并经试玩确认之前，不宣称独立版已达到桥接版全部功能。

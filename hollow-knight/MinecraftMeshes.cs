@@ -110,6 +110,7 @@ namespace HollowCraft
             string asset=id.StartsWith("minecraft:shield")?"shield_model":id=="minecraft:trident"?"trident_model":id=="minecraft:chest"?"chest_model":null;
             if(asset==null) {holder.gameObject.SetActive(false);return true;}
             string file=Path.Combine(assets,asset+".png");if(!File.Exists(file)) return false;
+            holder.gameObject.SetActive(true);
             if(!atlases.TryGetValue(file,out Texture2D texture)) {texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};texture.LoadImage(File.ReadAllBytes(file));atlases[file]=texture;}
             foreach(Transform child in holder){child.gameObject.SetActive(false);UnityEngine.Object.Destroy(child.gameObject);}
             var matrix=Matrix4x4.identity;
