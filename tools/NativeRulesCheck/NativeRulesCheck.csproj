@@ -28,6 +28,7 @@
     <Compile Include="../../hollow-knight/Standalone/NativeWeapons.cs" Link="NativeWeapons.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeCreatures.cs" Link="NativeCreatures.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeFluids.cs" Link="NativeFluids.cs" />
+    <Compile Include="../../hollow-knight/Standalone/NativeFluidGeometry.cs" Link="NativeFluidGeometry.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeRedstone.cs" Link="NativeRedstone.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeAutomation.cs" Link="NativeAutomation.cs" />
     <Compile Include="../../hollow-knight/Standalone/NativeNavigation.cs" Link="NativeNavigation.cs" />

@@ -8,6 +8,7 @@ namespace HollowCraft.Standalone
     internal sealed class NativeRoom
     {
         internal readonly Dictionary<string,JObject> Blocks=new Dictionary<string,JObject>();
+        internal readonly Dictionary<string,Tuple<string,JObject,string>> FluidVisuals=new Dictionary<string,Tuple<string,JObject,string>>();
         internal readonly Dictionary<string,NativeContainer> Containers=new Dictionary<string,NativeContainer>();
         internal readonly List<JObject> Drops=new List<JObject>();
         internal readonly List<JObject> Creatures=new List<JObject>();
@@ -17,21 +18,22 @@ namespace HollowCraft.Standalone
         internal static JObject Cell(int x,int y,string id,bool source=true,int level=0)=>new JObject{["x"]=x,["y"]=y,["id"]=NativeCatalog.Id(id),["source"]=source,["level"]=level};
         internal static JArray Shapes(JObject cell) {
             string id=(string)cell["id"];var item=NativeCatalog.Get(id);if(!item.Solid||LiquidId(id)||(bool?)cell["open"]==true||(bool?)cell["crop"]==true)return new JArray();
-            if(cell["pistonHead"]!=null){int dx=(int?)cell["dx"]??1,dy=(int?)cell["dy"]??0;return new JArray(new JArray(dx<0?0:dx>0?.75:0,dy<0?0:dy>0?.75:0,dx<0?.25:1,dy<0?.25:1));}
-            if(id.EndsWith("_slab",StringComparison.Ordinal))return (bool?)cell["double"]==true?new JArray(new JArray(0,0,1,1)):(bool?)cell["top"]==true?new JArray(new JArray(0,.5,1,1)):new JArray(new JArray(0,0,1,.5));
-            return item.Collision!=null?new JArray(item.Collision.Cast<JArray>().Select(b=>new JArray(b[0].DeepClone(),b[1].DeepClone(),b[3].DeepClone(),b[4].DeepClone()))):new JArray(new JArray(0,0,1,1));
+            if(cell["pistonHead"]!=null){int dx=(int?)cell["dx"]??1,dy=(int?)cell["dy"]??0;return new JArray{new JArray(dx<0?0:dx>0?.75:0,dy<0?0:dy>0?.75:0,dx<0?.25:1,dy<0?.25:1)};}
+            if(id.EndsWith("_slab",StringComparison.Ordinal))return (bool?)cell["double"]==true?new JArray{new JArray(0,0,1,1)}:(bool?)cell["top"]==true?new JArray{new JArray(0,.5,1,1)}:new JArray{new JArray(0,0,1,.5)};
+            return item.Collision!=null?new JArray(item.Collision.Cast<JArray>().Select(b=>new JArray(b[0].DeepClone(),b[1].DeepClone(),b[3].DeepClone(),b[4].DeepClone()))):new JArray{new JArray(0,0,1,1)};
         }
         private static bool LiquidId(string id)=>id=="minecraft:water"||id=="minecraft:lava";
-        internal JArray BlocksJson(int cx,int cy) {
+        internal JArray BlocksJson(int cx,int cy,Dictionary<string,JArray> terrain=null) {
             var result=new JArray();foreach(var cell in Blocks.Values.Where(cell=>Math.Abs((int)cell["x"]-cx)<=14&&Math.Abs((int)cell["y"]-cy)<=12)) {
                 var value=(JObject)cell.DeepClone();string id=(string)value["id"];var item=NativeCatalog.Get(id);bool fluid=id=="minecraft:water"||id=="minecraft:lava",open=(bool?)value["open"]==true;
                 bool solid=item.Solid&&!fluid&&!open&&(bool?)cell["crop"]!=true;double height=id.EndsWith("_slab",StringComparison.Ordinal)?.5:1;
-                value["solid"]=solid;value["fluid"]=fluid;value["height"]=fluid?Math.Max(.125,(bool?)value["falling"]==true?1:1-((int?)value["level"]??0)/8.0):height;value["state"]=id+":"+open+":"+(int?)value["power"]+":"+(bool?)value["lit"];
+                value["solid"]=solid;value["fluid"]=fluid;value["height"]=height;value["state"]=id+":"+open+":"+(int?)value["power"]+":"+(bool?)value["lit"];
                 value["collision"]=Shapes(cell);value["breakTicks"]=item.Hardness<0?int.MaxValue:Math.Max(1,(int)Math.Ceiling(item.Hardness*30));result.Add(value);
                 if((bool?)cell["crop"]==true){int age=(int?)cell["age"]??0;string crop=id.Split(':').Last();int stage=crop=="carrots"||crop=="potatoes"?age==7?3:age/2:age;value["render"]=crop+"_stage"+stage;}
                 if(id=="minecraft:redstone")value["render"]="redstone_dust_line0";
                 if(id=="minecraft:piston"||id=="minecraft:sticky_piston")value["render"]=cell["pistonHead"]!=null?"piston_top":id=="minecraft:sticky_piston"?"piston_top_sticky":"piston_side";
                 value["state"]=(string)value["state"]+"/"+value["render"]+"/"+cell["waterlogged"]+"/"+cell["extended"]+"/"+cell["dx"]+"/"+cell["dy"];
+                if(NativeFluidGeometry.IsLiquid(cell))NativeFluidGeometry.Describe(this,terrain,cell,value);
             }return result;
         }
         internal JObject Save() {var boxes=new JObject();foreach(var pair in Containers)boxes[pair.Key]=pair.Value.Save();return new JObject{["blocks"]=new JArray(Blocks.Values.Select(v=>v.DeepClone())),["containers"]=boxes,["drops"]=new JArray(Drops.Select(v=>v.DeepClone())),["creatures"]=new JArray(Creatures.Select(v=>v.DeepClone())),["clouds"]=new JArray(Clouds.Select(v=>v.DeepClone())),["projectiles"]=new JArray(Projectiles.Select(v=>v.DeepClone())),["primed"]=new JArray(Primed.Select(v=>v.DeepClone()))};}
@@ -49,10 +51,16 @@ namespace HollowCraft.Standalone
     internal sealed partial class NativeGame
     {
         private readonly Dictionary<string,JArray> terrain=new Dictionary<string,JArray>();
+        private readonly HashSet<string> terrainKnown=new HashSet<string>();
+        private bool terrainSurveyRequired;
         private JObject landingWater;private int collectWater;
         private void CaptureTransients(){if(scene.Length==0||!rooms.TryGetValue(scene,out var room))return;room.Projectiles.Clear();room.Projectiles.AddRange(projectiles.Values.Select(v=>(JObject)v.DeepClone()));room.Primed.Clear();room.Primed.AddRange(primed.Values.Select(v=>(JObject)v.DeepClone()));}
         private bool Reach(int bx,int by,double reach)=>Math.Pow(Math.Max(0,Math.Abs(bx+.5-x)-.5),2)+Math.Pow(Math.Max(0,Math.Abs(by+.5-y-1.62)-.5),2)<=reach*reach+.001;
-        private void ObserveTerrain(JObject packet) {if(!(packet["terrain"] is JArray values))return;terrain.Clear();foreach(JArray value in values){if(value.Count<2)continue;string key=NativeRoom.Key((int)value[0],(int)value[1]);if(!terrain.TryGetValue(key,out var list))terrain[key]=list=new JArray();list.Add(value.DeepClone());}}
+        private void ObserveTerrain(JObject packet) {
+            if(!(packet["terrain"] is JArray values))return;
+            if(packet["terrainKnown"] is JArray known){foreach(JArray at in known){if(at.Count<2)continue;string key=NativeRoom.Key((int)at[0],(int)at[1]);terrainKnown.Add(key);terrain.Remove(key);}}else {terrain.Clear();terrainKnown.Clear();}
+            foreach(JArray value in values){if(value.Count<2)continue;string key=NativeRoom.Key((int)value[0],(int)value[1]);if(!terrain.TryGetValue(key,out var list))terrain[key]=list=new JArray();list.Add(value.DeepClone());}
+        }
         private bool TerrainFull(int bx,int by)=>terrain.TryGetValue(NativeRoom.Key(bx,by),out var values)&&values.OfType<JArray>().Any(v=>v.Count<6||(double)v[2]<.01&&(double)v[3]<.01&&(double)v[4]>.99&&(double)v[5]>.99);
         private bool Solid(int bx,int by)=>terrain.ContainsKey(NativeRoom.Key(bx,by))||Room.Blocks.TryGetValue(NativeRoom.Key(bx,by),out var cell)&&NativeCatalog.Get((string)cell["id"]).Solid&&(bool?)cell["open"]!=true;
         private void Place(JObject packet,bool tower) {
@@ -99,7 +107,7 @@ namespace HollowCraft.Standalone
             TickCreatures();TickClouds();TickPlants();FluidStep();RedstoneStep();
             if(tick%10==0&&InFluid("lava")&&!effects.ContainsKey("fire_resistance"))Damage(4,"lava",x,y);
         }
-        private bool InFluid(string id)=>scene.Length>0&&Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+.4)),out var block)&&(id=="water"?WaterCell(block):(string)block["id"]=="minecraft:"+id);
+        private bool InFluid(string id)=>scene.Length>0&&FluidDepth(id)>0;
         private void Land(JObject p) {
             if(p["teleport"]!=null&&(int)p["teleport"]!=teleport)return;
             int sequence=(int?)p["landing"]??lastLanding+1;if(sequence<=lastLanding)return;lastLanding=sequence;

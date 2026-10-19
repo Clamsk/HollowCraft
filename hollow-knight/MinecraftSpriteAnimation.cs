@@ -10,17 +10,20 @@ namespace HollowCraft {
         private sealed class Clip {internal Sprite[] Frames;internal int[] Order;internal float[] Duration;internal float Total;}
         private static readonly Dictionary<string,Clip> clips=new Dictionary<string,Clip>();
         private SpriteRenderer renderer;private Clip clip;private int frame=-1;
-        internal static void Attach(SpriteRenderer value,string name) {
+        private static Clip Read(string name) {
             if(!clips.TryGetValue(name,out Clip data)) {
-                string path=Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),"HollowCraftAssets",name+".png");if(!File.Exists(path)) return;
-                var texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point};texture.LoadImage(File.ReadAllBytes(path));int count=texture.height/texture.width;if(count<1) {Destroy(texture);return;}
+                string path=Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),"HollowCraftAssets",name+".png");if(!File.Exists(path)){clips[name]=null;return null;}
+                var texture=new Texture2D(2,2,TextureFormat.RGBA32,false){filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};texture.LoadImage(File.ReadAllBytes(path));int count=texture.height/texture.width;if(count<1) {Destroy(texture);return null;}
                 data=new Clip{Frames=new Sprite[count]};for(int i=0;i<count;i++) data.Frames[i]=Sprite.Create(texture,new Rect(0,texture.height-(i+1)*texture.width,texture.width,texture.width),new Vector2(.5f,.5f),texture.width);
                 var meta=File.Exists(path+".mcmeta")?JObject.Parse(File.ReadAllText(path+".mcmeta"))["animation"]:null;int duration=Math.Max(1,(int?)meta?["frametime"]??1);var frames=meta?["frames"] as JArray;
                 data.Order=frames==null?Enumerable.Range(0,count).ToArray():frames.Select(f=>Mathf.Clamp(f is JObject?(int)f["index"]:(int)f,0,count-1)).ToArray();
                 data.Duration=frames==null?Enumerable.Repeat(duration*.05f,count).ToArray():frames.Select(f=>Math.Max(1,f is JObject?(int?)f["time"]??duration:duration)*.05f).ToArray();data.Total=data.Duration.Sum();clips[name]=data;
             }
-            var animation=value.GetComponent<MinecraftSpriteAnimation>()??value.gameObject.AddComponent<MinecraftSpriteAnimation>();animation.renderer=value;animation.clip=data;animation.frame=-1;
+            return data;
         }
-        private void LateUpdate() {if(clip==null||renderer==null||clip.Total<=0) return;float time=Time.time%clip.Total;int index=0;while(index<clip.Duration.Length-1&&time>=clip.Duration[index]) time-=clip.Duration[index++];int next=clip.Order[index];if(next!=frame) {frame=next;renderer.sprite=clip.Frames[frame];}}
+        private static int Index(Clip data,float age){float time=age%data.Total;int index=0;while(index<data.Duration.Length-1&&time>=data.Duration[index])time-=data.Duration[index++];return data.Order[index];}
+        internal static Sprite Frame(string name,float time){var data=Read(name);return data==null||data.Total<=0?null:data.Frames[Index(data,time)];}
+        internal static void Attach(SpriteRenderer value,string name) {var data=Read(name);if(data==null)return;var animation=value.GetComponent<MinecraftSpriteAnimation>()??value.gameObject.AddComponent<MinecraftSpriteAnimation>();animation.renderer=value;animation.clip=data;animation.frame=-1;}
+        private void LateUpdate() {if(clip==null||renderer==null||clip.Total<=0) return;int next=Index(clip,Time.time);if(next!=frame) {frame=next;renderer.sprite=clip.Frames[frame];}}
     }
 }

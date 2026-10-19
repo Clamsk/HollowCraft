@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.8",
+  "version": "0.40.0-alpha.9",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,
@@ -142,7 +142,7 @@
     "mainBuild": "passed",
     "gameStarted": false,
     "originalSteamAssemblyUnchanged": true,
-    "ruleChecksPassed": 511,
+    "ruleChecksPassed": 549,
     "launcherChecksPassed": 29,
     "originalPlayerAnimatorAxesCompared": 334584,
     "originalMatrixPointsCompared": 4782,

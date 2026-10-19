@@ -74,6 +74,11 @@ if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.
     @{profiles=$countTask} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'bettercombat-profiles-v2.json') -Encoding UTF8
 }
 $registryTask=Join-Path $nativeRootTask 'release/native-registry.json'
+if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-fluid-resources-v9.json'))) {
+    $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask)
+    try{foreach($fluidTask in @('water_still','water_flow','lava_still','lava_flow')){foreach($suffixTask in @('.png','.png.mcmeta')){$entryTask=$zipTask.GetEntry('assets/minecraft/textures/block/'+$fluidTask+$suffixTask);if(-not $entryTask){throw ('Missing fluid animation resource: '+$fluidTask+$suffixTask)};[IO.Compression.ZipFileExtensions]::ExtractToFile($entryTask,(Join-Path $assetsTask ($fluidTask+$suffixTask)),$true)}}}finally{$zipTask.Dispose()}
+    @{schema=1;originalAnimationMetadata=$true} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $assetsTask 'native-fluid-resources-v9.json') -Encoding UTF8
+}
 Copy-Item -LiteralPath (Join-Path $nativeRootTask 'release/native-held-models.json') -Destination (Join-Path $assetsTask 'native-held-models.json') -Force
 if(-not(Test-Path -LiteralPath (Join-Path $assetsTask 'native-launcher-resources-v8.json'))) {
     $archiveTask=NativeResourceArchiveTask $lockTask.minecraftVisuals $MinecraftJar 'minecraft-visuals-1.20.1.jar';$zipTask=[IO.Compression.ZipFile]::OpenRead($archiveTask)

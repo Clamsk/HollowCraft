@@ -117,10 +117,10 @@ namespace HollowCraft.Standalone
             CaptureTransients();
             if(campaign!=nextCampaign){CloseContainer();Save();campaign=nextCampaign;Load();}
             else CloseContainer();
-            scene=nextScene;visit=(int?)packet["visit"]??0;
+            scene=nextScene;visit=(int?)packet["visit"]??0;terrainSurveyRequired=(bool?)packet["nativeTerrain"]??false;
             if(!rooms.ContainsKey(scene))rooms[scene]=new NativeRoom();
             x=Number(packet,"exactX",Number(packet,"x"));y=Number(packet,"exactY",Number(packet,"y"));
-            enemies.Clear();enemyHurt.Clear();attackReplies.Clear();spentAttacks.Clear();towerResults.Clear();flights.Clear();projectiles.Clear();primed.Clear();terrain.Clear();rider=null;mining=null;usingItem=false;usingTicks=0;accumulator=0;teleport=0;lastLanding=-1;landingWater=null;lastVisual=null;
+            enemies.Clear();enemyHurt.Clear();attackReplies.Clear();spentAttacks.Clear();towerResults.Clear();flights.Clear();projectiles.Clear();primed.Clear();terrain.Clear();terrainKnown.Clear();rider=null;mining=null;usingItem=false;usingTicks=0;accumulator=0;teleport=0;lastLanding=-1;landingWater=null;lastVisual=null;
             foreach(var value in Room.Projectiles)projectiles[(int)value["entity"]]=(JObject)value.DeepClone();
             foreach(var value in Room.Primed)primed[(int)value["id"]]=(JObject)value.DeepClone();
             introLanding=!introDone&&scene=="Tutorial_01"&&((bool?)packet["intro"]==true||!File.Exists(savePath));
@@ -178,10 +178,10 @@ namespace HollowCraft.Standalone
             if(health<=0)return;
             if(InFluid("lava"))fireTicks=300;else if(InFluid("water"))fireTicks=0;else if(fireTicks>0)fireTicks--;
             if(fireTicks>0&&tick%20==0&&!effects.ContainsKey("fire_resistance"))Damage(1,"onFire",x,y);
-            if(Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+1.62)),out var head)&&(string)head["id"]=="minecraft:water"&&!effects.ContainsKey("water_breathing")&&!Creative&&!Spectator){if(random.Next(NativeData.Enchantment(Inventory.Armor[0],"respiration")+1)==0&&--air<=-20){air=0;Damage(2,"drown",x,y);}}else air=Math.Min(300,air+4);
+            if(FluidPoint(x,y+1.62,"water")&&!effects.ContainsKey("water_breathing")&&!Creative&&!Spectator){if(random.Next(NativeData.Enchantment(Inventory.Armor[0],"respiration")+1)==0&&--air<=-20){air=0;Damage(2,"drown",x,y);}}else air=Math.Min(300,air+4);
             if(effects.TryGetValue("poison",out var poison)&&health>1&&tick%Math.Max(1,25>>poison.Item2)==0)Damage(Math.Min(1,health-1),"magic",x,y);
             if(effects.TryGetValue("wither",out var wither)&&tick%Math.Max(1,40>>wither.Item2)==0)Damage(1,"wither",x,y);
-            if(usingItem){usingTicks++;if(Active.Definition.Food>0&&usingTicks>=(Active.Definition.FastFood?16:32))FinishFood();else if(Active.Id=="minecraft:milk_bucket"&&usingTicks>=32){effects.Clear();absorption=0;Active.Id="minecraft:bucket";usingItem=false;}else if(Active.Id=="minecraft:potion"&&usingTicks>=32)FinishPotion();}
+            if(usingItem){usingTicks++;ConsumptionSound();if(Active.Definition.Food>0&&usingTicks>=(Active.Definition.FastFood?16:32))FinishFood();else if(Active.Id=="minecraft:milk_bucket"&&usingTicks>=32){effects.Clear();absorption=0;Active.Id="minecraft:bucket";usingItem=false;}else if(Active.Id=="minecraft:potion"&&usingTicks>=32)FinishPotion();}
             while(exhaustion>=4){exhaustion-=4;if(saturation>0)saturation=Math.Max(0,saturation-1);else if(!Creative&&!Spectator)food=Math.Max(0,food-1);}
             if(!Creative&&!Spectator) {
                 if(food>=20&&saturation>0&&health<20){if(++regenTicks>=10){double heal=Math.Min(6,saturation)/6;health=Math.Min(20,health+heal);exhaustion+=heal*6;regenTicks=0;}}
@@ -213,7 +213,7 @@ namespace HollowCraft.Standalone
             if(item.Id.EndsWith("golden_apple",StringComparison.Ordinal)){bool enchanted=item.Id=="minecraft:enchanted_golden_apple";Effect("regeneration",enchanted?400:100,1);Effect("absorption",2400,enchanted?3:0);if(enchanted){Effect("resistance",6000,0);Effect("fire_resistance",6000,0);}}
             if(!Creative){string remainder=item.Definition.Remainder;item.Count--;item.Normalize();if(remainder!=null){var left=NativeStack.New(remainder);if(item.Empty){item.Id=left.Id;item.Count=1;}else if(!Inventory.Insert(left))DropAt(left,x,y+.5);}}usingItem=false;
         }
-        private void FinishPotion() {Sound("minecraft:entity.generic.drink",.5);ApplyPotion(Active);if(!Creative){Active.Count--;Active.Normalize();var bottle=NativeStack.New("glass_bottle");if(Active.Empty){Active.Id=bottle.Id;Active.Count=1;}else if(!Inventory.Insert(bottle))DropAt(bottle,x,y+.5);}usingItem=false;}
+        private void FinishPotion() {ApplyPotion(Active);if(!Creative){Active.Count--;Active.Normalize();var bottle=NativeStack.New("glass_bottle");if(Active.Empty){Active.Id=bottle.Id;Active.Count=1;}else if(!Inventory.Insert(bottle))DropAt(bottle,x,y+.5);}usingItem=false;}
         private JObject lastVisual;
         private JObject packetVisual(JObject packet)=>packet["scene"]==null||(string)packet["scene"]==scene?(JObject)packet.DeepClone():lastVisual;
         private void Publish() {
@@ -225,7 +225,7 @@ namespace HollowCraft.Standalone
             stats["speed"]=.1*(effects.TryGetValue("speed",out var speedEffect)?1+.2*(speedEffect.Item2+1):1)*(effects.TryGetValue("slowness",out var slowEffect)?Math.Max(0,1-.15*(slowEffect.Item2+1)):1);
             stats["jumpVelocity"]=.42+(effects.TryGetValue("jump_boost",out var jumpEffect)?.1*(jumpEffect.Item2+1):0);
             stats["level"]=ExperienceLevel;stats["xp"]=ExperienceProgress;MovementStats(stats);
-            snapshot=new JObject{["type"]="snapshot",["backend"]="native-csharp",["scene"]=scene,["campaign"]=campaign,["visit"]=visit,["tick"]=tick,["status"]=status,["creative"]=Creative,["selected"]=Inventory.Selected,["inventory"]=new JArray(Inventory.Slots.Select(s=>s.Json())),["stats"]=stats,["carried"]=Inventory.Carried.Json(),["playerCraft"]=craft,["playerSyncId"]=0,["insertSlots"]=new JArray(Enumerable.Range(1,45)),["combat"]=Profile(),["blocks"]=Room.BlocksJson((int)Math.Floor(x),(int)Math.Floor(y)),["drops"]=new JArray(Room.Drops.Select(d=>d.DeepClone())),["enemies"]=new JArray(enemies.Values.Select(e=>e.DeepClone())),["projectiles"]=ProjectileJson(),["primed"]=PrimedJson(),["creatures"]=new JArray()};
+            snapshot=new JObject{["type"]="snapshot",["backend"]="native-csharp",["scene"]=scene,["campaign"]=campaign,["visit"]=visit,["tick"]=tick,["status"]=status,["creative"]=Creative,["selected"]=Inventory.Selected,["inventory"]=new JArray(Inventory.Slots.Select(s=>s.Json())),["stats"]=stats,["carried"]=Inventory.Carried.Json(),["playerCraft"]=craft,["playerSyncId"]=0,["insertSlots"]=new JArray(Enumerable.Range(1,45)),["combat"]=Profile(),["blocks"]=Room.BlocksJson((int)Math.Floor(x),(int)Math.Floor(y),terrain),["drops"]=new JArray(Room.Drops.Select(d=>d.DeepClone())),["enemies"]=new JArray(enemies.Values.Select(e=>e.DeepClone())),["projectiles"]=ProjectileJson(),["primed"]=PrimedJson(),["creatures"]=new JArray()};
             snapshot["playerX"]=x;snapshot["playerY"]=y;snapshot["creatures"]=new JArray(Room.Creatures.Select(v=>v.DeepClone()));if(rider!=null)snapshot["rider"]=rider.DeepClone();
             snapshot["clouds"]=new JArray(Room.Clouds.Select(v=>v.DeepClone()));
             if(mining!=null)snapshot["mining"]=mining.DeepClone();if(container!=null)snapshot["container"]=ContainerJson();

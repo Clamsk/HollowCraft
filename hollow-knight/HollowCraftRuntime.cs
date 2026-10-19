@@ -45,6 +45,8 @@ namespace HollowCraft
         private JObject container;
         private readonly Dictionary<string, GameObject> blocks = new Dictionary<string, GameObject>();
         private readonly Dictionary<string,string> blockStates=new Dictionary<string,string>();
+        private readonly List<int[]> sampledTerrainCells=new List<int[]>();
+        private readonly HashSet<Vector2Int> surveyedFluidTerrain=new HashSet<Vector2Int>();
         private readonly Dictionary<string,float> pendingPlacements=new Dictionary<string,float>();
         private readonly Dictionary<int,GameObject> drops=new Dictionary<int,GameObject>();
         private readonly Dictionary<int,GameObject> primedTnt=new Dictionary<int,GameObject>();
@@ -423,7 +425,7 @@ namespace HollowCraft
                 openingSync=CampaignSession.IntroPending&&scene=="Tutorial_01"&&cachedManager.IsInSceneTransition;
                 Debug.Log("[HollowCraft] Room " + scene + " hero " + hero.transform.position);
                 Array.Fill(crafting, -1);
-                if (connected) bridge.Send(new { type = "scene", scene, campaign,legacy=CampaignSession.Legacy,intro=CampaignSession.IntroPending,x = Cell(hero.transform.position.x), y = Cell(hero.transform.position.y),exactX=hero.transform.position.x,exactY=hero.GetComponent<Collider2D>().bounds.min.y });
+                if (connected) bridge.Send(new { type = "scene", scene, campaign,nativeTerrain=Standalone,legacy=CampaignSession.Legacy,intro=CampaignSession.IntroPending,x = Cell(hero.transform.position.x), y = Cell(hero.transform.position.y),exactX=hero.transform.position.x,exactY=hero.GetComponent<Collider2D>().bounds.min.y });
             }
             Chat.Tick();
             if (!Chat.Captured&&!Automated && Application.isFocused && Input.GetKeyDown(KeyCode.F7) && connected)
@@ -604,7 +606,7 @@ namespace HollowCraft
                 ["sprinting"]=MinecraftControls.Sprinting,["crouching"]=MinecraftControls.Crouching,["scripted"]=NativeControlLocked,
                 ["riding"]=WorldCreatures.Riding,["dismount"]=WorldCreatures.Riding&&!GameplayBlocked&&Application.isFocused&&(Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)) };
             pose["enemies"]=JArray.FromObject(EnemySystem.Observe(hero));
-            if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);}
+            if(sample) {nextTerrain=Time.unscaledTime+.15f;terrainCells=ProbeTerrain(x,y);pose["terrain"]=JArray.FromObject(terrainCells);if(Standalone)pose["terrainKnown"]=JArray.FromObject(sampledTerrainCells);}
             bridge.Send(pose);
         }
         private void StopMining() {if(wasMining) bridge.Send(new {type="mining",scene,active=false});wasMining=false;mineProgress=0;}
@@ -651,14 +653,18 @@ namespace HollowCraft
         internal void Select(int value) {JumpBuild.Cancel();queuedTower=null;selected = value;mineCell=new Vector2Int(int.MinValue,int.MinValue);StopMining();bridge.Send(new { type = "select", scene, slot = selected }); }
         private List<float[]> ProbeTerrain(int cx, int cy)
         {
-            var result = new List<float[]>();
+            var result = new List<float[]>();sampledTerrainCells.Clear();
             int mask = LayerMask.GetMask("Terrain","Default");
             if (mask == 0) return result;
             var filter=new ContactFilter2D();filter.SetLayerMask(mask);filter.useTriggers=false;
             var ignored=new Dictionary<Collider2D,bool>();
-            foreach(var cell in WorldCreatures.SampleCells(cx,cy))
+            var sampleCells=new HashSet<Vector2Int>(WorldCreatures.SampleCells(cx,cy));
+            if(Standalone)foreach(JObject fluid in LatestSnapshot?["blocks"] as JArray??new JArray())if((bool?)fluid["fluid"]==true||(bool?)fluid["waterlogged"]==true){int fx=(int)fluid["x"],fy=(int)fluid["y"];for(int dx=-1;dx<=1;dx++)for(int dy=-1;dy<=1;dy++){var point=new Vector2Int(fx+dx,fy+dy);if(!surveyedFluidTerrain.Contains(point))sampleCells.Add(point);}}
+            foreach(var cell in sampleCells)
             {
                 int x=cell.x,y=cell.y;
+                sampledTerrainCells.Add(new[]{x,y});
+                surveyedFluidTerrain.Add(cell);
                 int found=Physics2D.OverlapBox(new Vector2((x + 0.5f) * CellSize, (y + 0.5f) * CellSize),
                     // Native platforms can be much thinner than a block and sit at cell edges.
                     // Sampling only the middle half missed their floors, letting server items
@@ -800,13 +806,19 @@ namespace HollowCraft
                 string id = (string)cell["id"];
                 breakingTicks[key] = (int?)cell["breakTicks"] ?? 20;
                 string state=((string)cell["state"] ?? id)+cell["collision"]?.ToString(Newtonsoft.Json.Formatting.None);
-                if (blocks.TryGetValue(key, out GameObject existing) && blockStates.TryGetValue(key,out string priorState) && priorState==state) continue;
+                blocks.TryGetValue(key,out GameObject existing);
+                if(Standalone&&(bool?)cell["fluid"]==true&&cell["fluidGeometry"]!=null){
+                    if(existing==null||existing.GetComponent<MinecraftFluidSurface>()==null){if(existing!=null){existing.SetActive(false);Destroy(existing);}existing=new GameObject("HollowCraft.Block."+id);DontDestroyOnLoad(existing);existing.transform.position=new Vector3(x+.5f,y+.5f,.1f);existing.AddComponent<MinecraftFluidSurface>();blocks[key]=existing;}
+                    existing.GetComponent<MinecraftFluidSurface>().Configure(cell);blockStates[key]=state;continue;
+                }
+                if (existing!=null && blockStates.TryGetValue(key,out string priorState) && priorState==state) continue;
                 if (existing != null) { existing.SetActive(false); Destroy(existing); }
                 var block = new GameObject("HollowCraft.Block." + id);
                 DontDestroyOnLoad(block);
                 block.transform.position = new Vector3((x+0.5f)*CellSize, (y+0.5f)*CellSize, 0.1f);
                 var renderer = block.AddComponent<SpriteRenderer>();
                 Texture2D texture = Texture((string)cell["render"]??id);
+                if(Standalone&&id.EndsWith("_slab",StringComparison.Ordinal))texture=HollowCraft.Standalone.NativeItemModels.FaceTexture(id)??texture;
                 if((bool?)cell["lit"]==true) texture=Texture(id+"_on") ?? texture;
                 if(id.EndsWith("_door")&&!id.EndsWith("_trapdoor")) texture=Texture(id+(state.Contains("half=upper") ? "_top":"_bottom")) ?? texture;
                 if(id=="minecraft:redstone_wire"||id=="minecraft:redstone") texture=Texture("minecraft:redstone_dust_line0") ?? texture;
@@ -828,6 +840,10 @@ namespace HollowCraft
                     } else block.AddComponent<BoxCollider2D>().size = new Vector2(CellSize,CellSize);
                 }
                 if(id=="minecraft:bedrock")block.AddComponent<BedrockWall>();
+                if(Standalone&&id.EndsWith("_slab",StringComparison.Ordinal)&&(bool?)cell["double"]!=true&&texture!=null){
+                    renderer.enabled=false;var visual=new GameObject("Half slab visual");visual.transform.SetParent(block.transform,false);visual.transform.localPosition=new Vector3(0,(bool?)cell["top"]==true?.25f:-.25f,0);var slab=visual.AddComponent<SpriteRenderer>();slab.sprite=Sprite.Create(texture,new Rect(0,0,texture.width,texture.width*.5f),new Vector2(.5f,.5f),texture.width);
+                }
+                if(Standalone&&(bool?)cell["waterlogged"]==true&&cell["fluidGeometry"]!=null)block.AddComponent<MinecraftFluidSurface>().Configure(cell);
                 blocks[key] = block;blockStates[key]=state;
             }
             foreach (string key in blocks.Keys.Where(k => !present.Contains(k)).ToArray())
@@ -845,7 +861,7 @@ namespace HollowCraft
             while(Time.time-start<.45f) {float t=(Time.time-start)/.45f;for(int i=0;i<particles.Count;i++) {float angle=i*Mathf.PI*2/particles.Count;particles[i].transform.position=point+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*t*3;particles[i].transform.localScale=Vector3.one*(1-t)*.6f;}yield return null;}
             foreach(var particle in particles) Destroy(particle);
         }
-        private void ClearBlocks() { SteveAvatar.ResetLanding();JumpBuild?.Cancel();audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) if(block!=null) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
+        private void ClearBlocks() { surveyedFluidTerrain.Clear();SteveAvatar.ResetLanding();JumpBuild?.Cancel();audio?.StopAll();particles.Reset();entityView.Reset();blockView.Reset();Hud?.Reset();nativeHiddenRenderers.Clear();nativeRendererCache.Clear();nativeProjectileSteps.Clear();nativeTntSteps.Clear();lastTntTick=-1;retiredProjectiles.Clear();foreach (GameObject block in blocks.Values) if(block!=null) { block.SetActive(false); Destroy(block); } blocks.Clear();blockStates.Clear();pendingPlacements.Clear(); breakingTicks.Clear();foreach(var drop in drops.Values) Destroy(drop);drops.Clear();foreach(var tnt in primedTnt.Values)Destroy(tnt);primedTnt.Clear();foreach(var projectile in projectiles.Values)if(projectile!=null)Destroy(projectile);projectiles.Clear();lastProjectileTick=-1;EnemySystem.Clear();if(placementGhost!=null) placementGhost.SetActive(false); }
         private int ItemCount(string id) { int total=0; for(int i=0;i<36;i++) if(inventory[i]==id) total+=counts[i]; return total; }
         private void SmokeTick(HeroController hero)
         {

@@ -41,6 +41,7 @@ namespace HollowCraft.Standalone
             for(int i=0;i<16&&key!=null&&key.StartsWith("#",StringComparison.Ordinal);i++)key=(string)model.Textures[key.Substring(1)];if(string.IsNullOrEmpty(key))return null;
             string resource=key.Contains(":")?key:"minecraft:"+key;string name=resource.Split('/').Last().Split(':').Last(),space=resource.Split(':')[0];return NativeAssets.Texture(space+":"+name);
         }
+        internal static Texture2D FaceTexture(string id) {var model=Read(id.Replace(":",":item/"));if(model==null)return null;foreach(string key in new[]{"side","all","texture","particle"}){var image=Image(model,"#"+key);if(image!=null)return image;}return null;}
         private static Mesh Bake(Mesh source,Matrix4x4 transform,bool gui=false) {var mesh=UnityEngine.Object.Instantiate(source);var points=mesh.vertices;for(int i=0;i<points.Length;i++){var p=transform.MultiplyPoint3x4(points[i]);points[i]=gui?new Vector3(p.x,p.y,-p.z):new Vector3(-p.x,-p.y,p.z);}mesh.vertices=points;mesh.RecalculateBounds();return mesh;}
         internal static bool Draw(Transform holder,string id,int layer,int order,bool left,bool gui=false) {
             if(string.IsNullOrEmpty(id)||!id.StartsWith("minecraft:",StringComparison.Ordinal)&&id!="hollowcraft_bridge:zenith"&&id!="hollowcraft_bridge:stardust_wings")return false;

@@ -23,7 +23,7 @@ namespace HollowCraft.Standalone
             stats["velocityMultiplier"]=floor=="minecraft:soul_sand"||floor=="minecraft:honey_block"?.4:1;
             int soul=NativeData.Enchantment(Inventory.Armor[3],"soul_speed");if(soul>0&&(floor=="minecraft:soul_sand"||floor=="minecraft:soul_soil")){stats["speed"]=(double)stats["speed"]+.0405+soul*.0105;stats["velocityMultiplier"]=1;}
             var current=FluidCurrent(x,y+.4);stats["currentX"]=current[0];stats["currentY"]=current[1];
-            if(Room.Blocks.TryGetValue(NativeRoom.Key((int)Math.Floor(x),(int)Math.Floor(y+.4)),out var cell)&&LiquidCell(cell))stats["waterHeight"]=WaterCell(cell)?(bool?)cell["falling"]==true?1:1-LiquidLevel(cell)/8.0:0;
+            stats["waterHeight"]=FluidDepth("water");stats["lavaHeight"]=FluidDepth("lava");
         }
         private void Thorns(int enemyId,string kind) {
             if(enemyId==0||kind=="thorns")return;var armor=Inventory.Armor.Where(s=>NativeData.Enchantment(s,"thorns")>0).ToArray();

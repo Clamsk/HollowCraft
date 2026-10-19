@@ -1,8 +1,8 @@
 # HollowCraft Native · 独立 Mod 迁移
 
-0.40.0-alpha.8 补齐 Better Combat 手持物品轨道与原版盾牌模型，加入融合风格启动器、初始配装物品库、死亡物品规则和可配置落地水；[本版说明](docs/NATIVE_HANDS_LAUNCHER.md)。
+0.40.0-alpha.9 修复进食过程音效、水和岩浆扩散、斜面液面、流动贴图、薄平台与含水半砖显示；[本版说明](docs/NATIVE_FLUID_FOOD.md)。
 
-现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.8 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
+现在主线正式转向只运行空洞的 C# Mod。**0.40.0-alpha.9 是功能未齐全的迁移预览**，不要求运行 MC 或 Java，默认使用本地后端。
 
 - [独立版安装、启动和迁移清单](docs/NATIVE_MIGRATION.md)
 - 独立启动入口：**Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@
 
 以下是旧桥接版文档和历史记录，其双游戏依赖不适用于 Native。
 
-- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.8)
+- [独立版 alpha 下载](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.9)
 
 ---
 

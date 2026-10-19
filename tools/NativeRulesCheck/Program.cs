@@ -33,7 +33,7 @@ internal static partial class Program
         using(var reloaded=new NativeGame(root)){Send(reloaded,"room-a","save-a","scene","exactX",0,"exactY",2);var state=Latest(reloaded);Check((int)state["inventory"][3]["count"]==62,"Native disk reload");Check(((JArray)state["blocks"]).Count==1,"Native world disk reload");}
         Additional(root);
         Rendering();
-        if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));FontContracts(Path.GetFullPath(args[1]));TowerContracts(root,Path.GetFullPath(args[1]));NativeExpansion(root,Path.GetFullPath(args[1]));WorldMigration(root,Path.GetFullPath(args[1]));MechanicsMigration(root,Path.GetFullPath(args[1]));LauncherSettings(root,Path.GetFullPath(args[1]));}
+        if(args.Length>1){ImportedData(root,Path.GetFullPath(args[1]));FrontendContracts(root,Path.GetFullPath(args[1]));WorkstationContracts(root,Path.GetFullPath(args[1]));RangedContracts(root,Path.GetFullPath(args[1]));FontContracts(Path.GetFullPath(args[1]));TowerContracts(root,Path.GetFullPath(args[1]));NativeExpansion(root,Path.GetFullPath(args[1]));WorldMigration(root,Path.GetFullPath(args[1]));MechanicsMigration(root,Path.GetFullPath(args[1]));LauncherSettings(root,Path.GetFullPath(args[1]));FluidFood(root,Path.GetFullPath(args[1]));}
         Console.WriteLine("Native rule checks: "+checks+" passed. No Unity, Minecraft, Java, sockets or gameplay launched.");
     }
     private static void Rendering() {
