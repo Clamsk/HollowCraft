@@ -1,8 +1,8 @@
 # HollowCraft Native · Standalone migration
 
-0.40.0-alpha.9 fixes consumption audio, water/lava propagation, sloping surfaces, original flow animations, thin terrain and waterlogged slab rendering. [Release details](docs/NATIVE_FLUID_FOOD.en.md).
+0.40.0-alpha.10 samples actual native terrain contours to fix ground-fluid spreading, and corrects the charging trident hand model and aim. [Release details](docs/NATIVE_TERRAIN_TRIDENT.en.md).
 
-The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.9 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
+The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.10 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
 
 - [Native installation, launch and migration checklist](docs/NATIVE_MIGRATION.en.md)
 - **Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
@@ -10,7 +10,7 @@ The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.9 i
 
 The following documents the legacy bridge. Its two-game requirements do not apply to Native.
 
-- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.9)
+- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.10)
 
 ---
 

@@ -23,7 +23,12 @@ namespace HollowCraft.Standalone
             if(!FluidPassable(bx+dx,by+dy,id))return false;
             // A thin platform can be wholly inside a voxel. Treat its horizontal
             // span as a floor even though TerrainFull correctly returns false.
-            return !NativeFluidGeometry.Obstacles(Room,terrain,bx,by).Any(r=>dy<0?r[0]<.001&&r[2]>.999&&r[3]>.001&&(r[1]<.001||r[3]<.999):dx!=0&&r[1]<.001&&r[3]>.999&&r[2]-r[0]>.001);
+            var obstacles=NativeFluidGeometry.Obstacles(Room,terrain,bx,by).ToArray();
+            if(dy<0)return !NativeTerrainRaster.Covers(obstacles.Where(r=>r[3]>.00001&&(r[1]<.00001||r[3]<.99999)),0);
+            double inlet=Room.Blocks.TryGetValue(NativeRoom.Key(bx,by),out var liquid)?Number(liquid,"inletX",.5):.5,edge=dx<0?0:1;
+            if(NativeTerrainRaster.Covers(obstacles.Where(r=>r[0]<Math.Max(inlet,edge)+.00001&&r[2]>Math.Min(inlet,edge)-.00001),1))return false;
+            var target=NativeFluidGeometry.Obstacles(Room,terrain,bx+dx,by).Where(r=>dx<0?r[2]>.99999:r[0]<.00001);
+            return !NativeTerrainRaster.Covers(obstacles.Where(r=>dx<0?r[0]<.00001:r[2]>.99999).Concat(target),1);
         }
         private int FluidDropDistance(int bx,int by,int direction,string id,Dictionary<string,JObject> old,int limit) {
             for(int distance=0;distance<=limit;distance++){
@@ -72,18 +77,18 @@ namespace HollowCraft.Standalone
                 JObject next=null;
                 foreach(string id in new[]{"minecraft:water","minecraft:lava"}) {
                     if(kind!=null&&kind!=id||tick%(id=="minecraft:water"?5:30)!=0||!FluidPassable(bx,by,id))continue;
-                    int level=8,sources=0;bool falling=false;
-                    if(old.TryGetValue(NativeRoom.Key(bx,by+1),out var above)&&LiquidKind(above)==id&&FluidCross(bx,by+1,0,-1,id)){level=0;falling=true;}
+                    int level=8,sources=0;bool falling=false;double inlet=.5;
+                    if(old.TryGetValue(NativeRoom.Key(bx,by+1),out var above)&&LiquidKind(above)==id&&FluidCross(bx,by+1,0,-1,id)){level=0;falling=true;inlet=Number(above,"inletX",.5);}
                     foreach(int direction in new[]{-1,1})if(old.TryGetValue(NativeRoom.Key(bx+direction,by),out var side)&&LiquidKind(side)==id&&FluidCross(bx+direction,by,-direction,0,id)){
                         if(LiquidSource(side))sources++;bool supported=!FluidCross(bx+direction,by,0,-1,id)||old.TryGetValue(NativeRoom.Key(bx+direction,by-1),out var support)&&LiquidKind(support)==id&&LiquidSource(support);
-                        if(supported&&(directions[NativeRoom.Key(bx+direction,by)]&(direction<0?2:1))!=0){int candidate=LiquidLevel(side)+(id=="minecraft:lava"?2:1);if(candidate<level){level=candidate;falling=false;}}
+                        if(supported&&(directions[NativeRoom.Key(bx+direction,by)]&(direction<0?2:1))!=0){int candidate=LiquidLevel(side)+(id=="minecraft:lava"?2:1);if(candidate<level){level=candidate;falling=false;inlet=direction<0?0:1;}}
                     }
                     bool renew=id=="minecraft:water"&&sources>=2&&(Solid(bx,by-1)||old.TryGetValue(NativeRoom.Key(bx,by-1),out var below)&&WaterCell(below)&&LiquidSource(below));
                     if(renew){level=0;falling=false;}
-                    if(level<=7){next=NativeRoom.Cell(bx,by,id,renew,level);next["falling"]=falling;}
+                    if(level<=7){next=NativeRoom.Cell(bx,by,id,renew,level);next["falling"]=falling;next["inletX"]=inlet;}
                     if(next!=null)break;
                 }
-                if(next!=null){if(current==null||LiquidLevel(current)!=LiquidLevel(next)||(bool?)current["falling"]!=(bool?)next["falling"]||LiquidSource(current)!=LiquidSource(next))changes[key]=next;}
+                if(next!=null){if(current==null||LiquidLevel(current)!=LiquidLevel(next)||(bool?)current["falling"]!=(bool?)next["falling"]||LiquidSource(current)!=LiquidSource(next)||Math.Abs(Number(current,"inletX",.5)-Number(next,"inletX",.5))>.00001)changes[key]=next;}
                 else if(current!=null&&tick%(kind=="minecraft:lava"?30:5)==0)changes[key]=null;
                 updates++;
             }

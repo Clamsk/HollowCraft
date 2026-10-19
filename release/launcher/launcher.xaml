@@ -12,7 +12,7 @@
   <Image x:Name="Backdrop" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
   <Border Background="#B2091422"/>
   <Grid Margin="34,24,34,18"><Grid.RowDefinitions><RowDefinition Height="120"/><RowDefinition Height="*"/><RowDefinition Height="76"/></Grid.RowDefinitions>
-   <Grid><StackPanel><TextBlock Text="HOLLOWCRAFT" FontFamily="Georgia" FontSize="35" FontWeight="Bold" Foreground="#F4F1E2"/><TextBlock Text="方块之力，深入圣巢" FontSize="16" Margin="2,7,0,6" Foreground="#BCD2BE"/><TextBlock Text="NATIVE 0.40.0 α9   /   HOLLOW KNIGHT × MINECRAFT" FontSize="10" Foreground="#9AB1BC"/></StackPanel><Border HorizontalAlignment="Right" VerticalAlignment="Top" Padding="12,6" BorderBrush="#6A8D84" BorderThickness="1" CornerRadius="12"><TextBlock Text="单进程 · 独立 Mod" Foreground="#C8E4C5" FontSize="11"/></Border></Grid>
+   <Grid><StackPanel><TextBlock Text="HOLLOWCRAFT" FontFamily="Georgia" FontSize="35" FontWeight="Bold" Foreground="#F4F1E2"/><TextBlock Text="方块之力，深入圣巢" FontSize="16" Margin="2,7,0,6" Foreground="#BCD2BE"/><TextBlock Text="NATIVE 0.40.0 α10   /   HOLLOW KNIGHT × MINECRAFT" FontSize="10" Foreground="#9AB1BC"/></StackPanel><Border HorizontalAlignment="Right" VerticalAlignment="Top" Padding="12,6" BorderBrush="#6A8D84" BorderThickness="1" CornerRadius="12"><TextBlock Text="单进程 · 独立 Mod" Foreground="#C8E4C5" FontSize="11"/></Border></Grid>
    <Border Grid.Row="1" Background="#ED0C1B2A" BorderBrush="#405965" BorderThickness="1" CornerRadius="8" Padding="18,14">
     <TabControl x:Name="MainTabs" Background="Transparent" BorderThickness="0">
      <TabItem x:Name="PlayTab" Header="冒险"><Grid Margin="8,22,8,8"><Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="0.9*"/></Grid.ColumnDefinitions>

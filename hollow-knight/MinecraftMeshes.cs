@@ -107,7 +107,7 @@ namespace HollowCraft
         }
         internal static bool Builtin(Transform holder,string id,string assets,int layer,int order,JArray grip=null)
         {
-            string asset=id.StartsWith("minecraft:shield")?"shield_model":id=="minecraft:trident"?"trident_model":id=="minecraft:chest"?"chest_model":null;
+            string asset=id.StartsWith("minecraft:shield")?"shield_model":Standalone.NativeHandModels.Trident(id)?"trident_model":id=="minecraft:chest"?"chest_model":null;
             if(asset==null) {holder.gameObject.SetActive(false);return true;}
             string file=Path.Combine(assets,asset+".png");if(!File.Exists(file)) return false;
             holder.gameObject.SetActive(true);

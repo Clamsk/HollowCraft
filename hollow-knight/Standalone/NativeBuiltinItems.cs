@@ -12,7 +12,7 @@ namespace HollowCraft.Standalone
         private static readonly Dictionary<string,Mesh> cache=new Dictionary<string,Mesh>();
         private static Vector3 V(JToken value,Vector3 fallback)=>value is JArray a?new Vector3((float)a[0],(float)a[1],(float)a[2]):fallback;
         internal static bool Draw(Transform holder,string id,Matrix4x4 matrix,int layer,int order,bool left) {
-            string kind=id.Contains("shield")?"shield":id=="minecraft:trident"?"trident":null;if(kind==null)return false;
+            string kind=id.Contains("shield")?"shield":NativeHandModels.Trident(id)?"trident":null;if(kind==null)return false;
             if(descriptions==null){string path=Path.Combine(NativeAssets.Root??"","native-held-models.json");if(!File.Exists(path))return false;descriptions=JObject.Parse(File.ReadAllText(path));}
             var source=descriptions["models"]?[kind] as JObject;if(source==null)return false;string key=id+"/"+left;
             if(!cache.TryGetValue(key,out var mesh)) {

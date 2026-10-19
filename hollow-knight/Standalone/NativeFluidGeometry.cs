@@ -11,10 +11,12 @@ namespace HollowCraft.Standalone
     {
         internal static string Kind(JObject cell)=>(bool?)cell?["waterlogged"]==true?"minecraft:water":(string)cell?["id"];
         internal static bool IsLiquid(JObject cell)=>Kind(cell)=="minecraft:water"||Kind(cell)=="minecraft:lava";
-        private static double Floor(Dictionary<string,JArray> terrain,int x,int y) {
-            double floor=0;if(terrain!=null&&terrain.TryGetValue(NativeRoom.Key(x,y),out var shapes))foreach(JArray r in shapes)if(r.Count>=6&&(double)r[2]<.001&&(double)r[4]>.999&&(double)r[5]<.999)floor=Math.Max(floor,(double)r[5]);return floor;
+        private static double[][] Floors(Dictionary<string,JArray> terrain,int x,int y) {
+            var data=terrain!=null&&terrain.TryGetValue(NativeRoom.Key(x,y),out var shapes)?shapes.OfType<JArray>().Where(r=>r.Count>=6&&(double)r[5]<.99999).Select(r=>new[]{(double)r[2],(double)r[3],(double)r[4],(double)r[5]}).ToArray():new double[0][];
+            return NativeTerrainRaster.Covers(data,0)?data:new double[0][];
         }
-        private static double LocalHeight(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell){double floor=Floor(terrain,(int)cell["x"],(int)cell["y"]);return floor+(1-floor)*Height(room,cell);}
+        private static double Floor(Dictionary<string,JArray> terrain,int x,int y,double at=.5){return Floors(terrain,x,y).Where(r=>r[0]<=at+.000001&&r[2]>=at-.000001).Select(r=>r[3]).DefaultIfEmpty(0).Max();}
+        private static double LocalHeight(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell,double at){double floor=Floor(terrain,(int)cell["x"],(int)cell["y"],at);return floor+(1-floor)*Height(room,cell);}
         internal static double Height(NativeRoom room,JObject cell) {
             if(!IsLiquid(cell))return 0;int x=(int)cell["x"],y=(int)cell["y"];
             if(room.Blocks.TryGetValue(NativeRoom.Key(x,y+1),out var above)&&Kind(above)==Kind(cell))return 1;
@@ -25,10 +27,10 @@ namespace HollowCraft.Standalone
             if(room.Blocks.TryGetValue(NativeRoom.Key(x,y),out var cell)&&!new[]{"minecraft:water","minecraft:lava"}.Contains((string)cell["id"]))foreach(JArray a in NativeRoom.Shapes(cell))yield return new[]{(double)a[0],(double)a[1],(double)a[2],(double)a[3]};
         }
         private static double Corner(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell,int direction) {
-            double own=LocalHeight(room,terrain,cell);int x=(int)cell["x"]+direction,y=(int)cell["y"];
-            if(room.Blocks.TryGetValue(NativeRoom.Key(x,y),out var side)&&Kind(side)==Kind(cell)){double other=LocalHeight(room,terrain,side);if(own>=1||other>=1)return 1;double a=own>=.8?10:1,b=other>=.8?10:1;return (a*own+b*other)/(a+b);}
+            double own=LocalHeight(room,terrain,cell,direction<0?0:1);int x=(int)cell["x"]+direction,y=(int)cell["y"];
+            if(room.Blocks.TryGetValue(NativeRoom.Key(x,y),out var side)&&Kind(side)==Kind(cell)){double other=LocalHeight(room,terrain,side,direction<0?1:0);if(own>=1||other>=1)return 1;double a=own>=.8?10:1,b=other>=.8?10:1;return (a*own+b*other)/(a+b);}
             if(Obstacles(room,terrain,x,y).Any(r=>r[3]>.99&&r[1]<.01))return own;
-            return (own*(own>=.8?10:1)+Floor(terrain,x,y))/(own>=.8?11:2);
+            return (own*(own>=.8?10:1)+Floor(terrain,x,y,direction<0?1:0))/(own>=.8?11:2);
         }
         internal static double[] Tops(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell)=>new[]{Corner(room,terrain,cell,-1),Corner(room,terrain,cell,1)};
         private static List<double[]> Clip(List<double[]> polygon,int axis,double edge,bool greater) {
@@ -37,7 +39,8 @@ namespace HollowCraft.Standalone
         }
         private static bool Area(List<double[]> polygon) {double sum=0;for(int i=0;i<polygon.Count;i++){var a=polygon[i];var b=polygon[(i+1)%polygon.Count];sum+=a[0]*b[1]-a[1]*b[0];}return Math.Abs(sum)>.000001;}
         internal static JArray Polygons(NativeRoom room,Dictionary<string,JArray> terrain,JObject cell) {
-            var top=Tops(room,terrain,cell);double bottom=Floor(terrain,(int)cell["x"],(int)cell["y"]);var polygons=new List<List<double[]>>{new List<double[]>{new[]{0.0,bottom},new[]{1.0,bottom},new[]{1.0,Math.Max(bottom,top[1])},new[]{0.0,Math.Max(bottom,top[0])}}};
+            var top=Tops(room,terrain,cell);var floors=Floors(terrain,(int)cell["x"],(int)cell["y"]);var cuts=floors.SelectMany(r=>new[]{r[0],r[2]}).Concat(new[]{0.0,1}).Distinct().OrderBy(v=>v).ToArray();var polygons=new List<List<double[]>>();
+            for(int i=0;i+1<cuts.Length;i++){double left=cuts[i],right=cuts[i+1],bottom=floors.Where(r=>r[0]<right&&r[2]>left).Select(r=>r[3]).DefaultIfEmpty(0).Max();polygons.Add(new List<double[]>{new[]{left,bottom},new[]{right,bottom},new[]{right,Math.Max(bottom,top[0]+(top[1]-top[0])*right)},new[]{left,Math.Max(bottom,top[0]+(top[1]-top[0])*left)}});}
             foreach(var r in Obstacles(room,terrain,(int)cell["x"],(int)cell["y"])) {
                 var next=new List<List<double[]>>();foreach(var p in polygons){var middle=Clip(Clip(p,0,r[0],true),0,r[2],false);foreach(var part in new[]{Clip(p,0,r[0],false),Clip(p,0,r[2],true),Clip(middle,1,r[1],false),Clip(middle,1,r[3],true)})if(Area(part))next.Add(part);}polygons=next;
             }

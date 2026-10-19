@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "source": "Numerical contour from the locally installed Hollow Knight 1.5.12620 scene Tutorial_01, Chunk 0 1 EdgeCollider2D. No game code or pixels.",
+  "points": [[32,1],[32,0],[64,0],[64,10],[32,10],[32,1]],
+  "sourceCell": [48,12],
+  "floorY": 10
+}

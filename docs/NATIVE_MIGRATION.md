@@ -1,4 +1,4 @@
-# HollowCraft Native 0.40.0-alpha.9
+# HollowCraft Native 0.40.0-alpha.10
 
 [English](NATIVE_MIGRATION.en.md) | 简体中文
 
@@ -49,7 +49,7 @@
 | 第三人称人物和装备 | 统一镜像、关节绑定、逐像素深度、原版手持与 GUI 参数、Better Combat 三连招时序、物品轨道和过渡 | 独立 C# 兼容实现；Bendy 弯曲、姿势细节和实机外观仍待完善 |
 | UI、贴图、音效 | 静态原版贴图／音效 + 自有占位资源 + 可选本机模型导入 | 部分外观和声音尚不等价桥接版 |
 
-本版详情见 [进食与流体修复](NATIVE_FLUID_FOOD.md)、[武器绑定与启动器配装](NATIVE_HANDS_LAUNCHER.md)、[世界规则与生物交互](NATIVE_SYSTEMS.md)、[Clamsk、生物与药水移植](NATIVE_EXPANSION.md) 和 [动作、跳搭与字体修复](NATIVE_ANIMATION_FIX.md)，前版基础见 [输入与工作站修复](NATIVE_INPUT_FIX.md) 及 [渲染与规则迁移说明](NATIVE_RENDERING.md)，机器可读清单见 [native-migration.json](../release/native-migration.json)。静态目录覆盖不等于特殊行为覆盖。
+本版详情见 [原生地面与三叉戟](NATIVE_TERRAIN_TRIDENT.md)、[进食与流体修复](NATIVE_FLUID_FOOD.md)、[武器绑定与启动器配装](NATIVE_HANDS_LAUNCHER.md)、[世界规则与生物交互](NATIVE_SYSTEMS.md)、[Clamsk、生物与药水移植](NATIVE_EXPANSION.md) 和 [动作、跳搭与字体修复](NATIVE_ANIMATION_FIX.md)，前版基础见 [输入与工作站修复](NATIVE_INPUT_FIX.md) 及 [渲染与规则迁移说明](NATIVE_RENDERING.md)，机器可读清单见 [native-migration.json](../release/native-migration.json)。静态目录覆盖不等于特殊行为覆盖。
 
 ## 本机静态资源复用
 
@@ -73,6 +73,6 @@ dotnet run --project tools/NativeRulesCheck/NativeRulesCheck.csproj -c Release
 
 纯规则检查工具需要 .NET 9 SDK，其测试不启动 Unity、空洞、MC 或 Java。主 Mod 面向游戏内的 .NET Framework/Mono，不要求玩家安装 .NET 9。
 
-本版通过 549 项纯规则／协议检查（含本机静态数据导入）、12 项启动器进程检查和 17 项配装／离屏界面交互检查。检查覆盖逐像素深度与透明像素、动画骨骼与恢复、配方和标签、酿药、弩、药水，以及已有存档和战斗规则。渲染外观、碰撞手感、实际帧率、Boss 全流程和完整通关仍由玩家试玩验收；没有启动或关闭游戏。
+本版通过 577 项纯规则／协议检查（含本机静态数据导入）、12 项启动器进程检查和 17 项配装／离屏界面交互检查。检查覆盖逐像素深度与透明像素、动画骨骼与恢复、配方和标签、酿药、弩、药水，以及已有存档和战斗规则。渲染外观、碰撞手感、实际帧率、Boss 全流程和完整通关仍由玩家试玩验收；没有启动或关闭游戏。
 
 接下来的迁移顺序是：人物装备与透明材质保真 → 战斗及通关回归修复 → 完整物品、配方和工作站 → 生物模型与行为 → 声音、粒子、红石及流体细节。直到清单全部迁移并经试玩确认之前，不宣称独立版已达到桥接版全部功能。

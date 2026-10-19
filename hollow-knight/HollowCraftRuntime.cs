@@ -658,6 +658,7 @@ namespace HollowCraft
             if (mask == 0) return result;
             var filter=new ContactFilter2D();filter.SetLayerMask(mask);filter.useTriggers=false;
             var ignored=new Dictionary<Collider2D,bool>();
+            var shapes=new Dictionary<Collider2D,NativeTerrainRaster>();
             var sampleCells=new HashSet<Vector2Int>(WorldCreatures.SampleCells(cx,cy));
             if(Standalone)foreach(JObject fluid in LatestSnapshot?["blocks"] as JArray??new JArray())if((bool?)fluid["fluid"]==true||(bool?)fluid["waterlogged"]==true){int fx=(int)fluid["x"],fy=(int)fluid["y"];for(int dx=-1;dx<=1;dx++)for(int dy=-1;dy<=1;dy++){var point=new Vector2Int(fx+dx,fy+dy);if(!surveyedFluidTerrain.Contains(point))sampleCells.Add(point);}}
             foreach(var cell in sampleCells)
@@ -669,23 +670,14 @@ namespace HollowCraft
                     // Native platforms can be much thinner than a block and sit at cell edges.
                     // Sampling only the middle half missed their floors, letting server items
                     // fall through platforms that still supported the native player.
-                    new Vector2(CellSize * 0.9999f, CellSize * 0.9999f), 0, filter,terrainProbe);
-                while(found==terrainProbe.Length&&terrainProbe.Length<256) {Array.Resize(ref terrainProbe,terrainProbe.Length*2);found=Physics2D.OverlapBox(new Vector2(x+.5f,y+.5f),new Vector2(.9999f,.9999f),0,filter,terrainProbe);}
+                    new Vector2(CellSize * 1.004f, CellSize * 1.004f), 0, filter,terrainProbe);
+                while(found==terrainProbe.Length&&terrainProbe.Length<256) {Array.Resize(ref terrainProbe,terrainProbe.Length*2);found=Physics2D.OverlapBox(new Vector2(x+.5f,y+.5f),new Vector2(1.004f,1.004f),0,filter,terrainProbe);}
                 for(int index=0;index<found;index++) {
                     var c=terrainProbe[index];if(c==null)continue;
                     if(!ignored.TryGetValue(c,out bool skip)) {skip=c.name.StartsWith("HollowCraft.Block")||c.GetComponent<CreatureBody>()!=null||c.GetComponentInParent<HeroController>()!=null||c.GetComponentInParent<HealthManager>()!=null;ignored[c]=skip;}
                     if(skip)continue;
-                    var bounds=c.bounds;float x0=Mathf.Max(x,bounds.min.x),x1=Mathf.Min(x+1,bounds.max.x),y0=Mathf.Max(y,bounds.min.y),y1=Mathf.Min(y+1,bounds.max.y);
-                    var center=new Vector2(x+.5f,y+.5f);var closest=c.ClosestPoint(center);
-                    // Polygon terrain bounds can span a whole room. Use the nearby surface
-                    // when the cell center is outside that polygon, preserving thin ledges.
-                    if((closest-center).sqrMagnitude>.000001f) {
-                        if(closest.y<center.y-.001f)y1=Math.Min(y1,closest.y);
-                        if(closest.y>center.y+.001f)y0=Math.Max(y0,closest.y);
-                        if(closest.x<center.x-.001f)x1=Math.Min(x1,closest.x);
-                        if(closest.x>center.x+.001f)x0=Math.Max(x0,closest.x);
-                    }
-                    if(x1>x0+.00001f&&y1>y0+.00001f) result.Add(new[]{(float)x,(float)y,x0-x,y0-y,x1-x,y1-y});
+                    if(!shapes.TryGetValue(c,out var shape))shapes[c]=shape=NativeTerrainSampler.Read(c);
+                    foreach(var r in shape.Cell(x,y))result.Add(new[]{(float)x,(float)y,(float)r[0],(float)r[1],(float)r[2],(float)r[3]});
                 }
             }
             return result;

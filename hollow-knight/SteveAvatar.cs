@@ -133,7 +133,7 @@ namespace HollowCraft
                 float aim=GameCursor.WorldTarget(hero,out Vector2 target,out _)?Mathf.Atan2(target.y-GameCursor.Eye(hero).y,Math.Abs(target.x-GameCursor.Eye(hero).x))*Mathf.Rad2Deg:0;
                 if(action=="BOW"||action=="CROSSBOW") {bool off=(string)runtime.Stats["activeHand"]=="offhand";rightArm.localRotation=Quaternion.Euler(90+aim,off?28.6f:5.7f,0);leftArm.localRotation=Quaternion.Euler(90+aim,off?-5.7f:-28.6f,0);}
                 else if(action=="BLOCK") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(60,arm==leftArm?-30:30,0);}
-                else if(action=="SPEAR") ((string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm).localRotation=Quaternion.Euler(162+aim,0,0);
+                else if(action=="SPEAR") ((string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm).localRotation=Quaternion.Euler(GameplayBackend.Standalone?Standalone.NativeHandModels.SpearPitch(aim):162+aim,0,0);
                 else if(action=="DRINK"||action=="EAT") {var arm=(string)runtime.Stats["activeHand"]=="offhand"?leftArm:rightArm;arm.localRotation=Quaternion.Euler(75+Mathf.Sin(Time.time*12)*5,arm==leftArm?25:-25,0);}
             }
             ApplyLandingPose();
@@ -163,8 +163,7 @@ namespace HollowCraft
         }
         private void TintHand(Transform hand,JToken item){if(hand==null||item==null)return;foreach(var renderer in hand.GetComponentsInChildren<MeshRenderer>()){renderer.GetPropertyBlock(tint);tint.SetColor("_Color",Standalone.NativeItemColors.Tint(item,renderer.sharedMaterial.mainTexture?.name??""));renderer.SetPropertyBlock(tint);}}
         private static string NativeHandModel(string id,JToken item,bool active,int ticks) {
-            string original=(string)item?["id"]??id;if(original=="minecraft:bow")return active?"minecraft:bow_pulling_"+Mathf.Clamp(ticks/7,0,2):original;
-            if(original=="minecraft:crossbow"){if((bool?)item?["nbt"]?["Charged"]==true)return "minecraft:crossbow_arrow";if(active)return "minecraft:crossbow_pulling_"+Mathf.Clamp(ticks/8,0,2);}return id;
+            string original=(string)item?["id"]??id;return original=="minecraft:trident"||original=="minecraft:bow"||original=="minecraft:crossbow"?Standalone.NativeHandModels.Render(original,active,ticks,(bool?)item?["nbt"]?["Charged"]==true):id;
         }
         private void Armor(Transform part,int slot,int w,int h,int d,int u,int v,bool pivot)
         {

@@ -61,7 +61,7 @@ namespace HollowCraft.Standalone
             if(packet["terrainKnown"] is JArray known){foreach(JArray at in known){if(at.Count<2)continue;string key=NativeRoom.Key((int)at[0],(int)at[1]);terrainKnown.Add(key);terrain.Remove(key);}}else {terrain.Clear();terrainKnown.Clear();}
             foreach(JArray value in values){if(value.Count<2)continue;string key=NativeRoom.Key((int)value[0],(int)value[1]);if(!terrain.TryGetValue(key,out var list))terrain[key]=list=new JArray();list.Add(value.DeepClone());}
         }
-        private bool TerrainFull(int bx,int by)=>terrain.TryGetValue(NativeRoom.Key(bx,by),out var values)&&values.OfType<JArray>().Any(v=>v.Count<6||(double)v[2]<.01&&(double)v[3]<.01&&(double)v[4]>.99&&(double)v[5]>.99);
+        private bool TerrainFull(int bx,int by)=>terrain.TryGetValue(NativeRoom.Key(bx,by),out var values)&&NativeTerrainRaster.Full(values.OfType<JArray>().Select(v=>v.Count<6?new[]{0.0,0,1,1}:new[]{(double)v[2],(double)v[3],(double)v[4],(double)v[5]}));
         private bool Solid(int bx,int by)=>terrain.ContainsKey(NativeRoom.Key(bx,by))||Room.Blocks.TryGetValue(NativeRoom.Key(bx,by),out var cell)&&NativeCatalog.Get((string)cell["id"]).Solid&&(bool?)cell["open"]!=true;
         private void Place(JObject packet,bool tower) {
             string request=(string)packet["request"]??"";if(tower&&towerResults.TryGetValue(request,out var prior)){Emit((JObject)prior.DeepClone());return;}
