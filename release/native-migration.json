@@ -1,6 +1,8 @@
 {
   "schema": 1,
-  "version": "0.40.0-alpha.12",
+  "version": "1.0.0",
+  "releaseChannel": "stable",
+  "releaseBaseline": "0.40.0-alpha.12",
   "target": "Hollow Knight only, in-process C# mod",
   "featureParity": false,
   "gameplayVerified": false,

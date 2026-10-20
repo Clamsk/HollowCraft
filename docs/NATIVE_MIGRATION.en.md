@@ -1,12 +1,12 @@
-# HollowCraft Native 0.40.0-alpha.12
+# HollowCraft Native 1.0.0
 
 [简体中文](NATIVE_MIGRATION.md) | English
 
-This release repairs armored boss head transitions, lava damage and replacement placement, and potion splash/sounds. See [Lava and potion fixes](NATIVE_LAVA_POTION.en.md).
+Version 1.0.0 is the first regular release, based on the gameplay of 0.40.0-alpha.12. See [release notes](NATIVE_RELEASE_1.0.en.md) and the preceding [lava/potion fixes](NATIVE_LAVA_POTION.en.md).
 
-HollowCraft is transitioning to a **Hollow Knight-only mod**. The default backend now runs C# rules inside the Hollow Knight process. Native mode does not launch Minecraft or Java, open a bridge socket, or receive live Minecraft-rendered frames. The v0.30.18 bridge remains available as a comparison and fallback.
+HollowCraft is a **Hollow Knight-only mod**. The default backend runs C# rules inside the Hollow Knight process. Native mode does not launch Minecraft or Java, open a bridge socket, or receive live Minecraft-rendered frames. The v0.30.18 bridge remains available as a comparison and fallback.
 
-**This is an incomplete migration preview, not feature parity or a verified full playthrough.** Builds and pure rule checks passed; no game or automated gameplay was launched for this version.
+Regular release status does not imply complete Minecraft/bridge feature parity or a fully verified playthrough. The checklist below retains specific limitations. Builds and pure rule checks do not replace gameplay acceptance; no game or automated gameplay was launched for this version.
 
 ## Install and play
 
@@ -73,4 +73,4 @@ Checks cover save separation, corrupt-save protection, item conservation, idempo
 
 Remaining work proceeds through rendering fidelity, combat/playthrough fixes, complete items/recipes/workstations, entity models and AI, then sound, particles, redstone and fluid details. Full parity will not be claimed until migration and player acceptance are complete.
 
-Alpha.12 passed 630 pure rule/protocol checks including imported local data, 12 launcher process checks and 17 loadout/offscreen UI interaction checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.
+The alpha.12 baseline passed 630 pure rule/protocol checks including imported local data, 12 launcher process checks and 17 loadout/offscreen UI interaction checks. Rendering appearance, frame rate and a full Boss playthrough remain for player acceptance. No game was launched or closed.

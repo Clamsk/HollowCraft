@@ -1,16 +1,17 @@
-# HollowCraft Native · Standalone migration
+# HollowCraft Native 1.0.0
 
-0.40.0-alpha.12 protects armored boss head transitions, adds native enemy lava damage, removes environmental hurt pull, allows placing blocks over fluids, and restores potion splash particles/sounds. [Release details](docs/NATIVE_LAVA_POTION.en.md).
+[简体中文](README.md) | [English](README.en.md)
 
-The main development line is now a Hollow Knight-only C# mod. **0.40.0-alpha.12 is an incomplete migration preview**, using the in-process backend by default. Running Minecraft or Java is unnecessary in Native mode.
+The **first regular release**, based on 0.40.0-alpha.12 with the same gameplay and balance. Run Hollow Knight only; Minecraft and Java are unnecessary. Includes Minecraft-style survival, combat, inventory and building, a Boss recording launcher and Clamsk easter-egg equipment. [Release notes and known limitations](docs/NATIVE_RELEASE_1.0.en.md).
 
 - [Native installation, launch and migration checklist](docs/NATIVE_MIGRATION.en.md)
+- [Download the 1.0.0 release](https://github.com/Clamsk/HollowCraft/releases/tag/v1.0.0)
 - **Install HollowCraft Native.cmd** → **Start HollowCraft Native.cmd**
 - The previous bridge remains at [v0.30.18](https://github.com/Clamsk/HollowCraft/releases/tag/v0.30.18) for comparison.
 
 The following documents the legacy bridge. Its two-game requirements do not apply to Native.
 
-- [Native alpha download](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.12)
+- [Previous Native alpha.12](https://github.com/Clamsk/HollowCraft/releases/tag/v0.40.0-alpha.12)
 
 ---
 
